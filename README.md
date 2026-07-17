@@ -1,12 +1,14 @@
 # Gestão à Vista
 
-Sistema web de gestão operacional que desenvolvi para uma empresa de facilities/serviços de grande porte, usado em produção por equipes de operação, qualidade e gestão espalhadas por várias regionais do Brasil. Ele centraliza rotinas que antes viviam em planilhas e grupos de WhatsApp: registro de ocorrências, auditoria de rondas, reservas de sala, avaliação psicossocial NR-01, gestão de qualidade, controle de efetivo e por aí vai.
+Sistema web de gestão operacional que desenvolvi para uma empresa de facilities/serviços de grande porte, usado em produção — hoje em escala nacional — por equipes de operação, qualidade e gestão das regionais da empresa pelo Brasil. Ele centraliza rotinas que antes viviam em planilhas e grupos de WhatsApp: registro de ocorrências, auditoria de rondas, reservas de sala, avaliação psicossocial NR-01, gestão de qualidade, controle de efetivo e por aí vai.
 
 Este repositório é a **versão pública de portfólio**: o código é o mesmo que roda em produção, mas todos os dados, credenciais, nomes de clientes e marcas foram removidos ou substituídos por valores fictícios (`example.com`, "Grupo Exemplo" etc.). O histórico do git foi zerado pelo mesmo motivo. Nenhum dado real está incluído — o projeto sobe com um banco SQLite vazio e um usuário de demonstração.
 
 ## Por que esse projeto existe
 
 A operação da empresa dependia de controles manuais: livro de ocorrências em papel, rondas sem evidência, indicadores montados à mão no fim do mês. A proposta do Gestão à Vista foi digitalizar esses fluxos um a um, dentro de um único sistema com controle de permissões por página e por papel (administrador, gerente, coordenador, supervisor).
+
+O sistema nasceu como ferramenta de uma única regional. Com os resultados aparecendo na operação, o corporativo da empresa decidiu adotá-lo como padrão e expandi-lo para todas as regionais do Brasil — e essa virada de escala guiou as decisões de arquitetura mais importantes do projeto, a começar pelo roteamento multi-banco descrito mais abaixo.
 
 O projeto cresceu módulo a módulo em cima de demandas reais — dá para perceber isso na estrutura. Alguns dos módulos principais:
 

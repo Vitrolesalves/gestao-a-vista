@@ -1,0 +1,133 @@
+{% if crs_kpi %}
+    {% for cr in crs_kpi %}
+    <div class="kpi-card cr-card">
+        <div class="kpi-card-header">
+            <div class="flex justify-between items-start">
+                <div class="flex-1">
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="flex items-center gap-2">
+                            {% if cr.tipo_servico == 'vigilancia' %}
+                                <i class="fas fa-map-marker-alt service-icon vigilancia"></i>
+                            {% elif cr.tipo_servico == 'facilities' %}
+                                <i class="fas fa-building service-icon facilities"></i>
+                            {% elif cr.tipo_servico == 'manutencao' %}
+                                <i class="fas fa-wrench service-icon manutencao"></i>
+                            {% elif cr.tipo_servico == 'limpeza' %}
+                                <i class="fas fa-building service-icon limpeza"></i>
+                            {% endif %}
+                            <h3 class="text-lg font-bold text-gray-900">{{ cr.cliente }}</h3>
+                        </div>
+                        <span class="status-badge" style="background: #e0e7ff; color: #3730a3;">CR: {{ cr.cr }}</span>
+                        <span class="status-badge" style="background: rgba(15, 23, 42, 0.1); color: #0F172A;">
+                            {{ cr.get_tipo_servico_display_formatted }}
+                        </span>
+                    </div>
+                    {% if view_mode == 'crs' %}
+                    <p class="text-sm text-gray-600">Gerente: {{ cr.gerente }}</p>
+                    {% endif %}
+                    {% if cr.observacoes %}
+                    <div class="alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        {{ cr.observacoes }}
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="text-right">
+                    <div class="performance-value {% if cr.performance_total >= 90 %}performance-high{% elif cr.performance_total >= 80 %}performance-medium{% else %}performance-low{% endif %}">
+                        {{ cr.performance_total }}%
+                    </div>
+                    <p class="text-sm text-gray-600">Performance</p>
+                </div>
+            </div>
+        </div>
+        <div class="p-6">
+            <div class="grid-3">
+                <!-- Performance -->
+                <div class="space-y-4">
+                    <h4 class="font-medium text-gray-900 text-sm flex items-center gap-2">
+                        {% if cr.tipo_servico == 'vigilancia' %}
+                            <i class="fas fa-map-marker-alt service-icon vigilancia"></i>
+                        {% elif cr.tipo_servico == 'facilities' %}
+                            <i class="fas fa-building service-icon facilities"></i>
+                        {% elif cr.tipo_servico == 'manutencao' %}
+                            <i class="fas fa-wrench service-icon manutencao"></i>
+                        {% elif cr.tipo_servico == 'limpeza' %}
+                            <i class="fas fa-building service-icon limpeza"></i>
+                        {% endif %}
+                        Performance
+                    </h4>
+                    <div class="space-y-2">
+                        {% if cr.performance_diurno %}
+                        <div class="flex justify-between items-center p-2 bg-gray-50 rounded text-sm">
+                            <span>Diurno</span>
+                            <span class="font-bold {% if cr.performance_diurno >= 90 %}performance-high{% elif cr.performance_diurno >= 80 %}performance-medium{% else %}performance-low{% endif %}">
+                                {{ cr.performance_diurno }}%
+                            </span>
+                        </div>
+                        {% endif %}
+                        {% if cr.performance_noturno %}
+                        <div class="flex justify-between items-center p-2 bg-gray-50 rounded text-sm">
+                            <span>Noturno</span>
+                            <span class="font-bold {% if cr.performance_noturno >= 90 %}performance-high{% elif cr.performance_noturno >= 80 %}performance-medium{% else %}performance-low{% endif %}">
+                                {{ cr.performance_noturno }}%
+                            </span>
+                        </div>
+                        {% endif %}
+                        <div class="progress-bar mt-2">
+                            <div class="progress-fill {% if cr.performance_total >= 90 %}{% elif cr.performance_total >= 80 %}medium{% else %}low{% endif %}" style="width: {{ cr.performance_total }}%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Visita Operacional -->
+                <div class="space-y-4">
+                    <h4 class="font-medium text-gray-900 text-sm flex items-center gap-2">
+                        <i class="fas fa-calendar text-blue-500"></i>
+                        Visita Operacional
+                    </h4>
+                    <div class="text-center p-3 bg-gray-50 rounded">
+                        <div class="flex items-center justify-center gap-2 mb-2">
+                            {% if cr.visita_operacional_concluida %}
+                                <i class="fas fa-check-circle text-green-500"></i>
+                                <span class="text-sm font-medium text-green-600">OK</span>
+                            {% else %}
+                                <i class="fas fa-times-circle text-red-500"></i>
+                                <span class="text-sm font-medium text-red-600">Pendente</span>
+                            {% endif %}
+                        </div>
+                        {% if cr.data_ultima_visita %}
+                        <p class="text-xs text-gray-600">
+                            {{ cr.data_ultima_visita|date:"d/m/Y" }}
+                        </p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- NPS -->
+                <div class="space-y-4">
+                    <h4 class="font-medium text-gray-900 text-sm flex items-center gap-2">
+                        <i class="fas fa-star text-yellow-500"></i>
+                        NPS
+                    </h4>
+                    <div class="text-center p-3 bg-gray-50 rounded">
+                        <div class="text-xl font-bold {% if cr.nps >= 9 %}performance-high{% elif cr.nps >= 7 %}performance-medium{% else %}performance-low{% endif %}">
+                            {{ cr.nps }}
+                        </div>
+                        <div class="flex justify-center mt-1 nps-stars">
+                            {% for i in "12345" %}
+                            <i class="fas fa-star star {% if forloop.counter <= cr.nps %}filled{% endif %}"></i>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+    <div class="kpi-card">
+        <div class="empty-state">
+            <p>Nenhum cliente encontrado com os filtros aplicados.</p>
+        </div>
+    </div>
+{% endif %} 

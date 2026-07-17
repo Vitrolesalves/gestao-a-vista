@@ -1,0 +1,20 @@
+<div class="nc-card {{ status_class }}" data-ids="{{ card.ids|json_script:None }}">
+    <div class="d-flex justify-content-between mb-2">
+        <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">{{ card.location }}</span>
+        <span class="badge bg-gray-100 text-gray-600 border">{{ card.count }} Item(s)</span>
+    </div>
+    
+    <h5 class="font-bold text-gray-800 text-sm mb-1">{{ card.responsavel }}</h5>
+    <p class="text-gray-600 text-sm mb-3">{{ card.item }}</p>
+    
+    <div class="d-flex align-items-center justify-content-between border-t pt-2 mt-2">
+        <small class="text-gray-400 text-xs">
+            <i class="far fa-clock me-1"></i> {{ card.last_update|date:"d/m H:i" }}
+        </small>
+        
+        <button class="btn btn-sm btn-link text-decoration-none p-0 text-xs" 
+                onclick="alert('Detalhes dos IDs: {{ card.ids }}')">
+            Ver Detalhes
+        </button>
+    </div>
+</div>

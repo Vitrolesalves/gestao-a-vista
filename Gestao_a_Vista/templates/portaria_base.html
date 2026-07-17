@@ -1,0 +1,555 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Portaria Base - Gestão à Vista{% endblock %}
+
+{% block extra_css %}
+<style>
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+    }
+    
+    .modal.show {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .modal-content {
+        background-color: white;
+        border-radius: 8px;
+        max-width: 500px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+    
+    .card {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        border: 1px solid #e2e8f0;
+    }
+    
+    .animate-pulse {
+        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    
+    @keyframes pulse {
+        0%, 100% {
+            opacity: 1;
+        }
+        50% {
+            opacity: .5;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto space-y-6" x-data="portariaBase()">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-3xl font-bold text-slate-900">Portaria Base</h1>
+            <p class="text-slate-600 mt-1">Registro de entrada na base</p>
+        </div>
+        <div class="flex gap-3">
+            <!-- Botão Histórico -->
+            <button @click="showHistoryModal = true" 
+                    class="inline-flex items-center px-4 py-2 border border-slate-300 rounded-md shadow-sm text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500">
+                <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                Histórico
+            </button>
+            <!-- Botão Nova Entrada -->
+            <button @click="showCreateModal = true" 
+                    class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500">
+                <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                </svg>
+                Nova Entrada
+            </button>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card p-4">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <label for="search" class="block text-sm font-medium text-slate-700 mb-1">Buscar</label>
+                <input type="text" 
+                       id="search" 
+                       x-model="filters.search"
+                       @input="applyFilters()"
+                       placeholder="Nome, CPF ou área responsável..."
+                       class="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-slate-500 focus:border-slate-500">
+            </div>
+            <div>
+                <label for="date" class="block text-sm font-medium text-slate-700 mb-1">Data</label>
+                <input type="date" 
+                       id="date" 
+                       x-model="filters.date"
+                       @input="applyFilters()"
+                       class="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-slate-500 focus:border-slate-500">
+            </div>
+            <div class="flex items-end">
+                <button @click="clearFilters()" 
+                        class="w-full px-4 py-2 border border-slate-300 rounded-md shadow-sm text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500">
+                    Limpar Filtros
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Entradas de Hoje -->
+    <div class="card">
+        <div class="px-6 py-4 border-b border-slate-200">
+            <h2 class="text-lg font-semibold text-slate-900 flex items-center">
+                <svg class="h-5 w-5 mr-2 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                Entradas de Hoje
+                <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800" x-text="filteredTodayEntries.length"></span>
+            </h2>
+        </div>
+        <div class="p-6">
+            <div class="space-y-4">
+                <template x-if="filteredTodayEntries.length === 0">
+                    <p class="text-slate-500 text-center py-8">
+                        <template x-if="filters.search || filters.date">
+                            <span>Nenhuma entrada encontrada com os filtros aplicados</span>
+                        </template>
+                        <template x-if="!filters.search && !filters.date">
+                            <span>Nenhuma entrada registrada hoje</span>
+                        </template>
+                    </p>
+                </template>
+                
+                <template x-for="entrada in filteredTodayEntries" :key="entrada.id">
+                    <div class="border border-slate-200 rounded-lg p-4 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <h4 class="font-semibold text-slate-900" x-text="entrada.nome"></h4>
+                            <span class="text-sm text-slate-500" x-text="entrada.data_hora_registro"></span>
+                        </div>
+                        <p class="text-sm text-slate-600"><strong>CPF:</strong> <span x-text="entrada.cpf"></span></p>
+                        <p class="text-sm text-slate-600"><strong>Motivo:</strong> <span x-text="entrada.motivo"></span></p>
+                        <p class="text-sm text-slate-600"><strong>Área Responsável:</strong> <span x-text="entrada.com_quem_veio_falar"></span></p>
+                        <p class="text-sm text-slate-600" x-show="entrada.liberado_por"><strong>Liberado por:</strong> <span x-text="entrada.liberado_por"></span></p>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Nova Entrada -->
+    <div class="modal" :class="{ 'show': showCreateModal }" @click.self="showCreateModal = false">
+        <div class="modal-content">
+            <div class="px-6 py-4 border-b border-slate-200">
+                <h3 class="text-lg font-semibold text-slate-900">Registrar Entrada</h3>
+            </div>
+            <form @submit.prevent="submitForm()" class="p-6 space-y-4">
+                <div>
+                    <label for="nome" class="block text-sm font-medium text-slate-700 mb-1">Nome</label>
+                    <input type="text" 
+                           id="nome" 
+                           x-model="form.nome"
+                           required
+                           placeholder="Nome completo"
+                           class="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-slate-500 focus:border-slate-500">
+                    <template x-if="errors.nome">
+                        <p class="text-sm text-red-600 mt-1" x-text="errors.nome"></p>
+                    </template>
+                </div>
+
+                <div>
+                    <label for="cpf" class="block text-sm font-medium text-slate-700 mb-1">CPF</label>
+                    <input type="text" 
+                           id="cpf" 
+                           x-model="form.cpf"
+                           required
+                           placeholder="000.000.000-00"
+                           maxlength="14"
+                           @input="formatCPF($event)"
+                           class="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-slate-500 focus:border-slate-500">
+                    <template x-if="errors.cpf">
+                        <p class="text-sm text-red-600 mt-1" x-text="errors.cpf"></p>
+                    </template>
+                </div>
+
+                <div>
+                    <label for="data_nascimento" class="block text-sm font-medium text-slate-700 mb-1">Data de Nascimento</label>
+                    <input type="date" 
+                           id="data_nascimento" 
+                           x-model="form.data_nascimento"
+                           required
+                           class="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-slate-500 focus:border-slate-500">
+                    <template x-if="errors.data_nascimento">
+                        <p class="text-sm text-red-600 mt-1" x-text="errors.data_nascimento"></p>
+                    </template>
+                </div>
+
+                <div>
+                    <label for="motivo" class="block text-sm font-medium text-slate-700 mb-1">Motivo da Entrada</label>
+                    <textarea id="motivo" 
+                              x-model="form.motivo"
+                              required
+                              rows="3"
+                              placeholder="Descreva o motivo da visita"
+                              class="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-slate-500 focus:border-slate-500"></textarea>
+                    <template x-if="errors.motivo">
+                        <p class="text-sm text-red-600 mt-1" x-text="errors.motivo"></p>
+                    </template>
+                </div>
+
+                <div>
+                    <label for="com_quem_veio_falar" class="block text-sm font-medium text-slate-700 mb-1">Área Responsável</label>
+                    <select id="com_quem_veio_falar" 
+                            x-model="form.com_quem_veio_falar"
+                            required
+                            class="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-slate-500 focus:border-slate-500">
+                        <option value="">Selecione uma área</option>
+                        {% for area in areas_responsaveis %}
+                            <option value="{{ area.id }}">{{ area.nome }}</option>
+                        {% endfor %}
+                    </select>
+                    <template x-if="errors.com_quem_veio_falar">
+                        <p class="text-sm text-red-600 mt-1" x-text="errors.com_quem_veio_falar"></p>
+                    </template>
+                </div>
+
+                <div>
+                    <label for="liberado_por" class="block text-sm font-medium text-slate-700 mb-1">Liberado por</label>
+                    <input type="text" 
+                           id="liberado_por" 
+                           x-model="form.liberado_por"
+                           placeholder="Nome de quem liberou a entrada"
+                           class="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-slate-500 focus:border-slate-500">
+                    <template x-if="errors.liberado_por">
+                        <p class="text-sm text-red-600 mt-1" x-text="errors.liberado_por"></p>
+                    </template>
+                </div>
+
+                <div class="flex justify-end space-x-3 pt-4">
+                    <button type="button" 
+                            @click="showCreateModal = false"
+                            class="px-4 py-2 border border-slate-300 rounded-md shadow-sm text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500">
+                        Cancelar
+                    </button>
+                    <button type="submit" 
+                            :disabled="loading"
+                            class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 disabled:opacity-50">
+                        <span x-show="!loading">Registrar Entrada</span>
+                        <span x-show="loading" class="flex items-center">
+                            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Registrando...
+                        </span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Histórico -->
+    <div class="modal" :class="{ 'show': showHistoryModal }" @click.self="showHistoryModal = false">
+        <div class="modal-content" style="max-width: 900px;">
+            <div class="px-6 py-4 border-b border-slate-200">
+                <h3 class="text-lg font-semibold text-slate-900">Histórico Completo de Registros</h3>
+            </div>
+            
+            <!-- Filtros do Histórico -->
+            <div class="px-6 py-4 border-b border-slate-200 bg-slate-50">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- Filtro por Nome/CPF/Área -->
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Buscar</label>
+                        <input type="text" 
+                               x-model="historyFilters.search"
+                               @input="applyHistoryFilters()"
+                               placeholder="Nome, CPF ou área responsável"
+                               class="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-slate-500 focus:border-slate-500 text-sm">
+                    </div>
+                    
+                    <!-- Filtro por Data -->
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Data</label>
+                        <input type="date" 
+                               x-model="historyFilters.date"
+                               @change="applyHistoryFilters()"
+                               class="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-slate-500 focus:border-slate-500 text-sm">
+                    </div>
+                    
+                    <!-- Filtro por Área Responsável -->
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Área Responsável</label>
+                        <select x-model="historyFilters.area"
+                                @change="applyHistoryFilters()"
+                                class="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-slate-500 focus:border-slate-500 text-sm">
+                            <option value="">Todas as áreas</option>
+                            <template x-for="area in uniqueAreas" :key="area">
+                                <option :value="area" x-text="area"></option>
+                            </template>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Botões de ação -->
+                <div class="flex justify-between items-center mt-4">
+                    <div class="text-sm text-slate-600">
+                        <span x-text="filteredHistoryEntries.length"></span> de <span x-text="allEntries.length"></span> registros
+                    </div>
+                    <button type="button" 
+                            @click="clearHistoryFilters()"
+                            class="px-3 py-1 text-sm text-slate-600 hover:text-slate-800 hover:bg-slate-200 rounded-md transition-colors">
+                        Limpar Filtros
+                    </button>
+                </div>
+            </div>
+            
+            <div class="p-6 space-y-4" style="max-height: 50vh; overflow-y: auto;">
+                <template x-if="filteredHistoryEntries.length === 0 && allEntries.length > 0">
+                    <p class="text-slate-500 text-center py-8">
+                        Nenhum registro encontrado com os filtros aplicados
+                    </p>
+                </template>
+                
+                <template x-if="allEntries.length === 0">
+                    <p class="text-slate-500 text-center py-8">
+                        Nenhum histórico disponível
+                    </p>
+                </template>
+                
+                <template x-for="entrada in filteredHistoryEntries" :key="entrada.id">
+                    <div class="border border-slate-200 rounded-lg p-4 space-y-2 hover:bg-slate-50 transition-colors">
+                        <div class="flex items-center justify-between">
+                            <h4 class="font-semibold text-slate-900" x-text="entrada.nome"></h4>
+                            <span class="text-sm text-slate-500 bg-slate-100 px-2 py-1 rounded" x-text="entrada.data_hora_registro"></span>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                            <p class="text-sm text-slate-600"><strong>CPF:</strong> <span x-text="entrada.cpf" class="font-mono"></span></p>
+                            <p class="text-sm text-slate-600"><strong>Data de Nascimento:</strong> <span x-text="entrada.data_nascimento"></span></p>
+                        </div>
+                        <p class="text-sm text-slate-600"><strong>Motivo:</strong> <span x-text="entrada.motivo"></span></p>
+                        <p class="text-sm text-slate-600"><strong>Área Responsável:</strong> 
+                            <span x-text="entrada.com_quem_veio_falar" class="bg-blue-100 text-blue-800 px-2 py-1 rounded-md text-xs"></span>
+                        </p>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function portariaBase() {
+    return {
+        // Data
+        showCreateModal: false,
+        showHistoryModal: false,
+        loading: false,
+        allEntries: {{ entradas_json|safe }},
+        todayEntries: {{ entradas_hoje_json|safe }},
+        filteredTodayEntries: {{ entradas_hoje_json|safe }},
+        filteredHistoryEntries: {{ entradas_json|safe }},
+        
+        // Form
+        form: {
+            nome: '',
+            cpf: '',
+            data_nascimento: '',
+            motivo: '',
+            com_quem_veio_falar: '',
+            liberado_por: ''
+        },
+        
+        // Filters
+        filters: {
+            search: '{{ search_term }}',
+            date: '{{ date_filter }}'
+        },
+        
+        // History Filters
+        historyFilters: {
+            search: '',
+            date: '',
+            area: ''
+        },
+        
+        errors: {},
+        
+        // Computed properties
+        get uniqueAreas() {
+            const areas = this.allEntries.map(entrada => entrada.com_quem_veio_falar);
+            return [...new Set(areas)].sort();
+        },
+        
+        init() {
+            this.applyFilters();
+            this.applyHistoryFilters();
+        },
+        
+        formatCPF(event) {
+            let value = event.target.value.replace(/\D/g, '');
+            value = value.replace(/(\d{3})(\d)/, '$1.$2');
+            value = value.replace(/(\d{3})(\d)/, '$1.$2');
+            value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+            event.target.value = value;
+            this.form.cpf = value;
+        },
+        
+        applyFilters() {
+            let filtered = this.todayEntries;
+            
+            if (this.filters.search) {
+                const search = this.filters.search.toLowerCase();
+                filtered = filtered.filter(entrada => 
+                    entrada.nome.toLowerCase().includes(search) ||
+                    entrada.cpf.includes(search) ||
+                    entrada.com_quem_veio_falar.toLowerCase().includes(search)
+                );
+            }
+            
+            this.filteredTodayEntries = filtered;
+        },
+        
+        clearFilters() {
+            this.filters = { search: '', date: '' };
+            this.applyFilters();
+        },
+        
+        applyHistoryFilters() {
+            let filtered = this.allEntries;
+            
+            // Filtro por busca (nome, CPF ou área responsável)
+            if (this.historyFilters.search) {
+                const search = this.historyFilters.search.toLowerCase();
+                filtered = filtered.filter(entrada => 
+                    entrada.nome.toLowerCase().includes(search) ||
+                    entrada.cpf.includes(search) ||
+                    entrada.com_quem_veio_falar.toLowerCase().includes(search)
+                );
+            }
+            
+            // Filtro por data
+            if (this.historyFilters.date) {
+                filtered = filtered.filter(entrada => {
+                    // Extrair data do formato "DD/MM/YYYY às HH:MM"
+                    const entradaDate = entrada.data_hora_registro.split(' às ')[0];
+                    const [day, month, year] = entradaDate.split('/');
+                    const entradaDateFormatted = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                    return entradaDateFormatted === this.historyFilters.date;
+                });
+            }
+            
+            // Filtro por área responsável
+            if (this.historyFilters.area) {
+                filtered = filtered.filter(entrada => 
+                    entrada.com_quem_veio_falar === this.historyFilters.area
+                );
+            }
+            
+            this.filteredHistoryEntries = filtered;
+        },
+        
+        clearHistoryFilters() {
+            this.historyFilters = { search: '', date: '', area: '' };
+            this.applyHistoryFilters();
+        },
+        
+        resetForm() {
+            this.form = {
+                nome: '',
+                cpf: '',
+                data_nascimento: '',
+                motivo: '',
+                com_quem_veio_falar: ''
+            };
+            this.errors = {};
+        },
+        
+        async submitForm() {
+            this.loading = true;
+            this.errors = {};
+            
+            try {
+                const response = await fetch('{% url "gestao_a_vista:portaria_base" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({
+                        action: 'create',
+                        ...this.form
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Adicionar nova entrada às listas
+                    const newEntry = data.entrada;
+                    const todayEntry = {
+                        ...newEntry,
+                        data_hora_registro: new Date(newEntry.data_hora_registro).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'}),
+                        data_nascimento: new Date(newEntry.data_nascimento).toLocaleDateString('pt-BR')
+                    };
+                    
+                    this.todayEntries.unshift(todayEntry);
+                    
+                    const historyEntry = {
+                        ...newEntry,
+                        data_hora_registro: new Date(newEntry.data_hora_registro).toLocaleDateString('pt-BR') + ' às ' + new Date(newEntry.data_hora_registro).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'}),
+                        data_nascimento: new Date(newEntry.data_nascimento).toLocaleDateString('pt-BR')
+                    };
+                    
+                    this.allEntries.unshift(historyEntry);
+                    this.applyFilters();
+                    this.applyHistoryFilters();
+                    
+                    // Reset form and close modal
+                    this.resetForm();
+                    this.showCreateModal = false;
+                    
+                    // Show success message
+                    this.showMessage(data.message, 'success');
+                } else {
+                    this.showMessage(data.message, 'error');
+                }
+            } catch (error) {
+                this.showMessage('Erro ao registrar entrada. Tente novamente.', 'error');
+            } finally {
+                this.loading = false;
+            }
+        },
+        
+        showMessage(message, type = 'success') {
+            // Create message element
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg ${type === 'success' ? 'bg-green-50 text-green-800 border-green-200' : 'bg-red-50 text-red-800 border-red-200'} border`;
+            messageDiv.textContent = message;
+            
+            document.body.appendChild(messageDiv);
+            
+            // Remove after 5 seconds
+            setTimeout(() => {
+                messageDiv.remove();
+            }, 5000);
+        }
+    }
+}
+</script>
+{% endblock %} 

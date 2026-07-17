@@ -1,0 +1,92 @@
+<div class="offcanvas offcanvas-end shadow" tabindex="-1" id="offcanvasHistorico" aria-labelledby="offcanvasHistoricoLabel" style="width: 450px; border-left: none;">
+    <div class="offcanvas-header text-white" style="background: linear-gradient(135deg, #1e293b, #334155);">
+        <h5 class="offcanvas-title fw-bold" id="offcanvasHistoricoLabel">
+            <i class="fas fa-history me-2"></i>Histórico Geral
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    
+    <div class="offcanvas-body bg-light" style="overflow-y: auto;">
+        <style>
+            .timeline-container { position: relative; padding-left: 20px; }
+            .timeline-container::before {
+                content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+                width: 2px; background: #cbd5e1; border-radius: 2px;
+            }
+            .timeline-card {
+                position: relative; background: white; border-radius: 8px; padding: 15px;
+                margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+                border: 1px solid #e2e8f0; transition: transform 0.2s;
+            }
+            .timeline-card:hover { transform: translateX(5px); border-color: #94a3b8; }
+            .timeline-dot {
+                position: absolute; left: -26px; top: 15px; width: 14px; height: 14px;
+                border-radius: 50%; border: 3px solid white; box-shadow: 0 0 0 1px #cbd5e1;
+            }
+            .dot-aprovacao { background: #f59e0b; }
+            .dot-compra { background: #0ea5e9; }
+            .dot-concluido { background: #22c55e; }
+            .dot-excluido { background: #ef4444; }
+        </style>
+
+        <div class="timeline-container mt-2">
+            {% for historico in historico_planos %}
+                <div class="timeline-card">
+                    {% if historico.status == 'concluido' %}
+                        <div class="timeline-dot dot-concluido"></div>
+                    {% elif historico.status == 'excluido' or historico.status == 'rejeitado' %}
+                        <div class="timeline-dot dot-excluido"></div>
+                    {% elif 'compra' in historico.status %}
+                        <div class="timeline-dot dot-compra"></div>
+                    {% else %}
+                        <div class="timeline-dot dot-aprovacao"></div>
+                    {% endif %}
+
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="badge 
+                            {% if historico.status == 'concluido' %}bg-success
+                            {% elif historico.status == 'excluido' %}bg-danger
+                            {% elif 'compra' in historico.status %}bg-info text-white
+                            {% else %}bg-warning text-dark{% endif %}">
+                            {{ historico.get_status_display }}
+                        </span>
+                        <small class="text-muted fw-bold">{{ historico.data_criacao|date:"d/m/Y H:i" }}</small>
+                    </div>
+                    
+                    <h6 class="fw-bold mb-1 text-dark">
+                        {{ historico.item_em_falta }}
+                        {% if historico.is_regulatory %}
+                        <span class="badge ms-1" style="background-color: #1e293b; color: #f8f9fa; font-size: 0.7rem;"><i class="fas fa-balance-scale"></i> Regulatório</span>
+                        {% endif %}
+                    </h6>
+                    <p class="mb-2 small text-secondary"><i class="fas fa-building me-1"></i> {{ historico.cr_colaborador }}</p>
+                    
+                    <div class="p-2 bg-light rounded border border-light small">
+                        <div class="mb-1"><i class="fas fa-user-edit text-muted"></i> <strong>Criado por:</strong> {% if historico.criador_plano %}{{ historico.criador_plano.name|default:historico.criador_plano.username }}{% else %}Desconhecido{% endif %}</div>
+                        
+                        {% if historico.aprovador %}
+                            <div class="mb-1"><i class="fas fa-user-check text-success"></i> <strong>Aprovador:</strong> {{ historico.aprovador.name|default:historico.aprovador.username }}</div>
+                        {% endif %}
+                        
+                        {% if historico.comprador %}
+                            <div class="mb-1"><i class="fas fa-shopping-bag text-info"></i> <strong>Comprador:</strong> {{ historico.comprador.name|default:historico.comprador.username }}</div>
+                        {% endif %}
+                        
+                        {% if historico.recebedor %}
+                            <div class="mb-1"><i class="fas fa-box-open text-primary"></i> <strong>Recebido por:</strong> {{ historico.recebedor }}</div>
+                        {% endif %}
+                        
+                        {% if historico.status == 'excluido' and historico.excluido_por %}
+                            <div class="mb-0 text-danger"><i class="fas fa-trash"></i> <strong>Excluído por:</strong> {{ historico.excluido_por.name|default:historico.excluido_por.username }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% empty %}
+                <div class="text-center text-muted p-4">
+                    <i class="fas fa-inbox fa-3x mb-3 opacity-50"></i>
+                    <p>Nenhuma movimentação registrada no histórico.</p>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>

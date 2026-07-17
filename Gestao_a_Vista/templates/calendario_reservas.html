@@ -1,0 +1,687 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Calendário de Reservas - Gestão à Vista{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* =========================================
+       CLASSES PADRÃO DO SISTEMA (DARK GRADIENT)
+       ========================================= */
+    .calendario-title {
+        background: linear-gradient(135deg, #1e293b, #334155) !important;
+        -webkit-background-clip: text !important;
+        background-clip: text !important;
+        -webkit-text-fill-color: transparent !important;
+        color: transparent !important; /* Fallback essencial */
+        display: inline-block;
+        font-size: 28px;
+        font-weight: bold;
+        margin: 0;
+        line-height: 1.2;
+    }
+    
+    .bg-gradient-padrao {
+        background: linear-gradient(135deg, #1e293b, #334155) !important;
+        color: white !important;
+        border: none !important;
+        transition: all 0.2s ease-in-out;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .bg-gradient-padrao:hover {
+        background: linear-gradient(135deg, #0f172a, #1e293b) !important;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    }
+
+    .focus-padrao:focus {
+        border-color: #1e293b !important;
+        box-shadow: 0 0 0 2px rgba(30, 41, 59, 0.2) !important;
+        outline: none !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="border-b pb-4">
+        <div class="flex justify-between items-center">
+            <div>
+                <h1 class="calendario-title">Calendário de Reservas</h1>
+                <p class="text-muted-foreground">Visualize e gerencie as reservas de salas</p>
+            </div>
+            <button onclick="abrirHistorico()" class="px-4 py-2 bg-gradient-padrao rounded-lg flex items-center gap-2">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                Histórico
+            </button>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-lg border shadow-sm p-4">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <label for="unidade" class="block text-sm font-medium mb-1">Unidade</label>
+                <select id="unidade" 
+                        class="w-full h-10 rounded-md border border-gray-300 shadow-sm focus-padrao">
+                    <option value="">Todas as unidades</option>
+                    {% for unidade in unidades %}
+                        <option value="{{ unidade.id }}" data-slug="{{ unidade.slug }}">{{ unidade.nome }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="sala" class="block text-sm font-medium mb-1">Sala</label>
+                <select id="sala" 
+                        class="w-full h-10 rounded-md border border-gray-300 shadow-sm focus-padrao">
+                    <option value="">Todas as salas</option>
+                </select>
+            </div>
+            <div>
+                <label for="mes" class="block text-sm font-medium mb-1">Mês</label>
+                <input type="month" 
+                       id="mes" 
+                       class="w-full h-10 rounded-md border border-gray-300 shadow-sm focus-padrao">
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-lg border shadow-sm">
+        <div class="border-b p-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <button id="prev-month" class="p-2 hover:bg-gray-100 rounded-full">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                        </svg>
+                    </button>
+                    <h2 id="calendar-title" class="text-xl font-semibold text-slate-800"></h2>
+                    <button id="next-month" class="p-2 hover:bg-gray-100 rounded-full">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        </svg>
+                    </button>
+                </div>
+                <button onclick="novaReserva()" class="px-4 py-2 bg-gradient-padrao rounded-lg flex items-center gap-2">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Nova Reserva
+                </button>
+            </div>
+        </div>
+
+        <div class="p-4">
+            <div class="grid grid-cols-7 gap-px mb-px">
+                <div class="text-center py-2 font-semibold text-sm text-slate-700">Dom</div>
+                <div class="text-center py-2 font-semibold text-sm text-slate-700">Seg</div>
+                <div class="text-center py-2 font-semibold text-sm text-slate-700">Ter</div>
+                <div class="text-center py-2 font-semibold text-sm text-slate-700">Qua</div>
+                <div class="text-center py-2 font-semibold text-sm text-slate-700">Qui</div>
+                <div class="text-center py-2 font-semibold text-sm text-slate-700">Sex</div>
+                <div class="text-center py-2 font-semibold text-sm text-slate-700">Sáb</div>
+            </div>
+
+            <div id="calendar-grid" class="grid grid-cols-7 gap-px bg-gray-200">
+                </div>
+        </div>
+    </div>
+</div>
+
+<div id="reserva-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden" style="z-index: 50;">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-lg">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-slate-800">Detalhes da Reserva</h3>
+                    <button onclick="fecharModal()" class="text-gray-500 hover:text-gray-700">
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+                <div id="reserva-detalhes" class="space-y-4 text-slate-700">
+                    </div>
+                <div class="mt-6 flex justify-end space-x-3">
+                    <button onclick="editarReserva()" class="px-4 py-2 bg-gradient-padrao rounded">
+                        Editar
+                    </button>
+                    <button onclick="cancelarReserva()" class="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700">
+                        Cancelar
+                    </button>
+                    <button onclick="fecharModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
+                        Fechar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="historico-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden" style="z-index: 50;">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] overflow-hidden">
+            <div class="p-6 border-b">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-lg font-semibold text-slate-800">Histórico de Reservas</h3>
+                    <button onclick="fecharHistorico()" class="text-gray-500 hover:text-gray-700">
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="p-6 overflow-y-auto max-h-[70vh]">
+                <div id="historico-lista" class="space-y-4">
+                    </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="edicao-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden" style="z-index: 50;">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-lg">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-slate-800">Editar Reserva</h3>
+                    <button onclick="fecharEdicao()" class="text-gray-500 hover:text-gray-700">
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+                <form id="form-edicao" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1 text-slate-700">Nome do Solicitante</label>
+                        <input type="text" id="edit-nome" class="w-full px-3 py-2 border border-gray-300 rounded-md focus-padrao" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1 text-slate-700">Email</label>
+                        <input type="email" id="edit-email" class="w-full px-3 py-2 border border-gray-300 rounded-md focus-padrao">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1 text-slate-700">Telefone</label>
+                        <input type="text" id="edit-telefone" class="w-full px-3 py-2 border border-gray-300 rounded-md focus-padrao">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1 text-slate-700">Data</label>
+                        <input type="date" id="edit-data" class="w-full px-3 py-2 border border-gray-300 rounded-md focus-padrao" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1 text-slate-700">Horário</label>
+                        <input type="text" id="edit-horario" class="w-full px-3 py-2 border border-gray-300 rounded-md focus-padrao" placeholder="Ex: 14:00 - 16:00" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1 text-slate-700">Observações</label>
+                        <textarea id="edit-observacoes" class="w-full px-3 py-2 border border-gray-300 rounded-md focus-padrao" rows="3"></textarea>
+                    </div>
+                </form>
+                <div class="mt-6 flex justify-end space-x-3">
+                    <button onclick="salvarEdicao()" class="px-4 py-2 bg-gradient-padrao rounded">
+                        Salvar
+                    </button>
+                    <button onclick="fecharEdicao()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
+                        Cancelar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentDate = new Date();
+let selectedReservaId = null;
+
+// FUNÇÃO PARA CORRIGIR O FUSO HORÁRIO (Transforma YYYY-MM-DD em data local exata)
+function parseDataLocal(dataString) {
+    if (!dataString) return new Date();
+    const [ano, mes, dia] = dataString.split('T')[0].split('-');
+    return new Date(ano, mes - 1, dia);
+}
+
+function formatDate(date) {
+    const d = new Date(date);
+    let month = '' + (d.getMonth() + 1);
+    let day = '' + d.getDate();
+    const year = d.getFullYear();
+
+    if (month.length < 2) month = '0' + month;
+    if (day.length < 2) day = '0' + day;
+
+    return [year, month, day].join('-');
+}
+
+function formatDateBR(date) {
+    const d = new Date(date);
+    let month = '' + (d.getMonth() + 1);
+    let day = '' + d.getDate();
+    const year = d.getFullYear();
+
+    if (month.length < 2) month = '0' + month;
+    if (day.length < 2) day = '0' + day;
+
+    return [day, month, year].join('/');
+}
+
+async function carregarSalas() {
+    const unidadeSelect = document.getElementById('unidade');
+    const salaSelect = document.getElementById('sala');
+    const unidadeId = unidadeSelect.value;
+    
+    const salaSelecionadaAnteriormente = salaSelect.value;
+    
+    salaSelect.innerHTML = '<option value="">Todas as salas</option>';
+    salaSelect.disabled = true; 
+    
+    try {
+        const url = unidadeId ? `/api/salas/?unidade=${unidadeId}` : `/api/salas/`;
+        const response = await fetch(url);
+        
+        if (response.ok) {
+            const data = await response.json();
+            if (data.salas && data.salas.length > 0) {
+                data.salas.forEach(sala => {
+                    const option = document.createElement('option');
+                    option.value = sala.id;
+                    option.textContent = sala.nome;
+                    salaSelect.appendChild(option);
+                });
+            }
+        }
+    } catch (error) {
+        console.error('Erro ao carregar salas:', error);
+    } finally {
+        salaSelect.disabled = false;
+        
+        if (salaSelecionadaAnteriormente) {
+            const existeNaLista = Array.from(salaSelect.options).some(opt => opt.value === salaSelecionadaAnteriormente);
+            if (existeNaLista) {
+                salaSelect.value = salaSelecionadaAnteriormente;
+            }
+        }
+        
+        atualizarCalendario(); 
+    }
+}
+
+async function carregarReservas(inicio, fim) {
+    const unidadeId = document.getElementById('unidade').value;
+    const salaId = document.getElementById('sala').value;
+    
+    try {
+        const params = new URLSearchParams({
+            data_inicio: formatDate(inicio),
+            data_fim: formatDate(fim)
+        });
+        if (unidadeId) params.append('unidade', unidadeId);
+        if (salaId) params.append('sala', salaId);
+        
+        const response = await fetch(`/api/reservas/?${params}`);
+        if (response.ok) {
+            const data = await response.json();
+            return data.reservas;
+        }
+        return [];
+    } catch (error) {
+        console.error('Erro ao carregar reservas:', error);
+        return [];
+    }
+}
+
+async function atualizarCalendario() {
+    const grid = document.getElementById('calendar-grid');
+    const title = document.getElementById('calendar-title');
+    
+    grid.innerHTML = '';
+    
+    const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+                       'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+    title.textContent = `${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
+    
+    const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+    const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+    
+    const reservas = await carregarReservas(firstDay, lastDay);
+    
+    for (let i = 0; i < firstDay.getDay(); i++) {
+        const cell = document.createElement('div');
+        cell.className = 'bg-white p-2 h-32';
+        grid.appendChild(cell);
+    }
+    
+    const salaSelect = document.getElementById('sala');
+    const salaId = salaSelect.value;
+    const salaNome = salaId ? salaSelect.options[salaSelect.selectedIndex].text : "";
+    
+    for (let day = 1; day <= lastDay.getDate(); day++) {
+        const cell = document.createElement('div');
+        cell.className = 'bg-white p-2 h-32 relative';
+        
+        const dayNumber = document.createElement('span');
+        dayNumber.className = 'absolute top-2 left-2 text-sm font-medium text-slate-700';
+        dayNumber.textContent = day;
+        cell.appendChild(dayNumber);
+        
+        const reservasContainer = document.createElement('div');
+        reservasContainer.className = 'mt-6 space-y-1 overflow-y-auto max-h-24';
+        
+        const reservasDoDia = reservas.filter(r => {
+            const dataReserva = parseDataLocal(r.data);
+            const isMesmoDia = dataReserva.getDate() === day && dataReserva.getMonth() === currentDate.getMonth();
+            const isMesmaSala = salaId ? (String(r.sala) === salaNome || String(r.sala_id) === String(salaId)) : true;
+            
+            return isMesmoDia && isMesmaSala;
+        });
+        
+        reservasDoDia.forEach(reserva => {
+            const reservaEl = document.createElement('div');
+            const corUnidade = getCorUnidade(reserva.unidade_id);
+            
+            if (reserva.status === 'cancelada') {
+                reservaEl.className = `px-2 py-1 ${corUnidade.bg} ${corUnidade.text} text-xs rounded cursor-pointer hover:${corUnidade.hover} line-through opacity-60 border border-transparent hover:border-slate-300`;
+                reservaEl.title = 'Reserva Cancelada';
+            } else {
+                reservaEl.className = `px-2 py-1 ${corUnidade.bg} ${corUnidade.text} text-xs rounded cursor-pointer hover:${corUnidade.hover} border border-transparent hover:border-slate-300`;
+            }
+            
+            reservaEl.textContent = `${reserva.hora_inicio} - ${reserva.nome || reserva.solicitante}`;
+            reservaEl.onclick = () => mostrarDetalhesReserva(reserva);
+            reservasContainer.appendChild(reservaEl);
+        });
+        
+        cell.appendChild(reservasContainer);
+        grid.appendChild(cell);
+    }
+    
+    const lastDayOfWeek = lastDay.getDay();
+    if (lastDayOfWeek < 6) {
+        for (let i = lastDayOfWeek + 1; i <= 6; i++) {
+            const cell = document.createElement('div');
+            cell.className = 'bg-white p-2 h-32';
+            grid.appendChild(cell);
+        }
+    }
+}
+
+const coresUnidades = [
+    { bg: 'bg-blue-100', text: 'text-blue-800', hover: 'bg-blue-200' },
+    { bg: 'bg-green-100', text: 'text-green-800', hover: 'bg-green-200' },
+    { bg: 'bg-purple-100', text: 'text-purple-800', hover: 'bg-purple-200' },
+    { bg: 'bg-orange-100', text: 'text-orange-800', hover: 'bg-orange-200' },
+    { bg: 'bg-pink-100', text: 'text-pink-800', hover: 'bg-pink-200' },
+    { bg: 'bg-indigo-100', text: 'text-indigo-800', hover: 'bg-indigo-200' },
+    { bg: 'bg-yellow-100', text: 'text-yellow-800', hover: 'bg-yellow-200' },
+    { bg: 'bg-red-100', text: 'text-red-800', hover: 'bg-red-200' }
+];
+
+function getCorUnidade(unidadeId) {
+    if (!unidadeId) return coresUnidades[0];
+    const index = parseInt(unidadeId) % coresUnidades.length;
+    return coresUnidades[index];
+}
+
+function mostrarDetalhesReserva(reserva) {
+    selectedReservaId = reserva.id;
+    const detalhes = document.getElementById('reserva-detalhes');
+    
+    const statusBadge = reserva.status === 'cancelada' ? 
+        '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Cancelada</span>' : 
+        '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Ativa</span>';
+    
+    detalhes.innerHTML = `
+        <div class="space-y-2">
+            <div class="flex items-center gap-2">
+                <span class="font-medium text-slate-800">Status:</span> ${statusBadge}
+            </div>
+            <p><span class="font-medium text-slate-800">Data:</span> ${formatDateBR(parseDataLocal(reserva.data))}</p>
+            <p><span class="font-medium text-slate-800">Horário:</span> ${reserva.hora_inicio} às ${reserva.hora_fim}</p>
+            <p><span class="font-medium text-slate-800">Unidade:</span> ${reserva.unidade}</p>
+            <p><span class="font-medium text-slate-800">Sala:</span> ${reserva.sala}</p>
+            ${reserva.mesa_numero ? `<p><span class="font-medium text-slate-800">Mesa:</span> ${reserva.mesa_numero}</p>` : ''}
+            <p><span class="font-medium text-slate-800">Nome:</span> ${reserva.nome || reserva.solicitante}</p>
+            <p><span class="font-medium text-slate-800">Email:</span> ${reserva.email || 'Não informado'}</p>
+            ${reserva.telefone ? `<p><span class="font-medium text-slate-800">Telefone:</span> ${reserva.telefone}</p>` : ''}
+            ${reserva.observacoes ? `<p><span class="font-medium text-slate-800">Observações:</span> ${reserva.observacoes}</p>` : ''}
+        </div>
+    `;
+    
+    const editBtn = document.querySelector('button[onclick="editarReserva()"]');
+    const cancelBtn = document.querySelector('button[onclick="cancelarReserva()"]');
+    
+    if (reserva.status === 'cancelada') {
+        editBtn.style.display = 'none';
+        cancelBtn.style.display = 'none';
+    } else {
+        editBtn.style.display = 'inline-block';
+        cancelBtn.style.display = 'inline-block';
+    }
+    
+    document.getElementById('reserva-modal').classList.remove('hidden');
+}
+
+function fecharModal() {
+    document.getElementById('reserva-modal').classList.add('hidden');
+    selectedReservaId = null;
+}
+
+async function cancelarReserva() {
+    if (!selectedReservaId) return;
+    if (!confirm('Tem certeza que deseja cancelar esta reserva?')) return;
+    
+    try {
+        const response = await fetch(`/api/reservas/${selectedReservaId}/`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ status: 'cancelada' })
+        });
+        
+        if (response.ok) {
+            fecharModal();
+            atualizarCalendario();
+        } else {
+            alert('Erro ao cancelar reserva');
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+    }
+}
+
+async function abrirHistorico() {
+    try {
+        const response = await fetch('/api/reservas/historico/');
+        if (response.ok) {
+            const data = await response.json();
+            mostrarHistorico(data.reservas);
+        } else {
+            alert('Erro ao carregar histórico');
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+    }
+}
+
+function mostrarHistorico(reservas) {
+    const lista = document.getElementById('historico-lista');
+    
+    if (reservas.length === 0) {
+        lista.innerHTML = '<p class="text-gray-500 text-center">Nenhuma reserva encontrada</p>';
+    } else {
+        lista.innerHTML = reservas.map(reserva => {
+            const corUnidade = getCorUnidade(reserva.unidade_id);
+            const statusBadge = reserva.status === 'cancelada' ? 
+                '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Cancelada</span>' : 
+                '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Ativa</span>';
+            
+            return `
+                <div class="border border-slate-200 rounded-lg p-4 ${reserva.status === 'cancelada' ? 'opacity-60' : 'bg-slate-50'}">
+                    <div class="flex justify-between items-start mb-2">
+                        <div class="flex items-center gap-2">
+                            <span class="px-2 py-1 ${corUnidade.bg} ${corUnidade.text} text-xs rounded">${reserva.unidade}</span>
+                            ${statusBadge}
+                        </div>
+                        <span class="text-sm font-medium text-slate-500">${formatDateBR(parseDataLocal(reserva.data))}</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 text-sm text-slate-700">
+                        <div>
+                            <p><strong class="text-slate-800">Nome:</strong> ${reserva.nome || reserva.solicitante}</p>
+                            <p><strong class="text-slate-800">Sala:</strong> ${reserva.sala}</p>
+                            <p><strong class="text-slate-800">Horário:</strong> ${reserva.horario}</p>
+                        </div>
+                        <div>
+                            <p><strong class="text-slate-800">Email:</strong> ${reserva.email || 'Não informado'}</p>
+                            <p><strong class="text-slate-800">Telefone:</strong> ${reserva.telefone || 'Não informado'}</p>
+                            ${reserva.mesa_numero ? `<p><strong class="text-slate-800">Mesa:</strong> ${reserva.mesa_numero}</p>` : ''}
+                        </div>
+                    </div>
+                    ${reserva.observacoes ? `<p class="mt-2 text-sm text-slate-700"><strong class="text-slate-800">Observações:</strong> ${reserva.observacoes}</p>` : ''}
+                </div>
+            `;
+        }).join('');
+    }
+    
+    document.getElementById('historico-modal').classList.remove('hidden');
+}
+
+function fecharHistorico() {
+    document.getElementById('historico-modal').classList.add('hidden');
+}
+
+function editarReserva() {
+    if (!selectedReservaId) return;
+    
+    const detalhes = document.getElementById('reserva-detalhes');
+    const reservaAtual = getCurrentReservaData();
+    
+    document.getElementById('edit-nome').value = reservaAtual.nome || '';
+    document.getElementById('edit-email').value = reservaAtual.email || '';
+    document.getElementById('edit-telefone').value = reservaAtual.telefone || '';
+    document.getElementById('edit-horario').value = reservaAtual.horario || '';
+    document.getElementById('edit-observacoes').value = reservaAtual.observacoes || '';
+    
+    fecharModal();
+    document.getElementById('edicao-modal').classList.remove('hidden');
+}
+
+function getCurrentReservaData() {
+    const detalhes = document.getElementById('reserva-detalhes');
+    return {
+        nome: extractTextFromDetail(detalhes, 'Nome:'),
+        email: extractTextFromDetail(detalhes, 'Email:'),
+        telefone: extractTextFromDetail(detalhes, 'Telefone:'),
+        horario: extractTextFromDetail(detalhes, 'Horário:'),
+        observacoes: extractTextFromDetail(detalhes, 'Observações:')
+    };
+}
+
+function extractTextFromDetail(container, label) {
+    const text = container.textContent;
+    const index = text.indexOf(label);
+    if (index === -1) return '';
+    
+    const start = index + label.length;
+    const nextLabel = text.indexOf('\n', start);
+    return text.substring(start, nextLabel === -1 ? text.length : nextLabel).trim();
+}
+
+async function salvarEdicao() {
+    if (!selectedReservaId) return;
+    
+    const dados = {
+        nome: document.getElementById('edit-nome').value,
+        email: document.getElementById('edit-email').value,
+        telefone: document.getElementById('edit-telefone').value,
+        data: document.getElementById('edit-data').value,
+        horario: document.getElementById('edit-horario').value,
+        observacoes: document.getElementById('edit-observacoes').value
+    };
+    
+    try {
+        const response = await fetch(`/api/reservas/${selectedReservaId}/`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify(dados)
+        });
+        
+        if (response.ok) {
+            fecharEdicao();
+            atualizarCalendario();
+        } else {
+            alert('Erro ao salvar alterações');
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+    }
+}
+
+function fecharEdicao() {
+    document.getElementById('edicao-modal').classList.add('hidden');
+}
+
+const unidadeSelect = document.getElementById('unidade');
+const salaSelect = document.getElementById('sala');
+
+if (unidadeSelect) {
+    unidadeSelect.addEventListener('change', function() {
+        carregarSalas(); 
+    });
+}
+
+if (salaSelect) {
+    salaSelect.addEventListener('change', function() {
+        atualizarCalendario(); 
+    });
+}
+
+document.getElementById('mes').addEventListener('change', (e) => {
+    const [year, month] = e.target.value.split('-');
+    currentDate = new Date(year, month - 1);
+    atualizarCalendario();
+});
+
+document.getElementById('prev-month').addEventListener('click', () => {
+    currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1);
+    document.getElementById('mes').value = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
+    atualizarCalendario();
+});
+
+document.getElementById('next-month').addEventListener('click', () => {
+    currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1);
+    document.getElementById('mes').value = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
+    atualizarCalendario();
+});
+
+function novaReserva() {
+    const unidadeSelect = document.getElementById('unidade');
+    const unidadeSelecionada = unidadeSelect.value;
+    
+    if (unidadeSelecionada) {
+        const unidadeOption = unidadeSelect.options[unidadeSelect.selectedIndex];
+        const unidadeSlug = unidadeOption.getAttribute('data-slug');
+        
+        if (unidadeSlug) {
+            window.location.href = `/reserva-salas/${unidadeSlug}/`;
+        } else {
+            window.location.href = '/selecionar-unidade/';
+        }
+    } else {
+        window.location.href = '/selecionar-unidade/';
+    }
+}
+
+document.getElementById('mes').value = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
+carregarSalas();
+</script>
+{% endblock %}

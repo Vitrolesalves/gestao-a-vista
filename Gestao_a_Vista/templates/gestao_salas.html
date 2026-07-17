@@ -1,0 +1,708 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+    .gestao-salas-title {
+        background: linear-gradient(to right, #0F172A, #1e40af);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-size: 28px;
+        font-weight: bold;
+        margin: 0;
+    }
+    .filtro-servico-btn {
+        background: white;
+        color: #64748b;
+        border-color: #cbd5e1;
+    }
+    .filtro-servico-btn:hover {
+        background: #f1f5f9;
+        color: #1e293b;
+        border-color: #94a3b8;
+    }
+    .filtro-servico-btn.ativo {
+        background: #1e293b;
+        color: white;
+        border-color: #1e293b;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-slate-50 p-6">
+    <div class="max-w-7xl mx-auto">
+        <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center gap-3">
+                <i class="fas fa-cog h-8 w-8 text-slate-700"></i>
+                <h1 class="gestao-salas-title">GESTÃO DE SALAS</h1>
+            </div>
+            <div class="flex items-center gap-4">
+                <a href="{% url 'gestao_a_vista:unidade_listar' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500">
+                    <i class="fas fa-building h-4 w-4 mr-2 text-gray-500"></i>
+                    Gerenciar Unidades
+                </a>
+                
+                <a href="{% url 'gestao_a_vista:sala_criar' %}?unidade={{ unidade_selecionada }}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-slate-800 hover:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500">
+                    <i class="fas fa-plus h-4 w-4 mr-2"></i>
+                    Nova Sala
+                </a>
+            </div>
+        </div>
+
+        <div class="border-b border-gray-200 mb-6">
+            <nav class="-mb-px flex space-x-8">
+                <a href="#" class="border-slate-800 text-slate-800 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                    <i class="fas fa-map-marker-alt mr-2"></i> Salas
+                </a>
+                <button onclick="abrirModalPrestador()" type="button" class="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors cursor-pointer bg-transparent">
+                    <i class="fas fa-users-cog mr-2"></i> Configurar Prestadores
+                </button>
+            </nav>
+        </div>
+
+        <div class="bg-white p-4 rounded-lg border shadow-sm mb-6">
+            <div class="flex items-center gap-3">
+                <i class="fas fa-building h-5 w-5 text-slate-600"></i>
+                <div class="flex items-center gap-4 flex-1">
+                    <label class="text-sm font-medium whitespace-nowrap">Selecionar Unidade:</label>
+                    <select id="unidade-select" class="px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" onchange="changeUnidade()">
+                        {% for unidade in unidades %}
+                            <option value="{{ unidade.id }}" 
+                                {% if request.GET.unidade %}
+                                    {% if unidade.id|stringformat:"s" == request.GET.unidade %}selected{% endif %}
+                                {% else %}
+                                    {% if unidade.id == 1 %}selected{% endif %}
+                                {% endif %}>
+                                {{ unidade.nome }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid gap-6">
+            {% if not salas %}
+            <div class="bg-white rounded-lg shadow-md">
+                <div class="p-8 text-center">
+                    <p class="text-slate-500">Nenhuma sala cadastrada.</p>
+                </div>
+            </div>
+            {% else %}
+            {% for sala in salas %}
+            <div class="bg-white rounded-lg shadow-md">
+                <div class="border-b border-gray-200 p-4">
+                    <div class="flex items-center justify-between">
+                        <h5 class="text-lg font-semibold flex items-center gap-2">
+                            <i class="fas fa-map-marker-alt h-5 w-5"></i>
+                            {{ sala.nome }}
+                        </h5>
+                        <div class="flex gap-2">
+                            <button type="button" onclick="abrirModalQrCodePersonalizado('{{ sala.id_sala }}', '{{ sala.nome|escapejs }}')" class="inline-flex items-center justify-center w-8 h-8 bg-blue-100 text-blue-600 rounded hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-300" title="Personalizar QR Code">
+                                <i class="fas fa-qrcode h-3 w-3"></i>
+                            </button>
+                            <a href="{% url 'gestao_a_vista:sala_editar' pk=sala.id_sala %}?unidade={{ unidade_selecionada }}" class="inline-flex items-center justify-center w-8 h-8 bg-gray-100 text-gray-600 rounded hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300" title="Editar">
+                                <i class="fas fa-pen h-3 w-3"></i>
+                            </a>
+                            <a href="{% url 'gestao_a_vista:sala_deletar' pk=sala.id_sala %}?unidade={{ unidade_selecionada }}" class="inline-flex items-center justify-center w-8 h-8 bg-red-100 text-red-600 rounded hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-red-300" 
+                               onclick="return confirm('Tem certeza que deseja excluir esta sala?')" title="Excluir">
+                                <i class="fas fa-trash h-3 w-3"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-users h-4 w-4 text-slate-500"></i>
+                            <span class="text-sm">Capacidade: {{ sala.capacidade }} pessoas</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-clock h-4 w-4 text-slate-500"></i>
+                            <span class="text-sm">
+                                Horários: {{ sala.hora_inicio|time:"H:i" }} às {{ sala.hora_fim|time:"H:i" }}
+                            </span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm text-slate-500">Mesas:</span>
+                            <div class="flex gap-1 flex-wrap">
+                                {% for mesa in sala.mesas %}
+                                <span class="inline-block px-2 py-1 text-xs bg-gray-200 text-gray-700 rounded">{{ mesa.mesa }}</span>
+                                {% empty %}
+                                <span class="text-sm text-slate-400">Nenhuma mesa configurada</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+            {% endif %}
+        </div>
+
+        <div id="modalPrestador" class="fixed inset-0 bg-slate-900 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50 flex items-center justify-center transition-all">
+            <div class="relative mx-auto p-6 border w-full max-w-3xl shadow-xl rounded-lg bg-white flex flex-col max-h-[90vh]">
+                
+                <div class="flex justify-between items-center mb-4 border-b pb-3">
+                    <h3 class="text-xl font-bold text-slate-800 flex items-center gap-2" id="modalTitle">
+                        <i class="fas fa-users-cog text-slate-600"></i> Painel de Prestadores
+                    </h3>
+                    <button onclick="fecharModalPrestador()" class="text-gray-400 hover:text-red-500 transition-colors">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+
+                <div class="overflow-y-auto pr-2 flex-1">
+                    
+                    <div id="viewListaPrestadores">
+                        <div class="flex justify-between items-center mb-4">
+                            <p class="text-sm text-slate-600">Gerencie os prestadores que recebem notificações de serviço.</p>
+                            <button onclick="mostrarFormulario()" class="px-3 py-1.5 bg-slate-800 text-white rounded-md hover:bg-slate-900 transition-colors text-sm font-medium flex items-center gap-2">
+                                <i class="fas fa-plus"></i> Novo
+                            </button>
+                        </div>
+
+                        <!-- FILTROS -->
+                        <div class="bg-slate-50 border border-slate-200 rounded-lg p-3 mb-4 space-y-3">
+                            <div class="flex flex-wrap gap-3 items-end">
+                                <!-- Filtro por Nome -->
+                                <div class="flex-1 min-w-[160px]">
+                                    <label class="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide"><i class="fas fa-user mr-1"></i>Nome</label>
+                                    <input type="text" id="filtroNome" oninput="aplicarFiltros()" placeholder="Buscar por nome..." class="w-full px-3 py-1.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-400 bg-white">
+                                </div>
+                                <!-- Filtro por Local (Unidade) -->
+                                <div class="flex-1 min-w-[140px]">
+                                    <label class="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide"><i class="fas fa-map-marker-alt mr-1"></i>Local / Unidade</label>
+                                    <select id="filtroLocal" onchange="aplicarFiltros()" class="w-full px-3 py-1.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-400 bg-white">
+                                        <option value="">Todas as unidades</option>
+                                        <!-- preenchido dinamicamente pelo JS -->
+                                    </select>
+                                </div>
+                                <!-- Filtro por Serviço (botões) -->
+                                <div class="flex-1 min-w-[200px]">
+                                    <label class="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide"><i class="fas fa-tools mr-1"></i>Serviço</label>
+                                    <div class="flex gap-1 flex-wrap">
+                                        <button id="btnServTodos" onclick="filtrarServico('')" class="filtro-servico-btn ativo px-2.5 py-1 rounded-full text-xs font-medium border transition-colors">Todos</button>
+                                        <button id="btnServEntreposto" onclick="filtrarServico('entreposto')" class="filtro-servico-btn px-2.5 py-1 rounded-full text-xs font-medium border transition-colors">Entreposto</button>
+                                        <button id="btnServLimpeza" onclick="filtrarServico('limpeza')" class="filtro-servico-btn px-2.5 py-1 rounded-full text-xs font-medium border transition-colors">Limpeza</button>
+                                        <button id="btnServCoffe" onclick="filtrarServico('coffe')" class="filtro-servico-btn px-2.5 py-1 rounded-full text-xs font-medium border transition-colors">Coffe</button>
+                                    </div>
+                                </div>
+                                <!-- Botão Limpar -->
+                                <div>
+                                    <button onclick="limparFiltros()" class="px-3 py-1.5 text-xs text-slate-500 border border-slate-300 rounded-md hover:bg-white hover:text-slate-700 transition-colors flex items-center gap-1">
+                                        <i class="fas fa-times"></i> Limpar
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="filtroResumo" class="text-xs text-slate-400 hidden"></div>
+                        </div>
+
+                        <div class="border rounded-lg overflow-hidden">
+                            <table class="min-w-full divide-y divide-gray-200 text-sm text-left">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-3 font-medium text-gray-500 uppercase tracking-wider">Nome</th>
+                                        <th class="px-4 py-3 font-medium text-gray-500 uppercase tracking-wider">E-mail</th>
+                                        <th class="px-4 py-3 font-medium text-gray-500 uppercase tracking-wider">Local</th>
+                                        <th class="px-4 py-3 font-medium text-gray-500 uppercase tracking-wider">Serviço</th>
+                                        <th class="px-4 py-3 font-medium text-gray-500 uppercase tracking-wider text-right">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabelaPrestadoresBody" class="bg-white divide-y divide-gray-200">
+                                    <tr>
+                                        <td colspan="5" class="px-4 py-8 text-center text-gray-500">
+                                            <i class="fas fa-spinner fa-spin mr-2"></i> Carregando prestadores...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div id="viewFormularioPrestador" class="hidden">
+                        <button onclick="mostrarLista()" class="mb-4 text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1 font-medium">
+                            <i class="fas fa-arrow-left"></i> Voltar para a lista
+                        </button>
+
+                        <form id="formPrestador" class="space-y-4 text-left border p-4 rounded-lg bg-gray-50">
+                            <input type="hidden" id="prestadorId" value="">
+
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Nome do Prestador</label>
+                                <input type="text" id="nomePrestador" class="block w-full rounded-md border border-gray-300 bg-white p-2.5 focus:ring-slate-500 focus:border-slate-500" placeholder="Ex: Empresa Limpeza Ltda" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">E-mail para Notificações</label>
+                                <input type="email" id="emailPrestador" class="block w-full rounded-md border border-gray-300 bg-white p-2.5 focus:ring-slate-500 focus:border-slate-500" placeholder="email@exemplo.com" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Unidade / Local <span class="text-xs text-slate-400">(onde o prestador atua)</span></label>
+                                <select id="unidadePrestador" class="block w-full rounded-md border border-gray-300 bg-white p-2.5 focus:ring-slate-500 focus:border-slate-500">
+                                    <option value="">Sem unidade específica</option>
+                                    {% for unidade in unidades %}
+                                    <option value="{{ unidade.id }}">{{ unidade.nome }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Área de Serviço</label>
+                                <select id="areaPrestador" class="block w-full rounded-md border border-gray-300 bg-white p-2.5 focus:ring-slate-500 focus:border-slate-500" required>
+                                    <option value="">Selecione...</option>
+                                    <option value="limpeza">Serviços de Limpeza</option>
+                                    <option value="entreposto">Serviços de Entreposto</option>
+                                    <option value="coffe">Serviços de Coffe Break</option>
+                                </select>
+                            </div>
+                            
+                            <div class="pt-4 flex justify-end gap-3 border-t mt-4">
+                                <button type="button" onclick="mostrarLista()" class="px-4 py-2 bg-white text-slate-700 border border-slate-300 rounded-md hover:bg-slate-50 transition-colors font-medium text-sm">
+                                    Cancelar
+                                </button>
+                                <button type="button" onclick="salvarPrestador()" class="px-4 py-2 bg-slate-800 text-white rounded-md hover:bg-slate-900 transition-colors font-medium text-sm flex items-center gap-2">
+                                    <i class="fas fa-save"></i> Salvar
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+        <!-- Modal Editor de Cartão QR Code -->
+        <div id="modalQrCodePersonalizado" class="fixed inset-0 bg-slate-900 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50 flex items-center justify-center transition-all pt-10 pb-10">
+            <div class="relative mx-auto p-6 border w-full max-w-4xl shadow-xl rounded-lg bg-white flex flex-col md:flex-row gap-6 max-h-[95vh]">
+                <!-- Fechar Modal -->
+                <button onclick="fecharModalQrCodePersonalizado()" class="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition-colors z-10 w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center hover:bg-red-50">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+                
+                <!-- Controles Laterais -->
+                <div class="w-full md:w-1/3 flex flex-col gap-4 overflow-y-auto pr-2">
+                    <h3 class="text-xl font-bold text-slate-800"><i class="fas fa-paint-brush"></i> Personalizar Cartaz</h3>
+                    <p class="text-sm text-slate-600">Monte o cartaz segurando e arrastando os elementos ao lado. <br><br><b>Dica:</b> A logo do sistema é fixa no topo. Envie a sua logo ou posicione os demais itens abaixo.</p>
+                    
+                    <div class="space-y-2 mb-4 p-3 border rounded-lg bg-slate-50">
+                        <label class="block text-sm font-medium text-slate-700">Adicionar Logo do Cliente (PNG/JPG)</label>
+                        <input type="file" id="inputLogoCliente" accept="image/*" onchange="carregarLogo(event)" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                    </div>
+
+                    <!-- Botão de Ação -->
+                    <button onclick="baixarCartazFinal()" class="mt-auto px-4 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium w-full flex items-center justify-center gap-2">
+                        <i class="fas fa-download"></i> Baixar e Gerar Placa
+                    </button>
+                </div>
+
+                <!-- Prancheta Visual (A4 Size prop) -->
+                <div class="w-full md:w-2/3 bg-gray-100 rounded-lg p-2 flex justify-center items-center overflow-auto border shadow-inner">
+                    <div id="cartazPreview" class="relative bg-white border border-gray-300" style="width: 400px; height: 600px; overflow: hidden; position: relative;">
+                        <!-- Bordazinha Fina de Corte Requerida pelo User -->
+                        <div class="absolute inset-0 border border-dashed border-gray-300 pointer-events-none" style="margin: 8px;" id="bordaDeCorte"></div>
+                        
+                        <!-- Logo Fixa Sistema -->
+                        <div class="w-full flex justify-center mt-6 select-none pointer-events-none">
+                            <img src="{% static 'gestao_a_vista/logogestao1.png' %}" alt="Gestão à Vista" style="width: 300px; height: 150px; object-fit: contain;">
+                        </div>
+                        
+                        <!-- Draggable Logo -->
+                        <img id="cartazLogo" class="draggable-item hidden absolute" style="left: 100px; top: 120px; max-width: 200px; max-height: 100px; cursor: move;" draggable="false">
+
+                        <!-- Draggable QR Code -->
+                        <img id="cartazQrCode" class="draggable-item absolute border p-2 bg-white rounded-lg shadow-sm" style="left: 100px; top: 250px; width: 200px; height: 200px; cursor: move;" draggable="false">
+
+                        <!-- Draggable Nome Sala -->
+                        <div id="cartazNomeSala" class="draggable-item absolute text-center w-full font-bold text-xl text-slate-800" style="left: 0; top: 480px; cursor: move; padding: 10px; box-sizing: border-box;" draggable="false">Nome da Sala</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+<script>
+function changeUnidade() {
+    const unidadeSelect = document.getElementById('unidade-select');
+    const unidadeId = unidadeSelect.value;
+    window.location.href = '{% url "gestao_a_vista:gestao_salas" %}?unidade=' + unidadeId;
+}
+
+// ==========================================
+// LÓGICA DO PAINEL DE PRESTADORES
+// ==========================================
+
+const urlListar = "{% url 'gestao_a_vista:listar_prestadores_ajax' %}";
+const urlCriar = "{% url 'gestao_a_vista:criar_prestador_ajax' %}";
+const csrfToken = "{{ csrf_token }}";
+
+function abrirModalPrestador() {
+    document.getElementById('modalPrestador').classList.remove('hidden');
+    mostrarLista(); // Sempre abre na visualização de lista
+}
+
+function fecharModalPrestador() {
+    document.getElementById('modalPrestador').classList.add('hidden');
+}
+
+function mostrarLista() {
+    document.getElementById('viewFormularioPrestador').classList.add('hidden');
+    document.getElementById('viewListaPrestadores').classList.remove('hidden');
+    document.getElementById('modalTitle').innerHTML = '<i class="fas fa-users-cog text-slate-600"></i> Painel de Prestadores';
+    carregarTabelaPrestadores();
+}
+
+// Função para abrir o formulário. Se receber dados, preenche para edição.
+function mostrarFormulario(id = '', nome = '', email = '', area = '', unidadeId = '') {
+    document.getElementById('viewListaPrestadores').classList.add('hidden');
+    document.getElementById('viewFormularioPrestador').classList.remove('hidden');
+    
+    // Limpa ou preenche os campos
+    document.getElementById('prestadorId').value = id;
+    document.getElementById('nomePrestador').value = nome;
+    document.getElementById('emailPrestador').value = email;
+    document.getElementById('areaPrestador').value = area;
+    document.getElementById('unidadePrestador').value = unidadeId;
+
+    if (id) {
+        document.getElementById('modalTitle').innerHTML = '<i class="fas fa-user-edit text-slate-600"></i> Editar Prestador';
+    } else {
+        document.getElementById('modalTitle').innerHTML = '<i class="fas fa-user-plus text-slate-600"></i> Novo Prestador';
+    }
+}
+
+// Armazenamento global dos dados carregados
+let _todosPrestadores = [];
+let _filtroServicoAtivo = '';
+
+// Labels amigáveis para as áreas
+const AREA_LABELS = {
+    'limpeza': 'Serviços de Limpeza',
+    'entreposto': 'Serviços de Entreposto',
+    'coffe': 'Serviços de Coffe Break'
+};
+
+// 1. READ (Buscar Lista)
+function carregarTabelaPrestadores() {
+    const tbody = document.getElementById('tabelaPrestadoresBody');
+    tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-8 text-center text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i> Carregando prestadores...</td></tr>';
+
+    fetch(urlListar)
+        .then(response => response.json())
+        .then(data => {
+            _todosPrestadores = data;
+            popularFiltroUnidades(data);
+            aplicarFiltros();
+        })
+        .catch(error => {
+            console.error("Erro:", error);
+            document.getElementById('tabelaPrestadoresBody').innerHTML = '<tr><td colspan="5" class="px-4 py-4 text-center text-red-500">Erro ao carregar os dados.</td></tr>';
+        });
+}
+
+// Popula o select de filtro Local com as unidades presentes nos prestadores
+function popularFiltroUnidades(dados) {
+    const select = document.getElementById('filtroLocal');
+    const valorAtual = select.value;
+    // Remove opções existentes exceto a primeira ("Todas as unidades")
+    while (select.options.length > 1) select.remove(1);
+
+    // Coleta unidades únicas
+    const unidadesVistas = new Map();
+    dados.forEach(p => {
+        if (p.unidade_id && p.unidade_nome && !unidadesVistas.has(p.unidade_id)) {
+            unidadesVistas.set(p.unidade_id, p.unidade_nome);
+        }
+    });
+
+    // Ordena por nome e insere as opções
+    [...unidadesVistas.entries()]
+        .sort((a, b) => a[1].localeCompare(b[1]))
+        .forEach(([id, nome]) => {
+            const opt = document.createElement('option');
+            opt.value = id;
+            opt.textContent = nome;
+            select.appendChild(opt);
+        });
+
+    // Restaura seleção anterior se ainda existir
+    if (valorAtual) select.value = valorAtual;
+}
+
+// Renderiza as linhas da tabela com base nos dados filtrados
+function renderizarTabela(dados) {
+    const tbody = document.getElementById('tabelaPrestadoresBody');
+    tbody.innerHTML = '';
+
+    if (dados.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="px-4 py-6 text-center text-gray-500"><i class="fas fa-filter mr-2 text-slate-400"></i>Nenhum prestador encontrado com os filtros aplicados.</td></tr>';
+        return;
+    }
+
+    dados.forEach(prestador => {
+        const nomeEscapado = prestador.nome.replace(/'/g, "\\'")
+            .replace(/"/g, '&quot;');
+        const emailEscapado = prestador.email.replace(/'/g, "\\'");
+        const label = AREA_LABELS[prestador.area_servico] || prestador.area_servico;
+        const badgeColor = {
+            'limpeza': 'bg-blue-100 text-blue-700',
+            'entreposto': 'bg-amber-100 text-amber-700',
+            'coffe': 'bg-emerald-100 text-emerald-700'
+        }[prestador.area_servico] || 'bg-gray-100 text-gray-700';
+        const localDisplay = prestador.unidade_nome || '<span class="text-slate-400 italic text-xs">Sem unidade</span>';
+
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50 transition-colors';
+        tr.innerHTML = `
+            <td class="px-4 py-3 font-medium text-slate-800">${prestador.nome}</td>
+            <td class="px-4 py-3 text-slate-600">${prestador.email}</td>
+            <td class="px-4 py-3 text-slate-600 text-sm">${localDisplay}</td>
+            <td class="px-4 py-3">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${badgeColor}">${label}</span>
+            </td>
+            <td class="px-4 py-3 text-right">
+                <button onclick="mostrarFormulario('${prestador.id}', '${nomeEscapado}', '${emailEscapado}', '${prestador.area_servico}', '${prestador.unidade_id || ''}')" class="text-blue-600 hover:text-blue-800 mx-1 p-1 rounded hover:bg-blue-50" title="Editar">
+                    <i class="fas fa-pen"></i>
+                </button>
+                <button onclick="deletarPrestador('${prestador.id}')" class="text-red-600 hover:text-red-800 mx-1 p-1 rounded hover:bg-red-50" title="Excluir">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+// Aplica os filtros e re-renderiza a tabela
+function aplicarFiltros() {
+    const nome = document.getElementById('filtroNome').value.trim().toLowerCase();
+    const localId = document.getElementById('filtroLocal').value;
+    const servico = _filtroServicoAtivo;
+
+    let dados = _todosPrestadores.filter(p => {
+        const matchNome = !nome || p.nome.toLowerCase().includes(nome);
+        const matchLocal = !localId || String(p.unidade_id) === String(localId);
+        const matchServico = !servico || p.area_servico === servico;
+        return matchNome && matchLocal && matchServico;
+    });
+
+    renderizarTabela(dados);
+
+    // Exibir resumo de filtros ativos
+    const resumoEl = document.getElementById('filtroResumo');
+    const localNome = localId ? (document.getElementById('filtroLocal').options[document.getElementById('filtroLocal').selectedIndex]?.text || localId) : '';
+    const filtrosAtivos = [nome && `nome: "${nome}"`, localNome && `local: "${localNome}"`, servico && `serviço: "${AREA_LABELS[servico] || servico}"`].filter(Boolean);
+    if (filtrosAtivos.length > 0) {
+        resumoEl.textContent = `Exibindo ${dados.length} de ${_todosPrestadores.length} prestadores · Filtros: ${filtrosAtivos.join(' | ')}`;
+        resumoEl.classList.remove('hidden');
+    } else {
+        resumoEl.classList.add('hidden');
+    }
+}
+
+// Filtra por serviço via botões de tag
+function filtrarServico(valor) {
+    _filtroServicoAtivo = valor;
+
+    // Atualiza visual dos botões
+    document.querySelectorAll('.filtro-servico-btn').forEach(btn => btn.classList.remove('ativo'));
+    const btnMap = { '': 'btnServTodos', 'entreposto': 'btnServEntreposto', 'limpeza': 'btnServLimpeza', 'coffe': 'btnServCoffe' };
+    const btnId = btnMap[valor];
+    if (btnId) document.getElementById(btnId).classList.add('ativo');
+
+    aplicarFiltros();
+}
+
+// Limpa todos os filtros
+function limparFiltros() {
+    document.getElementById('filtroNome').value = '';
+    document.getElementById('filtroLocal').value = '';
+    _filtroServicoAtivo = '';
+    filtrarServico('');
+}
+
+// 2. CREATE ou UPDATE (Salvar Formulário)
+function salvarPrestador() {
+    const id = document.getElementById('prestadorId').value;
+    const nome = document.getElementById('nomePrestador').value;
+    const email = document.getElementById('emailPrestador').value;
+    const area = document.getElementById('areaPrestador').value;
+    const unidadeId = document.getElementById('unidadePrestador').value || null;
+
+    if (!nome || !email || !area) {
+        alert("Por favor, preencha todos os campos do formulário.");
+        return;
+    }
+
+    // Se tiver ID, a URL é de edição. Se não, é de criação.
+    const urlDestino = id ? `/api/prestadores/${id}/editar/` : urlCriar;
+
+    fetch(urlDestino, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": csrfToken
+        },
+        body: JSON.stringify({
+            nome: nome,
+            email: email,
+            area_servico: area,
+            unidade_id: unidadeId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if(data.success) {
+            alert(data.message);
+            mostrarLista(); // Volta pra lista e recarrega os dados
+        } else {
+            alert("Ocorreu um erro: " + data.message);
+        }
+    })
+    .catch(error => {
+        console.error("Erro:", error);
+        alert("Erro de conexão ao tentar salvar.");
+    });
+}
+
+// 3. DELETE (Excluir)
+function deletarPrestador(id) {
+    if(!confirm("Tem certeza que deseja excluir este prestador? Esta ação não pode ser desfeita.")) {
+        return;
+    }
+
+    fetch(`/api/prestadores/${id}/deletar/`, {
+        method: "POST",
+        headers: {
+            "X-CSRFToken": csrfToken
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if(data.success) {
+            carregarTabelaPrestadores(); // Atualiza a tabela imediatamente
+        } else {
+            alert("Erro ao excluir: " + data.message);
+        }
+    })
+    .catch(error => {
+        console.error("Erro:", error);
+        alert("Erro de conexão ao tentar excluir.");
+    });
+}
+
+// ==========================================
+// LÓGICA DO CARTÃO QR CODE DRAG AND DROP
+// ==========================================
+
+function abrirModalQrCodePersonalizado(salaId, salaNome) {
+    document.getElementById('modalQrCodePersonalizado').classList.remove('hidden');
+    document.getElementById('cartazNomeSala').innerText = salaNome;
+    
+    const qrImage = document.getElementById('cartazQrCode');
+    const baseUrl = `{% url 'gestao_a_vista:baixar_qr_code_sala' sala_id='00000000-0000-0000-0000-000000000000' %}`.replace('00000000-0000-0000-0000-000000000000', salaId);
+    
+    // Refresh to bypass browser cache
+    qrImage.src = baseUrl + '?t=' + new Date().getTime();
+    
+    // Reseta Logo 
+    document.getElementById('inputLogoCliente').value = '';
+    const imgLogo = document.getElementById('cartazLogo');
+    imgLogo.src = '';
+    imgLogo.classList.add('hidden');
+    
+    // Posições Padrões da tela (reseta sempre q abre)
+    imgLogo.style.left = '100px'; imgLogo.style.top = '70px';
+    qrImage.style.left = '100px'; qrImage.style.top = '220px';
+    const textNome = document.getElementById('cartazNomeSala');
+    textNome.style.left = '0px'; textNome.style.top = '480px';
+}
+
+function fecharModalQrCodePersonalizado() {
+    document.getElementById('modalQrCodePersonalizado').classList.add('hidden');
+}
+
+function carregarLogo(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const logoURL = URL.createObjectURL(file);
+        const img = document.getElementById('cartazLogo');
+        img.src = logoURL;
+        img.classList.remove('hidden');
+    }
+}
+
+async function baixarCartazFinal() {
+    const cartaz = document.getElementById('cartazPreview');
+    const btnDown = event.currentTarget;
+    
+    btnDown.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gerando...';
+    btnDown.disabled = true;
+
+    try {
+        // Aguarda um pequeno momento para garantir que as imagens renderizaram
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        const canvas = await html2canvas(cartaz, {
+            scale: 2, // 2 é suficiente para boa qualidade e evita travar o navegador
+            useCORS: true,
+            allowTaint: true, // Adicione isso para ajudar com imagens locais
+            backgroundColor: '#ffffff',
+            logging: true // Ative para ver o erro real no F12 se persistir
+        });
+        
+        const link = document.createElement('a');
+        link.download = `Placa_Sala_${document.getElementById('cartazNomeSala').innerText.replace(/\s+/g, '_')}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    } catch (e) {
+        console.error("Erro detalhado do html2canvas:", e);
+        alert('Erro ao processar imagem da Placa. Tente recarregar a página ou usar outro navegador.');
+    } finally {
+        btnDown.innerHTML = '<i class="fas fa-download"></i> Baixar e Gerar Placa';
+        btnDown.disabled = false;
+    }
+}
+
+// LOGICA DE DRAG AND DROP
+let draggingItem = null;
+let offsetX = 0;
+let offsetY = 0;
+
+document.querySelectorAll('.draggable-item').forEach(item => {
+    item.addEventListener('mousedown', (e) => {
+        draggingItem = item;
+        const rect = item.getBoundingClientRect();
+        
+        offsetX = e.clientX - rect.left;
+        offsetY = e.clientY - rect.top;
+        
+        e.preventDefault(); // Previne o drag default nativo do browser de imagens q estraga o custom
+    });
+});
+
+document.addEventListener('mousemove', (e) => {
+    if (draggingItem) {
+        const container = document.getElementById('cartazPreview');
+        const containerRect = container.getBoundingClientRect();
+        const scale = container.getBoundingClientRect().width / container.offsetWidth; // em caso de zoom responsivo
+        
+        let newX = (e.clientX - containerRect.left - offsetX) / scale;
+        let newY = (e.clientY - containerRect.top - offsetY) / scale;
+        
+        draggingItem.style.left = newX + 'px';
+        draggingItem.style.top = newY + 'px';
+    }
+});
+
+document.addEventListener('mouseup', () => {
+    draggingItem = null;
+});
+</script>
+{% endblock %}

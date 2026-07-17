@@ -1,0 +1,53 @@
+{% comment %}
+Modal do tutorial de PRIMEIRO ACESSO. Incluído no base.html, aparece
+automaticamente UMA única vez por usuário (CustomUser.tutorial_visto).
+O "visto" é marcado no momento da EXIBIÇÃO (não da conclusão), de propósito:
+o requisito é mostrar apenas 1 vez, mesmo que a pessoa feche no meio.
+Para rever, existe a página Ajuda (último item do menu).
+{% endcomment %}
+{% if user.is_authenticated and not user.tutorial_visto and not request.GET.embed and request.resolver_match.url_name != 'ajuda' %}
+<div class="modal fade" id="tutorialPrimeiroAcesso" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+    aria-labelledby="tutorialPrimeiroAcessoLabel">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content" style="border: none; border-radius: 16px; overflow: hidden;">
+            <div class="modal-header text-white"
+                style="background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 100%); border: none;">
+                <h5 class="modal-title fw-bold" id="tutorialPrimeiroAcessoLabel">
+                    <i class="fas fa-graduation-cap me-2"></i>Primeiro acesso — conheça o Gestão à Vista
+                </h5>
+                <button type="button" class="btn btn-sm text-white-50" data-tut-skip
+                    style="background: rgba(255,255,255,.12); border: none;">
+                    Pular tour
+                </button>
+            </div>
+            <div class="modal-body p-0">
+                {% include 'partials/tutorial_slides.html' %}
+            </div>
+        </div>
+    </div>
+</div>
+<form style="display:none;">{% csrf_token %}</form>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var el = document.getElementById('tutorialPrimeiroAcesso');
+        if (!el || typeof bootstrap === 'undefined') return;
+
+        var modal = new bootstrap.Modal(el);
+        modal.show();
+
+        // Marca como visto JÁ NA EXIBIÇÃO: o tutorial obrigatório aparece
+        // uma única vez, mesmo que o usuário feche no meio do caminho.
+        var csrf = el.parentNode.querySelector('[name=csrfmiddlewaretoken]') ||
+            document.querySelector('[name=csrfmiddlewaretoken]');
+        fetch("{% url 'gestao_a_vista:tutorial_marcar_visto' %}", {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrf ? csrf.value : '' }
+        }).catch(function () { /* silencioso: em caso de falha, mostra de novo no próximo acesso */ });
+
+        el.addEventListener('tutorial:finish', function () { modal.hide(); });
+        el.querySelectorAll('[data-tut-skip]').forEach(function (b) {
+            b.addEventListener('click', function () { modal.hide(); });
+        });
+    });
+</script>
+{% endif %}

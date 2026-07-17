@@ -1,0 +1,42 @@
+<div style="font-family: Arial, sans-serif; padding: 20px; color: #333; max-width: 600px; border: 1px solid #e2e8f0; border-radius: 8px;">
+    <h2 style="color: #1e40af; border-bottom: 2px solid #1e40af; padding-bottom: 10px;">Novo Plano de Ação Aguardando Aprovação</h2>
+    
+    <p>Um novo plano de ação foi criado e precisa da sua avaliação urgente no sistema.</p>
+    
+    <table style="border-collapse: collapse; width: 100%; margin-top: 15px;">
+        <tr style="background-color: #f1f5f9; border: 1px solid #dee2e6;">
+            <td style="padding: 12px; font-weight: bold; width: 35%;">CR:</td>
+            <td style="padding: 12px;">{{ cr }}</td>
+        </tr>
+        <tr style="border: 1px solid #dee2e6;">
+            <td style="padding: 12px; font-weight: bold;">Item Solicitado:</td>
+            <td style="padding: 12px; color: #ef4444; font-weight: bold;">{{ item }}</td>
+        </tr>
+        <tr style="background-color: #f1f5f9; border: 1px solid #dee2e6;">
+            <td style="padding: 12px; font-weight: bold;">Colaborador NC:</td>
+            <td style="padding: 12px;">{{ colaborador }}</td>
+        </tr>
+        <tr style="border: 1px solid #dee2e6;">
+            <td style="padding: 12px; font-weight: bold;">Criado por:</td>
+            <td style="padding: 12px;">{{ criador_nome }}</td>
+        </tr>
+    </table>
+    
+    <div style="margin-top: 30px; text-align: center;">
+        <p style="font-size: 15px; margin-bottom: 15px;"><b>Por favor, avalie este plano de ação:</b></p>
+        
+        <a href="{{ link_aprovar }}" style="background-color: #22c55e; color: white; padding: 12px 20px; text-decoration: none; border-radius: 6px; font-weight: bold; margin-right: 10px; display: inline-block;">
+            ✅ Aprovar Pedido
+        </a>
+        
+        <a href="{{ link_rejeitar }}" style="background-color: #dc2626; color: white; padding: 12px 20px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
+            ❌ Negar Pedido
+        </a>
+    </div>
+
+    <div style="margin-top: 30px; text-align: center; padding-top: 15px; border-top: 1px solid #e2e8f0;">
+        <a href="{{ link_painel }}" style="color: #1e40af; text-decoration: none; font-weight: bold; display: inline-block; font-size: 14px;">
+            ➡️ Acessar Sistema
+        </a>
+    </div>
+</div>

@@ -1,0 +1,15 @@
+{
+  "nome_carteira": "Carteira Exemplo",
+  "contratos": [],
+  "pecs": [],
+  "destinatario_padrao": "responsavel@empresa.com",
+  "meses_fechados": [
+    "2026-04",
+    "2026-05"
+  ],
+  "limites_alerta": {
+    "atencao": 0.8,
+    "critico": 0.95,
+    "estourado": 1.0
+  }
+}

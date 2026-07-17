@@ -1,0 +1,544 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}CMO — Conformidade de Efetivo{% endblock %}
+{% block page_title %}CMO — Módulo de Conformidade Efetivo{% endblock %}
+
+{% block extra_css %}
+<style>
+    .cmo-title {
+        background: linear-gradient(to right, #0F172A, #1e40af);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-size: 26px;
+        font-weight: bold;
+        margin: 0;
+        text-transform: uppercase;
+    }
+
+    .kpi-card { border: none; color: #fff; transition: .2s; cursor: pointer; }
+    .kpi-card:hover { transform: translateY(-5px); box-shadow: 0 10px 15px rgba(0,0,0,.2); }
+    .kpi-value { font-size: 2rem; font-weight: 800; }
+    .kpi-label { font-size: .82rem; font-weight: 600; text-transform: uppercase; }
+
+    .bg-conforme { background: linear-gradient(135deg, #22c55e, #15803d); }
+    .bg-nc-efetivo { background: linear-gradient(135deg, #ef4444, #b91c1c); }
+    .bg-faltas { background: linear-gradient(135deg, #f59e0b, #b45309); }
+    .bg-cobertura-pend { background: linear-gradient(135deg, #a855f7, #6b21a8); }
+    .bg-cobertura-conf { background: linear-gradient(135deg, #0ea5e9, #0369a1); }
+    .bg-troca-pend { background: linear-gradient(135deg, #f97316, #c2410c); }
+    .bg-lancamento { background: linear-gradient(135deg, #1e293b, #334155); }
+    .bg-clientes { background: linear-gradient(135deg, #64748b, #334155); }
+
+    .nav-tabs .nav-link { color: #64748b; font-weight: 500; }
+    .nav-tabs .nav-link.active { background-color: #f8fafc; border-bottom-color: transparent; font-weight: bold; color: #1e40af; }
+    .tab-content { background: #f8fafc; border: 1px solid #dee2e6; border-top: none; padding: 20px; border-radius: 0 0 8px 8px; }
+
+    .status-pill { font-size: .72rem; font-weight: 700; padding: .25rem .6rem; border-radius: 999px; text-transform: uppercase; letter-spacing: .03em; }
+    .status-conforme { background: #dcfce7; color: #15803d; }
+    .status-nao_conforme { background: #fee2e2; color: #b91c1c; }
+    .status-aguardando_confirmacao { background: #f1f5f9; color: #475569; }
+    .status-pendente { background: #fef3c7; color: #92400e; }
+    .status-confirmada, .status-aprovado, .status-lancado { background: #dbeafe; color: #1d4ed8; }
+    .status-nao_realizada, .status-reprovado, .status-cancelada { background: #f1f5f9; color: #475569; }
+    .status-movimentacao { background: #e0e7ff; color: #3730a3; }
+
+    .chart-box { position: relative; height: 260px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+        <div class="d-flex align-items-center gap-2">
+            <i class="fas fa-user-shield fs-3 text-primary"></i>
+            <div>
+                <h1 class="cmo-title mb-0">CMO — Conformidade de Efetivo</h1>
+                <p class="text-muted mb-0 small">Substitui a PDM (Planilha Diária de Movimentações)</p>
+            </div>
+        </div>
+        <form method="get" class="d-flex align-items-center gap-2">
+            <label class="small text-muted mb-0">Período:</label>
+            <select name="dias" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()">
+                <option value="7" {% if dias_atuais == "7" %}selected{% endif %}>Últimos 7 dias</option>
+                <option value="15" {% if dias_atuais == "15" %}selected{% endif %}>Últimos 15 dias</option>
+                <option value="30" {% if dias_atuais == "30" %}selected{% endif %}>Últimos 30 dias</option>
+                <option value="60" {% if dias_atuais == "60" %}selected{% endif %}>Últimos 60 dias</option>
+                <option value="90" {% if dias_atuais == "90" %}selected{% endif %}>Últimos 90 dias</option>
+            </select>
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalFiltrosCmo"><i class="fas fa-filter me-1"></i>Filtros</button>
+        </form>
+    </div>
+
+    {% if filtros.cliente or filtros.tipo_servico or filtros.status != "all" %}
+    <div class="alert alert-primary d-flex justify-content-between align-items-center py-2 px-3 small mb-3">
+        <span>
+            Filtros ativos:
+            {% if filtros.cliente %}<strong>Cliente:</strong> {{ filtros.cliente }} {% endif %}
+            {% if filtros.tipo_servico %}<strong>Tipo:</strong> {{ filtros.tipo_servico }} {% endif %}
+            {% if filtros.status != "all" %}<strong>Status:</strong> {{ filtros.status }}{% endif %}
+        </span>
+        <a href="?dias={{ dias_atuais }}" class="btn btn-sm btn-outline-primary">Limpar filtros</a>
+    </div>
+    {% endif %}
+
+    <!-- ABAS -->
+    <ul class="nav nav-tabs" id="cmoEfetivoTabs" role="tablist">
+        <li class="nav-item"><button class="nav-link active" id="dash-tab" data-bs-toggle="tab" data-bs-target="#dash" type="button" role="tab"><i class="fas fa-chart-line me-1"></i>Dashboard da Torre</button></li>
+        <li class="nav-item"><button class="nav-link" id="conformidade-tab" data-bs-toggle="tab" data-bs-target="#conformidade" type="button" role="tab"><i class="fas fa-clipboard-check me-1"></i>Conformidade de Efetivo</button></li>
+        <li class="nav-item"><button class="nav-link" id="coberturas-tab" data-bs-toggle="tab" data-bs-target="#coberturas" type="button" role="tab"><i class="fas fa-people-arrows me-1"></i>Coberturas</button></li>
+        {% if pode_agir_cmo %}
+        <li class="nav-item"><button class="nav-link" id="lancamento-tab" data-bs-toggle="tab" data-bs-target="#lancamento" type="button" role="tab"><i class="fas fa-file-invoice me-1"></i>Lançamento CMO</button></li>
+        {% endif %}
+        <li class="nav-item"><button class="nav-link" id="previsao-cobertura-tab" data-bs-toggle="tab" data-bs-target="#previsao-cobertura" type="button" role="tab"><i class="fas fa-right-left me-1"></i>Previsão de Cobertura</button></li>
+    </ul>
+
+    <div class="tab-content" id="cmoEfetivoTabsContent">
+
+        <!-- DASHBOARD DA TORRE -->
+        <div class="tab-pane fade show active" id="dash" role="tabpanel">
+            <div class="row g-3 mb-4">
+                <div class="col-6 col-md-3"><div class="card kpi-card bg-clientes"><div class="card-body"><div class="kpi-label">Clientes Monitorados</div><div class="kpi-value">{{ kpis.total_clientes }}</div></div></div></div>
+                <div class="col-6 col-md-3"><div class="card kpi-card bg-conforme" onclick="mudarAba('conformidade-tab')"><div class="card-body"><div class="kpi-label">Efetivo Conforme</div><div class="kpi-value">{{ kpis.efetivo_conforme }}</div></div></div></div>
+                <div class="col-6 col-md-3"><div class="card kpi-card bg-nc-efetivo" onclick="mudarAba('conformidade-tab')"><div class="card-body"><div class="kpi-label">Efetivo Não Conforme</div><div class="kpi-value">{{ kpis.efetivo_nao_conforme }}</div></div></div></div>
+                <div class="col-6 col-md-3"><div class="card kpi-card bg-troca-pend" onclick="mudarAba('conformidade-tab')"><div class="card-body"><div class="kpi-label">Aguardando Confirmação</div><div class="kpi-value">{{ kpis.aguardando_confirmacao }}</div></div></div></div>
+                <div class="col-6 col-md-3"><div class="card kpi-card bg-faltas" onclick="mudarAba('conformidade-tab')"><div class="card-body"><div class="kpi-label">Faltas Registradas</div><div class="kpi-value">{{ kpis.faltas_registradas }}</div></div></div></div>
+                <div class="col-6 col-md-3"><div class="card kpi-card bg-cobertura-pend" onclick="mudarAba('coberturas-tab')"><div class="card-body"><div class="kpi-label">Coberturas Pendentes</div><div class="kpi-value">{{ kpis.coberturas_pendentes }}</div></div></div></div>
+                <div class="col-6 col-md-3"><div class="card kpi-card bg-cobertura-conf" onclick="mudarAba('coberturas-tab')"><div class="card-body"><div class="kpi-label">Coberturas Confirmadas</div><div class="kpi-value">{{ kpis.coberturas_confirmadas }}</div></div></div></div>
+                <div class="col-6 col-md-3"><div class="card kpi-card bg-lancamento" onclick="mudarAba('previsao-cobertura-tab')"><div class="card-body"><div class="kpi-label">Registros Incluídos</div><div class="kpi-value">{{ kpis.registros_movimentacao_total }}</div></div></div></div>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-md-6"><div class="card"><div class="card-header fw-bold small">Não Conformidades por Cliente</div><div class="card-body chart-box"><canvas id="chartNcCliente"></canvas></div></div></div>
+                <div class="col-md-6"><div class="card"><div class="card-header fw-bold small">Faltas por Período</div><div class="card-body chart-box"><canvas id="chartFaltasPeriodo"></canvas></div></div></div>
+                <div class="col-md-6"><div class="card"><div class="card-header fw-bold small">Coberturas por Tipo de Serviço</div><div class="card-body chart-box"><canvas id="chartCoberturaTipo"></canvas></div></div></div>
+                <div class="col-md-6"><div class="card"><div class="card-header fw-bold small">Top 10 Clientes — Maior Índice de Ocorrência</div><div class="card-body chart-box"><canvas id="chartTopClientes"></canvas></div></div></div>
+            </div>
+        </div>
+
+        <!-- CONFORMIDADE DE EFETIVO -->
+        <div class="tab-pane fade" id="conformidade" role="tabpanel">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h5 class="mb-0">Conformidade de Efetivo</h5>
+                <span class="text-muted small">Dados recebidos do Livro de Ocorrências (OpsVista)</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle bg-white">
+                    <thead class="table-light"><tr><th>Data</th><th>Cliente</th><th>CR</th><th>Tipo de Serviço</th><th>Status</th>{% if pode_agir_torre %}<th></th>{% endif %}</tr></thead>
+                    <tbody>
+                        {% for c in conformidades %}
+                        <tr>
+                            <td>{{ c.data_referencia|date:"d/m/Y" }}</td>
+                            <td>{{ c.cliente_nome }}</td>
+                            <td>{{ c.cr|default:"—" }}</td>
+                            <td>{{ c.tipo_servico_nome|default:"—" }}</td>
+                            <td><span class="status-pill status-{{ c.status_efetivo }}">{{ c.get_status_efetivo_display }}</span></td>
+                            {% if pode_agir_torre %}
+                            <td class="text-end">
+                                {% if c.status_efetivo == "nao_conforme" %}
+                                <button class="btn btn-sm btn-outline-danger" onclick="abrirModalIncluirRegistro('{{ c.id }}')"><i class="fas fa-plus me-1"></i>Incluir Registro</button>
+                                {% endif %}
+                            </td>
+                            {% endif %}
+                        </tr>
+                        {% empty %}<tr><td colspan="6" class="text-center text-muted py-4">Nenhum registro recebido do Vista no período.</td></tr>{% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- COBERTURAS -->
+        <div class="tab-pane fade" id="coberturas" role="tabpanel">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h5 class="mb-0">Coberturas</h5>
+                {% if pode_agir_torre %}
+                <button class="btn btn-primary btn-sm" onclick="abrirModalCobertura()"><i class="fas fa-plus me-1"></i>Nova Cobertura</button>
+                {% endif %}
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle bg-white">
+                    <thead class="table-light"><tr><th>Data</th><th>Cliente</th><th>Cobertura</th><th>Substituído</th><th>Tipo Serviço</th><th>Horário</th><th>Status</th>{% if pode_agir_torre %}<th></th>{% endif %}</tr></thead>
+                    <tbody>
+                        {% for c in coberturas %}
+                        <tr class="dados-cobertura"
+                            data-id="{{ c.id }}"
+                            data-cliente-nome="{{ c.cliente_nome }}"
+                            data-grupo-cliente="{{ c.grupo_cliente|default:'' }}"
+                            data-cr="{{ c.cr|default:'' }}"
+                            data-tipo-servico="{{ c.tipo_servico_nome|default:'' }}"
+                            data-nome-cobertura="{{ c.nome_cobertura }}"
+                            data-matricula-cobertura="{{ c.matricula_cobertura|default:'' }}"
+                            data-colaborador-substituido="{{ c.colaborador_substituido }}"
+                            data-data-cobertura="{{ c.data_cobertura|date:'Y-m-d' }}"
+                            data-horario-previsto="{{ c.horario_previsto|time:'H:i'|default:'' }}"
+                            data-status="{{ c.status }}"
+                            data-justificativa="{{ c.justificativa }}"
+                            data-observacoes="{{ c.observacoes|default:'' }}">
+                            <td>{{ c.data_cobertura|date:"d/m/Y" }}</td>
+                            <td>{{ c.cliente_nome }}</td>
+                            <td>{{ c.nome_cobertura }}</td>
+                            <td>{{ c.colaborador_substituido }}</td>
+                            <td>{{ c.tipo_servico_nome|default:"—" }}</td>
+                            <td>{{ c.horario_previsto|time:"H:i"|default:"—" }}</td>
+                            <td><span class="status-pill status-{{ c.status }}">{{ c.get_status_display }}</span></td>
+                            {% if pode_agir_torre %}
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-link p-0 me-2" title="Editar" onclick="abrirModalCobertura('{{ c.id }}')"><i class="fas fa-pen"></i></button>
+                                <button class="btn btn-sm btn-link text-danger p-0" title="Cancelar" onclick="cancelarRegistro('cobertura', '{{ c.id }}')"><i class="fas fa-ban"></i></button>
+                            </td>
+                            {% endif %}
+                        </tr>
+                        {% empty %}<tr><td colspan="8" class="text-center text-muted py-4">Nenhuma cobertura no período.</td></tr>{% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- LANÇAMENTO CMO -->
+        {% if pode_agir_cmo %}
+        <div class="tab-pane fade" id="lancamento" role="tabpanel">
+            <h5 class="mb-2">Lançamentos CMO</h5>
+            {% include "partials/cmo_efetivo_tabela_movimentacao.html" %}
+        </div>
+        {% endif %}
+
+        <!-- PREVISÃO DE COBERTURA -->
+        <div class="tab-pane fade" id="previsao-cobertura" role="tabpanel">
+            <h5 class="mb-2">Previsão de Cobertura</h5>
+            {% include "partials/cmo_efetivo_tabela_movimentacao.html" %}
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block modals %}
+<!-- Filtros -->
+<div class="modal fade" id="modalFiltrosCmo" tabindex="-1">
+    <div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Filtros</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <form method="get" class="modal-body">
+        <input type="hidden" name="dias" value="{{ dias_atuais }}">
+        <div class="mb-2"><label class="form-label small">Cliente</label><input type="text" name="filter_cliente" value="{{ filtros.cliente }}" class="form-control form-control-sm"></div>
+        <div class="mb-2"><label class="form-label small">Tipo de Serviço</label>
+            <select name="filter_tipo_servico" class="form-select form-select-sm">
+                <option value="">Todos</option>
+                {% for valor, rotulo in tipo_servico_choices %}<option value="{{ valor }}" {% if filtros.tipo_servico == valor %}selected{% endif %}>{{ rotulo }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="mb-2"><label class="form-label small">Status do Efetivo</label>
+            <select name="filter_status" class="form-select form-select-sm">
+                <option value="all">Todos</option>
+                <option value="aguardando_confirmacao" {% if filtros.status == "aguardando_confirmacao" %}selected{% endif %}>Aguardando Confirmação</option>
+                <option value="conforme" {% if filtros.status == "conforme" %}selected{% endif %}>Conforme</option>
+                <option value="nao_conforme" {% if filtros.status == "nao_conforme" %}selected{% endif %}>Não Conforme</option>
+            </select>
+        </div>
+        <div class="text-end mt-3"><button type="submit" class="btn btn-primary btn-sm">Aplicar</button></div>
+    </form>
+    </div></div>
+</div>
+
+<!-- Incluir Registro (a partir de uma Conformidade Não Conforme) -->
+<div class="modal fade" id="modalIncluirRegistro" tabindex="-1">
+    <div class="modal-dialog modal-lg"><div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title">Incluir Registro</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+            <form id="formIncluirRegistro">
+                <input type="hidden" name="conformidade_id" id="mov_conformidade_id">
+                <div class="row g-2">
+                    <div class="col-md-4"><label class="form-label small">Gerente</label><input type="text" class="form-control" name="gerente" id="mov_gerente"></div>
+                    <div class="col-md-4"><label class="form-label small">Nome *</label><input type="text" class="form-control" name="nome" id="mov_nome" required></div>
+                    <div class="col-md-4"><label class="form-label small">Cargo</label><input type="text" class="form-control" name="cargo" id="mov_cargo"></div>
+                    <div class="col-md-4"><label class="form-label small">Posto</label><input type="text" class="form-control" name="posto" id="mov_posto"></div>
+                    <div class="col-md-4"><label class="form-label small">Posto CR</label><input type="text" class="form-control" name="posto_cr" id="mov_posto_cr"></div>
+                    <div class="col-md-4">
+                        <label class="form-label small">Situação *</label>
+                        <select class="form-select" name="situacao" id="mov_situacao" required>
+                            <option value="">Selecione...</option>
+                            {% for valor, rotulo in situacao_choices %}<option value="{{ valor }}">{{ rotulo }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4"><label class="form-label small">Horário</label><input type="text" class="form-control" name="horario" id="mov_horario"></div>
+                    <div class="col-md-4"><label class="form-label small">Intervalo</label><input type="text" class="form-control" name="intervalo" id="mov_intervalo"></div>
+                    <div class="col-md-4">
+                        <label class="form-label small">Situação da Cobertura</label>
+                        <select class="form-select" name="situacao_cobertura" id="mov_situacao_cobertura">
+                            <option value="">Selecione...</option>
+                            {% for valor, rotulo in situacao_cobertura_choices %}<option value="{{ valor }}">{{ rotulo }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6"><label class="form-label small">Cobertura</label><input type="text" class="form-control" name="cobertura" id="mov_cobertura"></div>
+                    <div class="col-md-6"><label class="form-label small">Cargo (Cobertura)</label><input type="text" class="form-control" name="cargo_cobertura" id="mov_cargo_cobertura"></div>
+                    <div class="col-md-12"><label class="form-label small">Observação</label><textarea class="form-control" name="observacao" id="mov_observacao" rows="2"></textarea></div>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button><button type="button" class="btn btn-primary" onclick="salvarRegistroMovimentacao(this)">Salvar</button></div>
+    </div></div>
+</div>
+
+<!-- Cobertura -->
+<div class="modal fade" id="modalCobertura" tabindex="-1">
+    <div class="modal-dialog modal-lg"><div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title">Cobertura</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+            <form id="formCobertura">
+                <input type="hidden" name="id" id="cob_id">
+                <div class="row g-2">
+                    <div class="col-md-4"><label class="form-label small">Cliente *</label><input type="text" class="form-control" name="cliente_nome" id="cob_cliente_nome" list="listaClientesCmo" autocomplete="off" required></div>
+                    <div class="col-md-4"><label class="form-label small">CR</label><input type="text" class="form-control" name="cr" id="cob_cr"></div>
+                    <div class="col-md-4"><label class="form-label small">Tipo de Serviço</label>
+                        <select class="form-select" name="tipo_servico" id="cob_tipo_servico">
+                            <option value="">Selecione...</option>
+                            {% for valor, rotulo in tipo_servico_choices %}<option value="{{ valor }}">{{ rotulo }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6"><label class="form-label small">Colaborador da Cobertura *</label><input type="text" class="form-control" name="nome_cobertura" id="cob_nome_cobertura" list="listaColaboradoresCmo" autocomplete="off" required></div>
+                    <div class="col-md-6"><label class="form-label small">Colaborador Substituído *</label><input type="text" class="form-control" name="colaborador_substituido" id="cob_colaborador_substituido" required></div>
+                    <div class="col-md-4"><label class="form-label small">Data da Cobertura *</label><input type="date" class="form-control" name="data_cobertura" id="cob_data_cobertura" required></div>
+                    <div class="col-md-4"><label class="form-label small">Horário Previsto</label><input type="time" class="form-control" name="horario_previsto" id="cob_horario_previsto"></div>
+                    <div class="col-md-4"><label class="form-label small">Status</label>
+                        <select class="form-select" name="status" id="cob_status">
+                            <option value="pendente">Pendente</option>
+                            <option value="confirmada">Confirmada</option>
+                            <option value="nao_realizada">Não Realizada</option>
+                            <option value="cancelada">Cancelada</option>
+                        </select>
+                    </div>
+                    <div class="col-md-12"><label class="form-label small">Justificativa *</label><textarea class="form-control" name="justificativa" id="cob_justificativa" rows="2" required></textarea></div>
+                    <div class="col-md-12"><label class="form-label small">Observações</label><textarea class="form-control" name="observacoes" id="cob_observacoes" rows="2"></textarea></div>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button><button type="button" class="btn btn-primary" onclick="salvarCobertura(this)">Salvar</button></div>
+    </div></div>
+</div>
+
+<datalist id="listaClientesCmo"></datalist>
+<datalist id="listaColaboradoresCmo"></datalist>
+{% endblock %}
+
+{% block extra_js %}
+<form style="display:none;">{% csrf_token %}</form>
+
+<script id="cmo-charts-data-json" type="application/json">
+    {{ charts_json|default:"{}"|safe }}
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    Chart.register(ChartDataLabels);
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    const URL_CMO_AUTOCOMPLETE = '{% url "gestao_a_vista:cmo_efetivo_autocomplete" %}';
+    const URL_CMO_SALVAR_COBERTURA = '{% url "gestao_a_vista:cmo_efetivo_salvar_cobertura" %}';
+    const URL_CMO_SALVAR_REGISTRO_MOVIMENTACAO = '{% url "gestao_a_vista:cmo_efetivo_salvar_registro_movimentacao" %}';
+    const URL_CMO_CANCELAR = '{% url "gestao_a_vista:cmo_efetivo_cancelar" %}';
+
+    function getHeaders() { return { 'X-CSRFToken': csrfToken, 'Content-Type': 'application/json' }; }
+
+    function mudarAba(tabId) {
+        const triggerEl = document.querySelector('#' + tabId);
+        if (triggerEl) { new bootstrap.Tab(triggerEl).show(); }
+    }
+
+    function reloadComNotificacao(msg, tipo = 'success') {
+        sessionStorage.setItem('cmoEfetivoToastMsg', msg);
+        sessionStorage.setItem('cmoEfetivoToastTipo', tipo);
+        window.location.reload();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        let activeTab = sessionStorage.getItem('cmoEfetivoTab');
+        if (activeTab) { mudarAba(activeTab); }
+        document.querySelectorAll('#cmoEfetivoTabs button[data-bs-toggle="tab"]').forEach(el => {
+            el.addEventListener('shown.bs.tab', e => sessionStorage.setItem('cmoEfetivoTab', e.target.id));
+        });
+
+        let toastMsg = sessionStorage.getItem('cmoEfetivoToastMsg');
+        let toastTipo = sessionStorage.getItem('cmoEfetivoToastTipo');
+        if (toastMsg) {
+            Swal.fire({ title: toastTipo === 'success' ? 'Sucesso!' : 'Erro', text: toastMsg, icon: toastTipo, timer: 3000, showConfirmButton: false });
+            sessionStorage.removeItem('cmoEfetivoToastMsg');
+            sessionStorage.removeItem('cmoEfetivoToastTipo');
+        }
+
+        renderizarGraficos();
+    });
+
+    // ==== AUTOCOMPLETE (Cliente / Colaborador) ====
+    let autocompleteTimeout = null;
+    function ligarAutocomplete(inputId, tipo, datalistId) {
+        const input = document.getElementById(inputId);
+        if (!input) return;
+        input.addEventListener('input', () => {
+            clearTimeout(autocompleteTimeout);
+            const termo = input.value.trim();
+            if (termo.length < 2) return;
+            autocompleteTimeout = setTimeout(() => {
+                fetch(`${URL_CMO_AUTOCOMPLETE}?tipo=${tipo}&q=${encodeURIComponent(termo)}`)
+                    .then(r => r.json())
+                    .then(d => {
+                        if (!d.success) return;
+                        const datalist = document.getElementById(datalistId);
+                        datalist.innerHTML = '';
+                        d.resultados.forEach(item => {
+                            const opt = document.createElement('option');
+                            opt.value = tipo === 'cliente' ? item.cliente : item.nome;
+                            datalist.appendChild(opt);
+                        });
+                    });
+            }, 250);
+        });
+    }
+    ['cob_cliente_nome'].forEach(id => ligarAutocomplete(id, 'cliente', 'listaClientesCmo'));
+    ['cob_nome_cobertura'].forEach(id => ligarAutocomplete(id, 'colaborador', 'listaColaboradoresCmo'));
+
+    // ==== TRAVA ANTI-CLIQUE-DUPLO (evita criar registros repetidos ao
+    // clicar "Salvar" mais de uma vez enquanto a requisição está em voo) ====
+    function setBotaoCarregando(btn, carregando, textoCarregando = 'Salvando...') {
+        if (!btn) return;
+        if (carregando) {
+            if (btn.dataset.textoOriginal === undefined) btn.dataset.textoOriginal = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span>${textoCarregando}`;
+        } else {
+            btn.disabled = false;
+            if (btn.dataset.textoOriginal !== undefined) btn.innerHTML = btn.dataset.textoOriginal;
+        }
+    }
+
+    // ==== CONFORMIDADE DE EFETIVO -> INCLUIR REGISTRO ====
+    function abrirModalIncluirRegistro(conformidadeId) {
+        document.getElementById('formIncluirRegistro').reset();
+        document.getElementById('mov_conformidade_id').value = conformidadeId;
+        new bootstrap.Modal(document.getElementById('modalIncluirRegistro')).show();
+    }
+
+    function salvarRegistroMovimentacao(btn) {
+        const form = document.getElementById('formIncluirRegistro');
+        if (!form.checkValidity()) { form.reportValidity(); return; }
+        if (btn && btn.disabled) return;
+        setBotaoCarregando(btn, true);
+        const payload = {
+            conformidade_id: document.getElementById('mov_conformidade_id').value,
+            gerente: document.getElementById('mov_gerente').value,
+            nome: document.getElementById('mov_nome').value,
+            cargo: document.getElementById('mov_cargo').value,
+            posto: document.getElementById('mov_posto').value,
+            posto_cr: document.getElementById('mov_posto_cr').value,
+            horario: document.getElementById('mov_horario').value,
+            intervalo: document.getElementById('mov_intervalo').value,
+            cobertura: document.getElementById('mov_cobertura').value,
+            cargo_cobertura: document.getElementById('mov_cargo_cobertura').value,
+            situacao: document.getElementById('mov_situacao').value,
+            situacao_cobertura: document.getElementById('mov_situacao_cobertura').value,
+            observacao: document.getElementById('mov_observacao').value,
+        };
+        fetch(URL_CMO_SALVAR_REGISTRO_MOVIMENTACAO, { method: 'POST', headers: getHeaders(), body: JSON.stringify(payload) })
+            .then(r => r.json())
+            .then(d => {
+                if (d.success) { reloadComNotificacao(d.message); return; }
+                setBotaoCarregando(btn, false);
+                Swal.fire('Erro', d.message, 'error');
+            })
+            .catch(() => { setBotaoCarregando(btn, false); Swal.fire('Erro', 'Falha de conexão. Tente novamente.', 'error'); });
+    }
+
+    // ==== COBERTURAS ====
+    function abrirModalCobertura(id) {
+        document.getElementById('formCobertura').reset();
+        document.getElementById('cob_id').value = id || '';
+
+        if (id) {
+            const linha = document.querySelector(`tr.dados-cobertura[data-id="${id}"]`);
+            if (linha) {
+                const d = linha.dataset;
+                document.getElementById('cob_cliente_nome').value = d.clienteNome || '';
+                document.getElementById('cob_cr').value = d.cr || '';
+                document.getElementById('cob_tipo_servico').value = d.tipoServico || '';
+                document.getElementById('cob_nome_cobertura').value = d.nomeCobertura || '';
+                document.getElementById('cob_colaborador_substituido').value = d.colaboradorSubstituido || '';
+                document.getElementById('cob_data_cobertura').value = d.dataCobertura || '';
+                document.getElementById('cob_horario_previsto').value = d.horarioPrevisto || '';
+                document.getElementById('cob_status').value = d.status || 'pendente';
+                document.getElementById('cob_justificativa').value = d.justificativa || '';
+                document.getElementById('cob_observacoes').value = d.observacoes || '';
+            } else {
+                Swal.fire('Aviso', 'Não foi possível carregar os dados deste registro para edição.', 'warning');
+            }
+        }
+
+        new bootstrap.Modal(document.getElementById('modalCobertura')).show();
+    }
+
+    function salvarCobertura(btn) {
+        const form = document.getElementById('formCobertura');
+        if (!form.checkValidity()) { form.reportValidity(); return; }
+        if (btn && btn.disabled) return;
+        setBotaoCarregando(btn, true);
+        const payload = {
+            id: document.getElementById('cob_id').value || null,
+            cliente_nome: document.getElementById('cob_cliente_nome').value,
+            cr: document.getElementById('cob_cr').value,
+            tipo_servico: document.getElementById('cob_tipo_servico').value,
+            nome_cobertura: document.getElementById('cob_nome_cobertura').value,
+            colaborador_substituido: document.getElementById('cob_colaborador_substituido').value,
+            data_cobertura: document.getElementById('cob_data_cobertura').value,
+            horario_previsto: document.getElementById('cob_horario_previsto').value,
+            status: document.getElementById('cob_status').value,
+            justificativa: document.getElementById('cob_justificativa').value,
+            observacoes: document.getElementById('cob_observacoes').value,
+        };
+        fetch(URL_CMO_SALVAR_COBERTURA, { method: 'POST', headers: getHeaders(), body: JSON.stringify(payload) })
+            .then(r => r.json())
+            .then(d => {
+                if (d.success) { reloadComNotificacao(d.message); return; }
+                setBotaoCarregando(btn, false);
+                Swal.fire('Erro', d.message, 'error');
+            })
+            .catch(() => { setBotaoCarregando(btn, false); Swal.fire('Erro', 'Falha de conexão. Tente novamente.', 'error'); });
+    }
+
+    // ==== CANCELAMENTO (RN10) ====
+    function cancelarRegistro(entidade, id) {
+        Swal.fire({
+            title: 'Cancelar registro?', input: 'text', inputPlaceholder: 'Motivo do cancelamento (obrigatório)',
+            icon: 'warning', showCancelButton: true, confirmButtonText: 'Cancelar registro', cancelButtonText: 'Voltar',
+            inputValidator: value => !value ? 'Informe o motivo do cancelamento.' : undefined,
+        }).then(res => {
+            if (!res.isConfirmed) return;
+            fetch(URL_CMO_CANCELAR, { method: 'POST', headers: getHeaders(), body: JSON.stringify({ entidade, id, motivo: res.value }) })
+                .then(r => r.json())
+                .then(d => { if (d.success) reloadComNotificacao(d.message); else Swal.fire('Erro', d.message, 'error'); });
+        });
+    }
+
+    // ==== GRÁFICOS ====
+    function renderizarGraficos() {
+        const chartsData = JSON.parse(document.getElementById('cmo-charts-data-json').textContent || '{}');
+        const palette = ['#2563eb', '#7c3aed', '#0891b2', '#f59e0b', '#ea580c', '#4f46e5', '#16a34a', '#64748b', '#dc2626', '#0ea5e9'];
+
+        const elNc = document.getElementById('chartNcCliente');
+        if (elNc && chartsData.nc_por_cliente) {
+            new Chart(elNc, { type: 'bar', data: { labels: chartsData.nc_por_cliente.labels, datasets: [{ label: 'Não Conformidades', data: chartsData.nc_por_cliente.values, backgroundColor: '#ef4444' }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: { anchor: 'end', align: 'top' } } } });
+        }
+        const elFaltas = document.getElementById('chartFaltasPeriodo');
+        if (elFaltas && chartsData.faltas_por_periodo) {
+            new Chart(elFaltas, { type: 'line', data: { labels: chartsData.faltas_por_periodo.labels, datasets: [{ label: 'Faltas', data: chartsData.faltas_por_periodo.values, borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,.2)', fill: true, tension: .3 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { datalabels: { display: false } } } });
+        }
+        const elCob = document.getElementById('chartCoberturaTipo');
+        if (elCob && chartsData.coberturas_por_tipo) {
+            new Chart(elCob, { type: 'doughnut', data: { labels: chartsData.coberturas_por_tipo.labels, datasets: [{ data: chartsData.coberturas_por_tipo.values, backgroundColor: palette }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' }, datalabels: { color: '#fff', font: { weight: 'bold' } } } } });
+        }
+        const elTop = document.getElementById('chartTopClientes');
+        if (elTop && chartsData.top_clientes) {
+            new Chart(elTop, { type: 'bar', data: { labels: chartsData.top_clientes.labels, datasets: [{ label: 'Ocorrências', data: chartsData.top_clientes.values, backgroundColor: '#1e40af' }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: { anchor: 'end', align: 'right' } } } });
+        }
+    }
+</script>
+{% endblock %}

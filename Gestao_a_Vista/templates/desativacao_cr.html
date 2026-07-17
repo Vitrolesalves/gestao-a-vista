@@ -1,0 +1,630 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Desativação de CR - Gestão à Vista{% endblock %}
+
+{% block extra_css %}
+<style>
+    .desativacao-cr-title {
+        background: linear-gradient(to right, #0F172A, #1e40af);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-size: 28px;
+        font-weight: bold;
+        margin: 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="border-b pb-4">
+        <h1 class="desativacao-cr-title">Desativação de CR</h1>
+        <p class="text-muted-foreground">Gerencie as solicitações de desativação de contratos</p>
+    </div>
+
+    <!-- Filtros -->
+    <div class="bg-white rounded-lg border shadow-sm">
+        <div class="p-4 border-b">
+            <h2 class="text-lg font-semibold flex items-center gap-2">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+                </svg>
+                Filtros
+            </h2>
+        </div>
+        <div class="p-4">
+            <form method="get" class="flex gap-4 items-end">
+                <div class="flex-1">
+                    <label for="filtro-cr" class="block text-sm font-medium mb-1">CR</label>
+                    <div class="relative flex items-center">
+                        <svg class="absolute left-3 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                        <input type="text" 
+                               id="filtro-cr" 
+                               name="cr" 
+                               value="{{ filtros.cr }}"
+                               placeholder="Buscar por CR..." 
+                               class="pl-10 w-full h-10 rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    </div>
+                </div>
+                <div class="w-48">
+                    <label for="filtro-status" class="block text-sm font-medium mb-1">Status</label>
+                    <select id="filtro-status" 
+                            name="status" 
+                            class="w-full h-10 rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                        <option value="todos" {% if filtros.status == 'todos' %}selected{% endif %}>Todos os status</option>
+                        {% for value, label in status_choices %}
+                            <option value="{{ value }}" {% if filtros.status == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="button" 
+                        class="px-4 h-10 text-white rounded-md hover:opacity-90 flex items-center gap-2"
+                        style="background-color: #0F172A;"
+                        onclick="openDialog()">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Nova Solicitação
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Barra de Ações em Massa -->
+    <div id="barraAcoesMassa" class="hidden bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+        <div class="flex items-center justify-between gap-4">
+            <div class="flex items-center gap-2">
+                <svg class="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                </svg>
+                <span class="text-sm font-medium text-blue-900">
+                    <span id="contadorSelecionados">0</span> item(ns) selecionado(s)
+                </span>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <select id="statusMassa" class="h-9 rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm">
+                    <option value="">Alterar status para...</option>
+                    {% for value, label in status_choices %}
+                        <option value="{{ value }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+
+                <button onclick="alterarStatusMassa()"
+                        class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center gap-2">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    Alterar Status
+                </button>
+
+                <button onclick="cancelarSelecao()"
+                        class="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 text-sm">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista -->
+    <div class="bg-white rounded-lg border shadow-sm">
+        <div class="p-4 border-b">
+            <h2 class="text-lg font-semibold">Lista de Solicitações</h2>
+        </div>
+        <div class="p-4">
+            <div class="overflow-x-auto">
+                <table class="w-full text-xs">
+                    <thead>
+                        <tr class="border-b">
+                            <th class="text-left py-2 px-2 w-10">
+                                <input type="checkbox"
+                                       id="checkboxTodos"
+                                       onchange="selecionarTodos(this)"
+                                       class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            </th>
+                            <th class="text-left py-2 px-2">Contrato</th>
+                            <th class="text-left py-2 px-2">Solicitante</th>
+                            <th class="text-left py-2 px-2">Status</th>
+                            <th class="text-left py-2 px-2">Data Solicitação</th>
+                            <th class="text-left py-2 px-2">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in desativacoes %}
+                        <tr class="border-b hover:bg-gray-50">
+                            <td class="py-1.5 px-2">
+                                <input type="checkbox"
+                                       data-solicitacao-id="{{ item.id }}"
+                                       onchange="toggleSelecao(this)"
+                                       class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            </td>
+                            <td class="py-1.5 px-2 font-medium">{{ item.contrato }}</td>
+                            <td class="py-1.5 px-2">{{ item.solicitante }}</td>
+                            <td class="py-1.5 px-2">
+                                <span class="px-2 py-1 rounded-full text-xs
+                                    {% if item.status == 'ativo' %}bg-green-100 text-green-800
+                                    {% elif item.status == 'solicitado' %}bg-yellow-100 text-yellow-800
+                                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                    {{ item.get_status_display }}
+                                </span>
+                            </td>
+                            <td class="py-1.5 px-2">{{ item.datasolicitacao|date:"d/m/Y" }}</td>
+                            <td class="py-1.5 px-2">
+                                <div class="flex items-center gap-2">
+                                    <button onclick="editarSolicitacao('{{ item.id }}')"
+                                            class="text-blue-600 hover:text-blue-800">
+                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                        </svg>
+                                    </button>
+                                    <button onclick="excluirSolicitacao('{{ item.id }}')"
+                                            class="text-red-600 hover:text-red-800">
+                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-8 text-gray-500">
+                                Nenhuma solicitação encontrada com os filtros aplicados.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Paginação -->
+            {% if desativacoes.has_other_pages %}
+            <div class="flex items-center justify-between mt-6 pt-4 border-t">
+                <div class="flex items-center gap-2">
+                    <span class="text-sm text-gray-600">
+                        Itens por página:
+                    </span>
+                    <select onchange="window.location.href='?{% if filtros.cr %}cr={{ filtros.cr }}&{% endif %}{% if filtros.status != 'todos' %}status={{ filtros.status }}&{% endif %}por_pagina=' + this.value;" 
+                    class="border rounded px-2 py-1 text-sm">
+                <option value="10" {% if por_pagina == 10 %}selected{% endif %}>10</option>
+                <option value="15" {% if por_pagina == 15 %}selected{% endif %}>15</option>
+                <option value="30" {% if por_pagina == 30 %}selected{% endif %}>30</option>
+                <option value="50" {% if por_pagina == 50 %}selected{% endif %}>50</option>
+                <option value="100" {% if por_pagina == 100 %}selected{% endif %}>100</option>
+            </select>
+            
+                </div>
+                
+                <div class="flex items-center gap-2 text-sm text-gray-600">
+                    <span>
+                        página {{ desativacoes.number }} de {{ desativacoes.paginator.num_pages }} com total de {{ desativacoes.paginator.count }} itens
+                    </span>
+                </div>
+                
+                <div class="flex items-center gap-1">
+                    {% if desativacoes.has_previous %}
+                        <a href="?{% if filtros.cr %}cr={{ filtros.cr }}&{% endif %}{% if filtros.status != 'todos' %}status={{ filtros.status }}&{% endif %}{% if por_pagina %}por_pagina={{ por_pagina }}&{% endif %}pagina=1" 
+                           class="px-2 py-1 border rounded hover:bg-gray-50">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/>
+                            </svg>
+                        </a>
+                        <a href="?{% if filtros.cr %}cr={{ filtros.cr }}&{% endif %}{% if filtros.status != 'todos' %}status={{ filtros.status }}&{% endif %}{% if por_pagina %}por_pagina={{ por_pagina }}&{% endif %}pagina={{ desativacoes.previous_page_number }}" 
+                           class="px-2 py-1 border rounded hover:bg-gray-50">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                            </svg>
+                        </a>
+                    {% else %}
+                        <span class="px-2 py-1 border rounded bg-gray-100 text-gray-400 cursor-not-allowed">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/>
+                            </svg>
+                        </span>
+                        <span class="px-2 py-1 border rounded bg-gray-100 text-gray-400 cursor-not-allowed">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                            </svg>
+                        </span>
+                    {% endif %}
+                    
+                    {% if desativacoes.has_next %}
+                        <a href="?{% if filtros.cr %}cr={{ filtros.cr }}&{% endif %}{% if filtros.status != 'todos' %}status={{ filtros.status }}&{% endif %}{% if por_pagina %}por_pagina={{ por_pagina }}&{% endif %}pagina={{ desativacoes.next_page_number }}" 
+                           class="px-2 py-1 border rounded hover:bg-gray-50">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </a>
+                        <a href="?{% if filtros.cr %}cr={{ filtros.cr }}&{% endif %}{% if filtros.status != 'todos' %}status={{ filtros.status }}&{% endif %}{% if por_pagina %}por_pagina={{ por_pagina }}&{% endif %}pagina={{ desativacoes.paginator.num_pages }}" 
+                           class="px-2 py-1 border rounded hover:bg-gray-50">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/>
+                            </svg>
+                        </a>
+                    {% else %}
+                        <span class="px-2 py-1 border rounded bg-gray-100 text-gray-400 cursor-not-allowed">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </span>
+                        <span class="px-2 py-1 border rounded bg-gray-100 text-gray-400 cursor-not-allowed">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/>
+                            </svg>
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Nova/Editar Solicitação -->
+<div id="novaDesativacaoModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center">
+    <div class="bg-white rounded-lg w-full max-w-md mx-4">
+        <div class="p-4 border-b">
+            <h2 class="text-lg font-semibold" id="modalTitle">Nova Solicitação de Desativação</h2>
+        </div>
+        <form id="novaDesativacaoForm" class="p-4 space-y-4">
+            <input type="hidden" id="solicitacao_id" name="solicitacao_id">
+            <div>
+                <label for="contrato" class="block text-sm font-medium mb-1">Contrato (CR)</label>
+                <input type="text"
+                       id="contrato"
+                       name="contrato"
+                       placeholder="Ex: CR-001/2024"
+                       required
+                       class="w-full h-10 rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+            </div>
+            <div>
+                <label for="solicitante" class="block text-sm font-medium mb-1">Solicitante</label>
+                <input type="text"
+                       id="solicitante"
+                       name="solicitante"
+                       placeholder="Nome do solicitante"
+                       required
+                       class="w-full h-10 rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+            </div>
+            <div>
+                <label for="status" class="block text-sm font-medium mb-1">Status</label>
+                <select id="status"
+                        name="status"
+                        required
+                        class="w-full h-10 rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    {% for value, label in status_choices %}
+                        <option value="{{ value }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="flex justify-end gap-2 pt-4">
+                <button type="button"
+                        onclick="closeDialog()"
+                        class="px-4 py-2 border rounded-md hover:bg-gray-50">
+                    Cancelar
+                </button>
+                <button type="submit"
+                        class="px-4 py-2 text-white rounded-md hover:opacity-90"
+                        style="background-color: #0F172A;">
+                    Salvar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal de Confirmação Moderna -->
+<div id="confirmModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg w-full max-w-md mx-4 shadow-xl">
+        <div class="p-6">
+            <div class="flex items-center gap-4 mb-4">
+                <div class="flex-shrink-0">
+                    <svg id="confirmIcon" class="h-12 w-12 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                </div>
+                <div class="flex-1">
+                    <h3 id="confirmTitle" class="text-lg font-semibold text-gray-900">Confirmar ação</h3>
+                    <p id="confirmMessage" class="text-sm text-gray-600 mt-1"></p>
+                </div>
+            </div>
+            <div class="flex justify-end gap-3 mt-6">
+                <button id="confirmCancelBtn"
+                        type="button"
+                        class="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">
+                    Cancelar
+                </button>
+                <button id="confirmOkBtn"
+                        type="button"
+                        class="px-4 py-2 text-white rounded-md hover:opacity-90 transition-opacity"
+                        style="background-color: #0F172A;">
+                    Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Variável global para rastrear itens selecionados
+let itensSelecionados = new Set();
+
+// Sistema de confirmação moderna
+function showConfirm(title, message, type = 'warning') {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('confirmModal');
+        const titleEl = document.getElementById('confirmTitle');
+        const messageEl = document.getElementById('confirmMessage');
+        const iconEl = document.getElementById('confirmIcon');
+        const okBtn = document.getElementById('confirmOkBtn');
+        const cancelBtn = document.getElementById('confirmCancelBtn');
+
+        // Definir diferentes ícones/cores por tipo
+        const icons = {
+            warning: {
+                color: 'text-yellow-500',
+                path: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z'
+            },
+            danger: {
+                color: 'text-red-500',
+                path: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z'
+            },
+            info: {
+                color: 'text-blue-500',
+                path: 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
+            }
+        };
+
+        const icon = icons[type] || icons.warning;
+        iconEl.className = `h-12 w-12 ${icon.color}`;
+        iconEl.querySelector('path').setAttribute('d', icon.path);
+
+        titleEl.textContent = title;
+        messageEl.textContent = message;
+        modal.classList.remove('hidden');
+
+        function handleConfirm() {
+            modal.classList.add('hidden');
+            cleanup();
+            resolve(true);
+        }
+
+        function handleCancel() {
+            modal.classList.add('hidden');
+            cleanup();
+            resolve(false);
+        }
+
+        function cleanup() {
+            okBtn.removeEventListener('click', handleConfirm);
+            cancelBtn.removeEventListener('click', handleCancel);
+            modal.removeEventListener('click', handleOutsideClick);
+            document.removeEventListener('keydown', handleKeydown);
+        }
+
+        function handleOutsideClick(e) {
+            if (e.target === modal) {
+                handleCancel();
+            }
+        }
+
+        function handleKeydown(e) {
+            if (e.key === 'Escape') {
+                handleCancel();
+            } else if (e.key === 'Enter') {
+                handleConfirm();
+            }
+        }
+
+        okBtn.addEventListener('click', handleConfirm);
+        cancelBtn.addEventListener('click', handleCancel);
+        modal.addEventListener('click', handleOutsideClick);
+        document.addEventListener('keydown', handleKeydown);
+    });
+}
+
+function openDialog(isEdit = false) {
+    document.getElementById('modalTitle').textContent = isEdit ? 'Editar Solicitação de Desativação' : 'Nova Solicitação de Desativação';
+    document.getElementById('novaDesativacaoModal').classList.remove('hidden');
+    if (!isEdit) {
+        document.getElementById('novaDesativacaoForm').reset();
+        document.getElementById('solicitacao_id').value = '';
+    }
+}
+
+function closeDialog() {
+    document.getElementById('novaDesativacaoModal').classList.add('hidden');
+}
+
+// Função para atualizar UI da barra de ações
+function atualizarBarraAcoes() {
+    const barra = document.getElementById('barraAcoesMassa');
+    const contador = document.getElementById('contadorSelecionados');
+
+    if (itensSelecionados.size > 0) {
+        barra.classList.remove('hidden');
+        contador.textContent = itensSelecionados.size;
+    } else {
+        barra.classList.add('hidden');
+    }
+}
+
+// Função para marcar/desmarcar todos
+function selecionarTodos(checkbox) {
+    const checkboxes = document.querySelectorAll('input[data-solicitacao-id]');
+    checkboxes.forEach(cb => {
+        cb.checked = checkbox.checked;
+        if (checkbox.checked) {
+            itensSelecionados.add(cb.dataset.solicitacaoId);
+        } else {
+            itensSelecionados.delete(cb.dataset.solicitacaoId);
+        }
+    });
+    atualizarBarraAcoes();
+}
+
+// Função para marcar/desmarcar individual
+function toggleSelecao(checkbox) {
+    if (checkbox.checked) {
+        itensSelecionados.add(checkbox.dataset.solicitacaoId);
+    } else {
+        itensSelecionados.delete(checkbox.dataset.solicitacaoId);
+    }
+    atualizarBarraAcoes();
+
+    // Atualizar checkbox "selecionar todos"
+    const checkboxTodos = document.getElementById('checkboxTodos');
+    const totalCheckboxes = document.querySelectorAll('input[data-solicitacao-id]').length;
+    checkboxTodos.checked = itensSelecionados.size === totalCheckboxes;
+}
+
+// Função para cancelar seleção
+function cancelarSelecao() {
+    itensSelecionados.clear();
+    document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+    atualizarBarraAcoes();
+}
+
+// Função para alterar status em massa
+async function alterarStatusMassa() {
+    const novoStatus = document.getElementById('statusMassa').value;
+
+    if (!novoStatus) {
+        showNotification('Selecione um status', 'warning');
+        return;
+    }
+
+    const statusText = document.getElementById('statusMassa').selectedOptions[0].text;
+    const confirmed = await showConfirm(
+        'Alterar Status em Massa',
+        `Deseja alterar o status de ${itensSelecionados.size} item(ns) para "${statusText}"?`,
+        'warning'
+    );
+
+    if (!confirmed) {
+        return;
+    }
+
+    try {
+        const response = await fetch('{% url "gestao_a_vista:desativacao_cr" %}', {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                ids: Array.from(itensSelecionados),
+                status: novoStatus
+            })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            showNotification(data.message || 'Status alterado com sucesso', 'success');
+            window.location.reload();
+        } else {
+            showNotification(data.message || 'Erro ao alterar status', 'error');
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+        showNotification('Erro ao alterar status em massa', 'error');
+    }
+}
+
+async function editarSolicitacao(id) {
+    try {
+        const response = await fetch(`{% url 'gestao_a_vista:desativacao_cr' %}?id=${id}`);
+        if (response.ok) {
+            const data = await response.json();
+            document.getElementById('solicitacao_id').value = id;
+            document.getElementById('contrato').value = data.contrato;
+            document.getElementById('solicitante').value = data.solicitante;
+            document.getElementById('status').value = data.status;
+            openDialog(true);
+        } else {
+            showNotification('Erro ao carregar os dados da solicitação', 'error');
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+        showNotification('Erro ao carregar os dados da solicitação', 'error');
+    }
+}
+
+async function excluirSolicitacao(id) {
+    const confirmed = await showConfirm(
+        'Confirmar Exclusão',
+        'Tem certeza que deseja excluir esta solicitação?',
+        'danger'
+    );
+
+    if (!confirmed) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`{% url 'gestao_a_vista:desativacao_cr' %}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ id: id })
+        });
+
+        if (response.ok) {
+            window.location.reload();
+        } else {
+            const data = await response.json();
+            showNotification(data.message || 'Erro ao excluir a solicitação', 'error');
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+        showNotification('Erro ao excluir a solicitação', 'error');
+    }
+}
+
+document.getElementById('novaDesativacaoForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = {
+        id: document.getElementById('solicitacao_id').value,
+        contrato: document.getElementById('contrato').value,
+        solicitante: document.getElementById('solicitante').value,
+        status: document.getElementById('status').value
+    };
+    
+    try {
+        const response = await fetch('{% url "gestao_a_vista:desativacao_cr" %}', {
+            method: formData.id ? 'PUT' : 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            window.location.reload();
+        } else {
+            showNotification(data.message || 'Erro ao salvar a solicitação', 'error');
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+        showNotification('Erro ao salvar a solicitação. Por favor, verifique os dados e tente novamente.', 'error');
+    }
+});
+
+// Auto-submit do formulário de filtros quando mudar o select
+document.getElementById('filtro-status').addEventListener('change', function() {
+    this.form.submit();
+});
+</script>
+{% endblock %} 

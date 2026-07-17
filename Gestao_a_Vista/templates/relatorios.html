@@ -1,0 +1,696 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Relatórios - Gestão à Vista{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background: #f5f7fa;
+    }
+    
+    .relatorios-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 24px;
+    }
+    
+    .relatorios-icon {
+        width: 32px;
+        height: 32px;
+        background: #0F172A;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 16px;
+    }
+    
+    .relatorios-title {
+        background: linear-gradient(to right, #0F172A, #1e40af);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-size: 28px;
+        font-weight: bold;
+        margin: 0;
+    }
+    
+    .filters-card {
+        background: white;
+        border-radius: 8px;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        margin-bottom: 24px;
+    }
+    
+    .tab-buttons {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        background: #f3f4f6;
+        border-radius: 8px;
+        padding: 4px;
+        margin-bottom: 24px;
+    }
+    
+    .tab-button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 12px 16px;
+        border-radius: 6px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.2s;
+        background: transparent;
+        color: #6b7280;
+    }
+    
+    .tab-button.active {
+        background: white;
+        color: #111827;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .content-card {
+        background: white;
+        border-radius: 8px;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .content-card-header {
+        padding: 20px;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .content-card-body {
+        padding: 20px;
+    }
+    
+    .table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .table th,
+    .table td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .table th {
+        font-weight: 600;
+        color: #374151;
+        background: #f9fafb;
+    }
+    
+    .table tbody tr:hover {
+        background: #f9fafb;
+    }
+    
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 500;
+    }
+    
+    .badge-outline {
+        background: transparent;
+        border: 1px solid #d1d5db;
+        color: #374151;
+    }
+    
+    .badge-epi {
+        background: #dbeafe;
+        color: #1d4ed8;
+    }
+    
+    .badge-apr {
+        background: #dcfce7;
+        color: #059669;
+    }
+    
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        text-decoration: none;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .btn-outline {
+        background: white;
+        color: #374151;
+        border: 1px solid #d1d5db;
+    }
+    
+    .btn-outline:hover {
+        background: #f9fafb;
+        border-color: #9ca3af;
+    }
+    
+    .btn-small {
+        padding: 6px 12px;
+        font-size: 12px;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 40px;
+        color: #6b7280;
+    }
+    
+    /* Paginação */
+    .pagination-container {
+        margin-top: 2rem;
+        padding-top: 1rem;
+        border-top: 1px solid #e5e7eb;
+    }
+    
+    .pagination {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+    }
+    
+    .pagination-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        background: #3b82f6;
+        color: white;
+        text-decoration: none;
+        border-radius: 0.375rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: all 0.2s;
+    }
+    
+    .pagination-btn:hover {
+        background: #2563eb;
+        color: white;
+        text-decoration: none;
+    }
+    
+    .pagination-info {
+        font-size: 0.875rem;
+        color: #6b7280;
+        text-align: center;
+        flex: 1;
+    }
+    
+    .grid-5 {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+    }
+    
+    .form-group {
+        margin-bottom: 16px;
+    }
+    
+    .form-label {
+        display: block;
+        font-size: 14px;
+        font-weight: 500;
+        color: #374151;
+        margin-bottom: 4px;
+    }
+    
+    .form-control {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 14px;
+    }
+    
+    .form-control:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    
+    .input-with-icon {
+        position: relative;
+    }
+    
+    .input-with-icon .icon {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #9ca3af;
+    }
+    
+    .input-with-icon .form-control {
+        padding-left: 40px;
+    }
+    
+    .text-center {
+        text-align: center;
+    }
+    
+    .flex-end {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+    }
+    
+    .tab-content {
+        display: none;
+    }
+    
+    .tab-content.active {
+        display: block;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="relatorios-header">
+        <div>
+            <div class="flex items-center gap-3 mb-2">
+                <div class="relatorios-icon">
+                    <i class="fas fa-file-alt"></i>
+                </div>
+                <h1 class="relatorios-title">Relatórios</h1>
+            </div>
+            <p class="text-gray-600">
+                Gestão de relatórios de Inspeção de EPI e APR - Viagem Segura
+            </p>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="filters-card">
+        <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+            <i class="fas fa-filter text-gray-600"></i>
+            Filtros de Busca
+        </h3>
+        
+        <form method="get" id="filtrosForm">
+            <div class="grid-5">
+                <div class="form-group">
+                    <label class="form-label">Buscar</label>
+                    <div class="input-with-icon">
+                        <i class="fas fa-search icon"></i>
+                        <input 
+                            type="text" 
+                            class="form-control" 
+                            name="search" 
+                            value="{{ search_term }}"
+                            placeholder="Nome ou número..."
+                            onkeypress="handleEnterKey(event)"
+                        />
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Responsável</label>
+                    <select class="form-control" name="responsavel" onchange="applyFilters()">
+                        <option value="all" {% if filter_responsavel == 'all' %}selected{% endif %}>Todos</option>
+                        {% for responsavel in responsaveis_list %}
+                        <option value="{{ responsavel }}" {% if filter_responsavel == responsavel %}selected{% endif %}>
+                            {{ responsavel }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">CR</label>
+                    <select class="form-control" name="cr" onchange="applyFilters()">
+                        <option value="all" {% if filter_cr == 'all' %}selected{% endif %}>Todos</option>
+                        {% for cr in crs_list %}
+                        <option value="{{ cr }}" {% if filter_cr == cr %}selected{% endif %}>
+                            {{ cr }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Data Inicial</label>
+                    <input 
+                        type="date" 
+                        class="form-control" 
+                        name="data_inicial" 
+                        value="{{ filter_data_inicial }}"
+                        onchange="applyFilters()"
+                    />
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Data Final</label>
+                    <input 
+                        type="date" 
+                        class="form-control" 
+                        name="data_final" 
+                        value="{{ filter_data_final }}"
+                        onchange="applyFilters()"
+                    />
+                </div>
+            </div>
+
+            <div class="flex-end">
+                <button type="button" class="btn btn-outline" onclick="applyFilters()">
+                    <i class="fas fa-search"></i>
+                    Aplicar Filtros
+                </button>
+                <button type="button" class="btn btn-outline" onclick="clearFilters()">
+                    <i class="fas fa-times"></i>
+                    Limpar Filtros
+                </button>
+            </div>
+            
+            <!-- Hidden field for active tab -->
+            <input type="hidden" name="tipo" id="hiddenTipo" value="{{ active_tab }}">
+        </form>
+    </div>
+
+    <!-- Tabs para tipos de relatórios -->
+    <div class="tab-buttons">
+        <button 
+            class="tab-button {% if active_tab == 'EPI' %}active{% endif %}" 
+            onclick="setActiveTab('EPI')"
+        >
+            <i class="fas fa-hard-hat"></i>
+            Inspeção de EPI
+        </button>
+        <button 
+            class="tab-button {% if active_tab == 'APR' %}active{% endif %}" 
+            onclick="setActiveTab('APR')"
+        >
+            <i class="fas fa-car"></i>
+            APR - Viagem Segura
+        </button>
+    </div>
+
+    <!-- Conteúdo EPI -->
+    <div id="tab-EPI" class="tab-content {% if active_tab == 'EPI' %}active{% endif %}">
+        <div class="content-card">
+            <div class="content-card-header">
+                <h3 class="text-lg font-semibold flex items-center gap-2">
+                    <i class="fas fa-hard-hat text-blue-600"></i>
+                    Relatórios de Inspeção de EPI
+                    <span class="badge badge-epi ml-2">
+                        {{ relatorios_epi|length }} relatórios
+                    </span>
+                </h3>
+            </div>
+            <div class="content-card-body">
+                {% if relatorios_epi %}
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Número</th>
+                            <th>Nome</th>
+                            <th>CR</th>
+                            <th>Responsável</th>
+                            <th>Data</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for relatorio in relatorios_epi %}
+                        <tr>
+                            <td class="font-medium">{{ relatorio.numero }}</td>
+                            <td>{{ relatorio.nome }}</td>
+                            <td>
+                                <span class="badge badge-outline">{{ relatorio.cr }}</span>
+                            </td>
+                            <td>{{ relatorio.responsavel }}</td>
+                            <td>{{ relatorio.data|date:"d/m/Y" }}</td>
+                            <td>
+                                <button 
+                                    class="btn btn-outline btn-small" 
+                                    onclick="downloadRelatorio('{{ relatorio.id }}')"
+                                >
+                                    <i class="fas fa-download"></i>
+                                    Baixar
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="empty-state">
+                    <p>Nenhum relatório encontrado com os filtros aplicados.</p>
+                </div>
+                {% endif %}
+                
+                <!-- Paginação EPI -->
+                {% if relatorios_epi and relatorios_epi.has_other_pages %}
+                <div class="pagination-container">
+                    <nav class="pagination">
+                        {% if relatorios_epi.has_previous %}
+                            <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ relatorios_epi.previous_page_number }}" class="pagination-btn">
+                                <i class="fas fa-chevron-left"></i> Anterior
+                            </a>
+                        {% endif %}
+                        
+                        <span class="pagination-info">
+                            Página {{ relatorios_epi.number }} de {{ relatorios_epi.paginator.num_pages }}
+                            ({{ relatorios_epi.paginator.count }} registros)
+                        </span>
+                        
+                        {% if relatorios_epi.has_next %}
+                            <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ relatorios_epi.next_page_number }}" class="pagination-btn">
+                                Próxima <i class="fas fa-chevron-right"></i>
+                            </a>
+                        {% endif %}
+                    </nav>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Conteúdo APR -->
+    <div id="tab-APR" class="tab-content {% if active_tab == 'APR' %}active{% endif %}">
+        <div class="content-card">
+            <div class="content-card-header">
+                <h3 class="text-lg font-semibold flex items-center gap-2">
+                    <i class="fas fa-car text-green-600"></i>
+                    Relatórios APR - Viagem Segura
+                    <span class="badge badge-apr ml-2">
+                        {{ relatorios_apr|length }} relatórios
+                    </span>
+                </h3>
+            </div>
+            <div class="content-card-body">
+                {% if relatorios_apr %}
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Número</th>
+                            <th>Nome</th>
+                            <th>CR</th>
+                            <th>Responsável</th>
+                            <th>Data</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for relatorio in relatorios_apr %}
+                        <tr>
+                            <td class="font-medium">{{ relatorio.numero }}</td>
+                            <td>{{ relatorio.nome }}</td>
+                            <td>
+                                <span class="badge badge-outline">{{ relatorio.cr }}</span>
+                            </td>
+                            <td>{{ relatorio.responsavel }}</td>
+                            <td>{{ relatorio.data|date:"d/m/Y" }}</td>
+                            <td>
+                                <button 
+                                    class="btn btn-outline btn-small" 
+                                    onclick="downloadRelatorio('{{ relatorio.id }}')"
+                                >
+                                    <i class="fas fa-download"></i>
+                                    Baixar
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="empty-state">
+                    <p>Nenhum relatório encontrado com os filtros aplicados.</p>
+                </div>
+                {% endif %}
+                
+                <!-- Paginação APR -->
+                {% if relatorios_apr and relatorios_apr.has_other_pages %}
+                <div class="pagination-container">
+                    <nav class="pagination">
+                        {% if relatorios_apr.has_previous %}
+                            <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ relatorios_apr.previous_page_number }}" class="pagination-btn">
+                                <i class="fas fa-chevron-left"></i> Anterior
+                            </a>
+                        {% endif %}
+                        
+                        <span class="pagination-info">
+                            Página {{ relatorios_apr.number }} de {{ relatorios_apr.paginator.num_pages }}
+                            ({{ relatorios_apr.paginator.count }} registros)
+                        </span>
+                        
+                        {% if relatorios_apr.has_next %}
+                            <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ relatorios_apr.next_page_number }}" class="pagination-btn">
+                                Próxima <i class="fas fa-chevron-right"></i>
+                            </a>
+                        {% endif %}
+                    </nav>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function setActiveTab(tab) {
+    // Atualizar o campo hidden e recarregar a página com o novo tipo
+    document.getElementById('hiddenTipo').value = tab;
+    
+    // Coletar filtros atuais
+    const form = document.querySelector('form');
+    const formData = new FormData(form);
+    formData.set('tipo', tab); // Garantir que o tipo está correto
+    const params = new URLSearchParams(formData).toString();
+    
+    // Recarregar página com o novo tipo
+    window.location.href = '{% url "gestao_a_vista:relatorios" %}?' + params;
+}
+
+function handleEnterKey(event) {
+    if (event.key === 'Enter') {
+        event.preventDefault();
+        applyFilters();
+    }
+}
+
+function applyFilters() {
+    const form = document.getElementById('filtrosForm');
+    const formData = new FormData(form);
+    
+    // Garantir que o tipo atual está definido
+    const activeTab = document.querySelector('.tab-button.active');
+    if (activeTab) {
+        const tabType = activeTab.textContent.includes('EPI') ? 'EPI' : 'APR';
+        formData.set('tipo', tabType);
+    }
+    
+    const params = new URLSearchParams(formData).toString();
+    window.location.href = '{% url "gestao_a_vista:relatorios" %}?' + params;
+}
+
+function clearFilters() {
+    // Limpar todos os campos do formulário
+    const form = document.getElementById('filtrosForm');
+    const inputs = form.querySelectorAll('input[type="text"], input[type="date"]');
+    const selects = form.querySelectorAll('select');
+    
+    inputs.forEach(input => input.value = '');
+    selects.forEach(select => select.value = 'all');
+    
+    // Manter apenas o tipo atual
+    const activeTab = document.querySelector('.tab-button.active');
+    const tabType = activeTab && activeTab.textContent.includes('APR') ? 'APR' : 'EPI';
+    
+    window.location.href = '{% url "gestao_a_vista:relatorios" %}?tipo=' + tabType;
+}
+
+function downloadRelatorio(relatorioId) {
+    // Mostrar indicador de carregamento
+    const button = event.target.closest('button');
+    const originalContent = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Baixando...';
+    button.disabled = true;
+    
+    // URL da view Django que faz proxy para a API externa
+    const downloadUrl = `{% url "gestao_a_vista:relatorios" %}?action=download&id=${relatorioId}`;
+    
+    // Fazer download via proxy Django
+    fetch(downloadUrl, {
+        method: 'GET',
+        headers: {
+            'Accept': 'application/pdf, application/octet-stream, application/json'
+        }
+    })
+    .then(response => {
+        // Verificar se é JSON (erro) ou arquivo
+        const contentType = response.headers.get('content-type');
+        
+        if (contentType && contentType.includes('application/json')) {
+            // É um erro em JSON
+            return response.json().then(errorData => {
+                throw new Error(errorData.message || 'Erro ao baixar relatório');
+            });
+        }
+        
+        if (!response.ok) {
+            throw new Error(`Erro HTTP: ${response.status}`);
+        }
+        
+        // É um arquivo, processar como blob
+        return response.blob();
+    })
+    .then(blob => {
+        // Criar URL temporária para o blob
+        const url = window.URL.createObjectURL(blob);
+        
+        // Criar elemento de download
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = `relatorio_${relatorioId}.pdf`;
+        
+        // Adicionar ao DOM, clicar e remover
+        document.body.appendChild(a);
+        a.click();
+        
+        // Limpar recursos
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        
+        // Mostrar mensagem de sucesso
+        showNotification('Download realizado com sucesso!', 'success');
+    })
+    .catch(error => {
+        console.error('Erro no download:', error);
+        showNotification(error.message || 'Erro ao fazer download do relatório. Tente novamente.', 'error');
+    })
+    .finally(() => {
+        // Restaurar botão
+        button.innerHTML = originalContent;
+        button.disabled = false;
+    });
+}
+
+// Sistema de notificações já está disponível via notifications.min.js incluído no base.html
+</script>
+{% endblock %} 

@@ -1,0 +1,35 @@
+<script>
+    // PWA Install Detection - Detecta se o app já está instalado
+    (function() {
+        function checkIfPWAInstalled() {
+            // Verifica se está rodando em standalone mode (app instalado)
+            if (window.matchMedia('(display-mode: standalone)').matches ||
+                window.navigator.standalone === true) {
+                console.log('[PWA] App está instalado e rodando em modo standalone');
+                const statusEl = document.getElementById('pwa-status');
+                const buttonEl = document.getElementById('pwa-install-button');
+                if (statusEl) statusEl.style.display = 'block';
+                if (buttonEl) buttonEl.style.display = 'none';
+                return true;
+            }
+            return false;
+        }
+
+        // Verifica ao carregar a página
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', checkIfPWAInstalled);
+        } else {
+            checkIfPWAInstalled();
+        }
+
+        // Monitora mudanças no display mode
+        window.matchMedia('(display-mode: standalone)').addEventListener('change', (e) => {
+            if (e.matches) {
+                const statusEl = document.getElementById('pwa-status');
+                const buttonEl = document.getElementById('pwa-install-button');
+                if (statusEl) statusEl.style.display = 'block';
+                if (buttonEl) buttonEl.style.display = 'none';
+            }
+        });
+    })();
+</script>

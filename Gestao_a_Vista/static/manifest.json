@@ -1,0 +1,112 @@
+{
+  "name": "Gestão à Vista - RCO",
+  "short_name": "Gestão à Vista",
+  "description": "Sistema Integrado de Gestão à Vista - Regional Centro Oeste",
+  "start_url": "/home/",
+  "display": "standalone",
+  "background_color": "#1e293b",
+  "theme_color": "#1e293b",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/static/img/icon-72x72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/img/icon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/img/icon-128x128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/img/icon-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/img/icon-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/img/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/img/icon-384x384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/img/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "business"],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "Visualizar dashboard do sistema",
+      "url": "/dashboard/",
+      "icons": [
+        {
+          "src": "/static/img/icon-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Gerador QR Code",
+      "short_name": "QR Code",
+      "description": "Gerar QR Codes",
+      "url": "/qr-generator/",
+      "icons": [
+        {
+          "src": "/static/img/icon-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Gestão da Qualidade",
+      "short_name": "Qualidade",
+      "description": "Acessar gestão da qualidade",
+      "url": "/gestao-qualidade/",
+      "icons": [
+        {
+          "src": "/static/img/icon-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Monitoramento",
+      "short_name": "Monitor",
+      "description": "Acessar monitoramento",
+      "url": "/monitoramento/",
+      "icons": [
+        {
+          "src": "/static/img/icon-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #333; line-height: 1.6; background-color: #f4f4f4; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .header { background-color: #dc3545; color: #ffffff; padding: 20px; text-align: center; }
+        .header h2 { margin: 0; font-size: 22px; text-transform: uppercase; letter-spacing: 1px; }
+        .content { padding: 30px; }
+        .alert-box { background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin-bottom: 25px; border-radius: 4px; color: #856404; }
+        .history-box { background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 6px; padding: 20px; margin-top: 20px; }
+        .history-title { margin-top: 0; color: #495057; border-bottom: 2px solid #dee2e6; padding-bottom: 10px; margin-bottom: 15px; font-size: 16px; text-transform: uppercase; }
+        .history-item { margin-bottom: 10px; font-size: 14px; display: flex; flex-direction: column; border-bottom: 1px dashed #e0e0e0; padding-bottom: 8px; }
+        .history-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .label { font-weight: 700; color: #495057; margin-bottom: 2px; }
+        .value { color: #212529; }
+        .footer { background-color: #343a40; padding: 20px; text-align: center; font-size: 13px; color: #adb5bd; }
+        .footer p { margin: 5px 0; }
+        .img-container { text-align: center; margin-top: 25px; padding: 15px; background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 6px; }
+        .img-container img { max-width: 100%; height: auto; border-radius: 4px; border: 1px solid #ced4da; margin-top: 10px; }
+        .badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; background-color: #6c757d; color: white; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>Alerta de Tratativa / NC</h2>
+        </div>
+        
+        <div class="content">
+            <p style="font-size: 16px; margin-top: 0;">Olá,</p>
+            
+            <div class="alert-box">
+                Foi registrada uma pendência de auditoria que precisa da sua tratativa <strong>IMEDIATA</strong>.
+            </div>
+            
+            <p><span class="label">CR / Local:</span> <span class="value">{{ cr }}</span></p>
+            <p><span class="label">Item não conforme:</span> <strong style="color: #dc3545; font-size: 16px;">{{ item }}</strong></p>
+
+            <div class="history-box">
+                <h4 class="history-title">Histórico Completo do Item</h4>
+                
+                <div class="history-item">
+                    <span class="label">Aberto em:</span> 
+                    <span class="value">{{ plano.data_criacao|date:"d/m/Y H:i"|default:"N/A" }}</span>
+                </div>
+                <div class="history-item">
+                    <span class="label">Status Atual:</span> 
+                    <span class="badge">{{ plano.get_status_display }}</span>
+                </div>
+                <div class="history-item">
+                    <span class="label">Solicitado por:</span> 
+                    <span class="value">
+                        {% if plano.criador_plano %}
+                            {{ plano.criador_plano.get_full_name|default:plano.criador_plano.username }}
+                        {% else %}
+                            Não informado
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="history-item">
+                    <span class="label">Aprovado por:</span> 
+                    <span class="value">
+                        {% if plano.aprovador %}
+                            {{ plano.aprovador.get_full_name|default:plano.aprovador.username }}
+                        {% else %}
+                            Aguardando aprovação / Sistema
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="history-item">
+                    <span class="label">Comprado por:</span> 
+                    <span class="value">
+                        {% if plano.comprador %}
+                            {{ plano.comprador.get_full_name|default:plano.comprador.username }}
+                        {% else %}
+                            N/A
+                        {% endif %}
+                        {% if plano.data_compra %}<br><small style="color:#666;">Data: {{ plano.data_compra|date:"d/m/Y" }}</small>{% endif %}
+                    </span>
+                </div>
+                <div class="history-item">
+                    <span class="label">Recebido / Retirado por:</span> 
+                    <span class="value">
+                        {% if plano.recebedor %}
+                            {{ plano.recebedor }}
+                        {% elif plano.retirante %}
+                            {{ plano.retirante.get_full_name|default:plano.retirante.username }}
+                        {% else %}
+                            N/A
+                        {% endif %}
+                        {% if plano.data_retirada %}<br><small style="color:#666;">Data: {{ plano.data_retirada|date:"d/m/Y H:i" }}</small>{% endif %}
+                    </span>
+                </div>
+            </div>
+
+            {% if url_nota or url_foto %}
+            <div style="margin-top: 30px;">
+                <h4 class="history-title" style="text-align: center; border-bottom: none;">Evidências Anexadas</h4>
+                
+                {% if url_nota %}
+                <div class="img-container">
+                    <p class="label">📄 Nota Fiscal / Comprovante de Compra:</p>
+                    <img src="{{ url_nota }}" alt="Nota Fiscal">
+                </div>
+                {% endif %}
+
+                {% if url_foto %}
+                <div class="img-container">
+                    <p class="label">📸 Evidência / Foto da Retirada:</p>
+                    <img src="{{ url_foto }}" alt="Foto da Retirada">
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <div style="text-align: center; margin-top: 30px;">
+                <a href="{{ link_painel }}" style="display: inline-block; background-color: #dc3545; color: white; text-decoration: none; padding: 12px 25px; border-radius: 5px; font-weight: bold; letter-spacing: 0.5px;">Acessar Painel de Auditoria</a>
+            </div>
+
+        </div>
+        
+        <div class="footer">
+            <p><strong>Por favor, entre em contato com TI para mais informações ou dúvidas.</strong></p>
+            <p style="font-size: 11px; margin-top: 15px; color: #6c757d;">Este é um e-mail automático do sistema Gestão à Vista. Por favor, não responda.</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,32 @@
+<div class="table-responsive">
+    <table class="table table-sm table-hover align-middle bg-white">
+        <thead class="table-light">
+            <tr>
+                <th>Data</th><th>Cliente</th><th>CR</th><th>Gerente</th><th>Nome</th><th>Cargo</th>
+                <th>Posto</th><th>Posto CR</th><th>Horário</th><th>Intervalo</th><th>Situação</th>
+                <th>Cobertura</th><th>Cargo Cobertura</th><th>Situação da Cobertura</th><th>Observação</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in registros_movimentacao %}
+            <tr>
+                <td>{{ r.data_referencia|date:"d/m/Y" }}</td>
+                <td>{{ r.cliente_nome }}</td>
+                <td>{{ r.cr|default:"—" }}</td>
+                <td>{{ r.gerente|default:"—" }}</td>
+                <td>{{ r.nome }}</td>
+                <td>{{ r.cargo|default:"—" }}</td>
+                <td>{{ r.posto|default:"—" }}</td>
+                <td>{{ r.posto_cr|default:"—" }}</td>
+                <td>{{ r.horario|default:"—" }}</td>
+                <td>{{ r.intervalo|default:"—" }}</td>
+                <td><span class="status-pill status-movimentacao">{{ r.get_situacao_display }}</span></td>
+                <td>{{ r.cobertura|default:"—" }}</td>
+                <td>{{ r.cargo_cobertura|default:"—" }}</td>
+                <td>{{ r.get_situacao_cobertura_display|default:"—" }}</td>
+                <td>{{ r.observacao|default:"—" }}</td>
+            </tr>
+            {% empty %}<tr><td colspan="15" class="text-center text-muted py-4">Nenhum registro de movimentação no período.</td></tr>{% endfor %}
+        </tbody>
+    </table>
+</div>

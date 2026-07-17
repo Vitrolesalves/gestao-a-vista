@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Processamento de Plano de Ação</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f1f5f9;
+            height: 100vh;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+        }
+        .icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+        }
+        .sucesso-confirmado { color: #22c55e; }
+        .sucesso-negado { color: #ef4444; }
+        .erro { color: #eab308; }
+        
+        h1 {
+            color: #1e293b;
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+        p {
+            color: #64748b;
+            font-size: 16px;
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+        .btn-fechar {
+            background-color: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background-color 0.3s;
+        }
+        .btn-fechar:hover {
+            background-color: #2563eb;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        {% if status_pagina == 'sucesso' %}
+            {% if acao == 'CONFIRMADO' %}
+                <div class="icon sucesso-confirmado">✓</div>
+                <h1>Solicitação Aprovada</h1>
+                <p>O plano de ação do item <strong>{{ plano.item }}</strong> foi aprovado com sucesso. O Gerente já foi notificado.</p>
+            {% else %}
+                <div class="icon sucesso-negado">✕</div>
+                <h1>Solicitação Rejeitada</h1>
+                <p>O plano de ação do item <strong>{{ plano.item }}</strong> foi negado. O Gerente já foi notificado sobre a decisão.</p>
+            {% endif %}
+
+        {% elif status_pagina == 'ja_processado' %}
+            <div class="icon erro">⚠</div>
+            <h1>Ação já realizada</h1>
+            <p>Este plano de ação já havia sido avaliado anteriormente. Seu status atual no sistema é: <strong>{{ plano.get_status_display }}</strong>.</p>
+
+        {% elif status_pagina == 'erro' %}
+            <div class="icon sucesso-negado">⚠</div>
+            <h1>Ops, algo deu errado</h1>
+            <p>{{ mensagem }}</p>
+        {% endif %}
+
+        <button class="btn-fechar" onclick="window.close();">Pode fechar esta página</button>
+    </div>
+
+    <script>
+        function tentarFechar() {
+            window.close();
+            setTimeout(function() {
+                alert("Você já pode fechar esta aba e voltar para o seu e-mail.");
+            }, 300);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,3053 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Gestão da Qualidade - Gestão à Vista{% endblock %}
+
+{% block page_title %}Gestão da Qualidade{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Custom Dark Theme Colors for Quality Cards */
+    :root {
+        --quality-info: #38BDF8;
+        --quality-success: #22C55E;
+        --quality-warning: #FACC15;
+        --quality-error: #EF4444;
+    }
+
+    /* Stats Cards */
+    .quality-stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .quality-stat-card {
+        background: white;
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        border-left: 4px solid;
+        transition: all 0.3s ease;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .quality-stat-card:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        transform: translateY(-2px);
+    }
+
+    .quality-stat-card.info { border-left-color: var(--quality-info); }
+    .quality-stat-card.success { border-left-color: var(--quality-success); }
+    .quality-stat-card.error { border-left-color: var(--quality-error); }
+    .quality-stat-card.warning { border-left-color: var(--quality-warning); }
+
+    .quality-stat-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+    }
+
+    .quality-stat-icon {
+        width: 3rem;
+        height: 3rem;
+        border-radius: 0.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+    }
+
+    .quality-stat-card.info .quality-stat-icon {
+        background: rgba(56, 189, 248, 0.1);
+        color: var(--quality-info);
+    }
+
+    .quality-stat-card.success .quality-stat-icon {
+        background: rgba(34, 197, 94, 0.1);
+        color: var(--quality-success);
+    }
+
+    .quality-stat-card.error .quality-stat-icon {
+        background: rgba(239, 68, 68, 0.1);
+        color: var(--quality-error);
+    }
+
+    .quality-stat-card.warning .quality-stat-icon {
+        background: rgba(250, 204, 21, 0.1);
+        color: var(--quality-warning);
+    }
+
+    .quality-stat-number {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #1e293b;
+    }
+
+    .quality-stat-label {
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .quality-stat-alert {
+        font-size: 0.75rem;
+        color: var(--quality-error);
+        margin-top: 0.5rem;
+    }
+
+    /* Action Buttons */
+    .quality-actions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .quality-action-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+    }
+
+    .quality-action-btn.info {
+        background: var(--quality-info);
+        color: white;
+    }
+
+    .quality-action-btn.info:hover {
+        background: #0ea5e9;
+    }
+
+    .quality-action-btn.success {
+        background: var(--quality-success);
+        color: white;
+    }
+
+    .quality-action-btn.success:hover {
+        background: #16a34a;
+    }
+
+    .quality-action-btn.error {
+        background: var(--quality-error);
+        color: white;
+    }
+
+    .quality-action-btn.error:hover {
+        background: #dc2626;
+    }
+
+    .quality-action-btn.warning {
+        background: #f59e0b;
+        color: white;
+    }
+
+    .quality-action-btn.warning:hover {
+        background: #d97706;
+    }
+
+    /* Tabs */
+    .quality-tabs {
+        background: white;
+        border-radius: 0.5rem;
+        overflow: hidden;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .quality-tab-nav {
+        display: flex;
+        border-bottom: 1px solid #e2e8f0;
+        overflow-x: auto;
+    }
+
+    .quality-tab-btn {
+        padding: 1rem 1.5rem;
+        border: none;
+        background: transparent;
+        color: #64748b;
+        font-weight: 500;
+        font-size: 0.875rem;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        transition: all 0.3s ease;
+        white-space: nowrap;
+    }
+
+    .quality-tab-btn:hover {
+        color: #1e293b;
+        background: #f8fafc;
+    }
+
+    .quality-tab-btn.active {
+        color: #1e293b;
+        border-bottom-color: var(--quality-info);
+    }
+
+    .quality-tab-content {
+        padding: 1.5rem;
+    }
+
+    .quality-tab-pane {
+        display: none;
+    }
+
+    .quality-tab-pane.active {
+        display: block;
+    }
+
+    /* Tables */
+    .quality-table {
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    .quality-table table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .quality-table th {
+        text-align: left;
+        padding: 0.75rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .quality-table td {
+        padding: 1rem 0.75rem;
+        font-size: 0.875rem;
+        color: #334155;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .quality-table tr:hover {
+        background: #f8fafc;
+    }
+
+    /* Badges */
+    .quality-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+
+    .quality-badge.pending {
+        background: rgba(250, 204, 21, 0.2);
+        color: #ca8a04;
+    }
+
+    .quality-badge.in-progress {
+        background: rgba(56, 189, 248, 0.2);
+        color: #0284c7;
+    }
+
+    .quality-badge.completed {
+        background: rgba(34, 197, 94, 0.2);
+        color: #16a34a;
+    }
+
+    .quality-badge.low {
+        background: rgba(56, 189, 248, 0.2);
+        color: #0284c7;
+    }
+
+    .quality-badge.medium {
+        background: rgba(250, 204, 21, 0.2);
+        color: #ca8a04;
+    }
+
+    .quality-badge.high {
+        background: rgba(239, 68, 68, 0.2);
+        color: #dc2626;
+    }
+
+    .quality-badge.critical {
+        background: #dc2626;
+        color: white;
+    }
+
+    .quality-badge.corrective {
+        background: rgba(239, 68, 68, 0.2);
+        color: #dc2626;
+    }
+
+    .quality-badge.preventive {
+        background: rgba(34, 197, 94, 0.2);
+        color: #16a34a;
+    }
+
+    /* Empty State */
+    .quality-empty {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: #94a3b8;
+    }
+
+    /* Modal Overlay */
+    .quality-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 9999;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .quality-modal.active {
+        display: flex;
+    }
+
+    .quality-modal-content {
+        background: white;
+        border-radius: 0.5rem;
+        padding: 2rem;
+        max-width: 600px;
+        width: 90%;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    .quality-modal-header {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+        color: #1e293b;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .quality-modal-close-icon {
+        cursor: pointer;
+        color: #94a3b8;
+        transition: color 0.2s;
+    }
+
+    .quality-modal-close-icon:hover {
+        color: #475569;
+    }
+
+    .quality-modal-body {
+        color: #334155;
+    }
+
+    /* Form Styles */
+    .quality-form-group {
+        margin-bottom: 1.25rem;
+    }
+
+    .quality-form-label {
+        display: block;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #334155;
+        margin-bottom: 0.5rem;
+    }
+
+    .quality-form-label.required::after {
+        content: '*';
+        color: #EF4444;
+        margin-left: 0.25rem;
+    }
+
+    .quality-form-input,
+    .quality-form-select,
+    .quality-form-textarea {
+        width: 100%;
+        padding: 0.625rem 0.875rem;
+        border: 1px solid #cbd5e1;
+        border-radius: 0.375rem;
+        font-size: 0.875rem;
+        color: #334155;
+        background: white;
+        transition: all 0.2s;
+    }
+
+    .quality-form-input:focus,
+    .quality-form-select:focus,
+    .quality-form-textarea:focus {
+        outline: none;
+        border-color: #38BDF8;
+        box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.1);
+    }
+
+    .quality-form-textarea {
+        resize: vertical;
+        min-height: 80px;
+    }
+
+    .quality-form-error {
+        color: #EF4444;
+        font-size: 0.75rem;
+        margin-top: 0.25rem;
+    }
+
+    .quality-form-actions {
+        display: flex;
+        gap: 0.75rem;
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid #e2e8f0;
+    }
+
+    .quality-btn {
+        padding: 0.625rem 1.25rem;
+        border: none;
+        border-radius: 0.375rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        flex: 1;
+    }
+
+    .quality-btn-primary {
+        background: #38BDF8;
+        color: white;
+    }
+
+    .quality-btn-primary:hover {
+        background: #0ea5e9;
+    }
+
+    .quality-btn-success {
+        background: #22C55E;
+        color: white;
+    }
+
+    .quality-btn-success:hover {
+        background: #16a34a;
+    }
+
+    .quality-btn-error {
+        background: #EF4444;
+        color: white;
+    }
+
+    .quality-btn-error:hover {
+        background: #dc2626;
+    }
+
+    .quality-btn-secondary {
+        background: #e2e8f0;
+        color: #475569;
+    }
+
+    .quality-btn-secondary:hover {
+        background: #cbd5e1;
+    }
+
+    .quality-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    /* Alert Messages */
+    .quality-alert {
+        padding: 0.75rem 1rem;
+        border-radius: 0.375rem;
+        font-size: 0.875rem;
+        margin-bottom: 1rem;
+        display: none;
+    }
+
+    .quality-alert.show {
+        display: block;
+    }
+
+    .quality-alert-success {
+        background: rgba(34, 197, 94, 0.1);
+        color: #16a34a;
+        border: 1px solid rgba(34, 197, 94, 0.3);
+    }
+
+    .quality-alert-error {
+        background: rgba(239, 68, 68, 0.1);
+        color: #dc2626;
+        border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    /* Evidence Upload Section */
+    .evidence-upload-section {
+        background: #f8fafc;
+        border: 2px dashed #cbd5e1;
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        margin-bottom: 1.25rem;
+        transition: all 0.3s ease;
+    }
+
+    .evidence-upload-section:hover {
+        border-color: #38BDF8;
+        background: rgba(56, 189, 248, 0.05);
+    }
+
+    .evidence-upload-header {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #334155;
+    }
+
+    .evidence-upload-icon {
+        width: 1.25rem;
+        height: 1.25rem;
+        color: #38BDF8;
+    }
+
+    .evidence-file-input {
+        display: none;
+    }
+
+    .evidence-upload-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.625rem 1rem;
+        background: white;
+        border: 1px solid #cbd5e1;
+        border-radius: 0.375rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #475569;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .evidence-upload-btn:hover {
+        border-color: #38BDF8;
+        color: #38BDF8;
+        background: rgba(56, 189, 248, 0.05);
+    }
+
+    .evidence-upload-help {
+        font-size: 0.75rem;
+        color: #64748b;
+        margin-top: 0.5rem;
+    }
+
+    /* Evidence Preview Grid */
+    .evidence-preview-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+
+    .evidence-preview-item {
+        position: relative;
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.375rem;
+        overflow: hidden;
+        transition: all 0.2s;
+    }
+
+    .evidence-preview-item:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .evidence-preview-img {
+        width: 100%;
+        height: 120px;
+        object-fit: cover;
+    }
+
+    .evidence-preview-remove {
+        position: absolute;
+        top: 0.25rem;
+        right: 0.25rem;
+        width: 1.5rem;
+        height: 1.5rem;
+        background: rgba(239, 68, 68, 0.9);
+        border: none;
+        border-radius: 0.25rem;
+        color: white;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+    }
+
+    .evidence-preview-remove:hover {
+        background: #dc2626;
+        transform: scale(1.1);
+    }
+
+    .evidence-preview-description {
+        padding: 0.5rem;
+    }
+
+    .evidence-preview-description input {
+        width: 100%;
+        padding: 0.375rem 0.5rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.25rem;
+        font-size: 0.75rem;
+        color: #334155;
+    }
+
+    .evidence-preview-description input:focus {
+        outline: none;
+        border-color: #38BDF8;
+        box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.1);
+    }
+
+    /* Evidence Badge in Table */
+    .evidence-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        padding: 0.25rem 0.625rem;
+        background: rgba(56, 189, 248, 0.1);
+        color: #0284c7;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .evidence-badge:hover {
+        background: rgba(56, 189, 248, 0.2);
+        transform: scale(1.05);
+    }
+
+    .evidence-badge-icon {
+        width: 0.875rem;
+        height: 0.875rem;
+    }
+
+    .no-evidence {
+        color: #94a3b8;
+        font-size: 0.75rem;
+    }
+
+    /* Evidence Gallery Modal */
+    .evidence-gallery-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.8);
+        z-index: 10000;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .evidence-gallery-modal.active {
+        display: flex;
+    }
+
+    .evidence-gallery-content {
+        background: white;
+        border-radius: 0.5rem;
+        padding: 2rem;
+        max-width: 900px;
+        width: 90%;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    .evidence-gallery-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1.5rem;
+    }
+
+    .evidence-gallery-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #1e293b;
+    }
+
+    .evidence-gallery-close {
+        cursor: pointer;
+        color: #94a3b8;
+        transition: color 0.2s;
+    }
+
+    .evidence-gallery-close:hover {
+        color: #475569;
+    }
+
+    .evidence-gallery-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .evidence-gallery-item {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.5rem;
+        overflow: hidden;
+        transition: all 0.3s;
+    }
+
+    .evidence-gallery-item:hover {
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+        transform: translateY(-4px);
+    }
+
+    .evidence-gallery-img-wrapper {
+        position: relative;
+        width: 100%;
+        height: 200px;
+        overflow: hidden;
+        cursor: pointer;
+    }
+
+    .evidence-gallery-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.3s;
+    }
+
+    .evidence-gallery-img-wrapper:hover .evidence-gallery-img {
+        transform: scale(1.1);
+    }
+
+    .evidence-gallery-zoom-icon {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        width: 2rem;
+        height: 2rem;
+        background: rgba(0, 0, 0, 0.6);
+        border-radius: 0.25rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.2s;
+    }
+
+    .evidence-gallery-img-wrapper:hover .evidence-gallery-zoom-icon {
+        opacity: 1;
+    }
+
+    .evidence-gallery-info {
+        padding: 1rem;
+    }
+
+    .evidence-gallery-description {
+        font-size: 0.875rem;
+        color: #334155;
+        margin-bottom: 0.5rem;
+    }
+
+    .evidence-gallery-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .evidence-download-btn {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.375rem;
+        padding: 0.5rem;
+        background: #38BDF8;
+        color: white;
+        border: none;
+        border-radius: 0.375rem;
+        font-size: 0.75rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .evidence-download-btn:hover {
+        background: #0ea5e9;
+    }
+
+    /* Lightbox for Full Image View */
+    .evidence-lightbox {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.95);
+        z-index: 10001;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+    }
+
+    .evidence-lightbox.active {
+        display: flex;
+    }
+
+    .evidence-lightbox-content {
+        max-width: 90%;
+        max-height: 90%;
+        position: relative;
+    }
+
+    .evidence-lightbox-img {
+        max-width: 100%;
+        max-height: 90vh;
+        object-fit: contain;
+        border-radius: 0.5rem;
+    }
+
+    .evidence-lightbox-close {
+        position: absolute;
+        top: -3rem;
+        right: 0;
+        width: 2.5rem;
+        height: 2.5rem;
+        background: rgba(255, 255, 255, 0.1);
+        border: 2px solid white;
+        border-radius: 0.375rem;
+        color: white;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+    }
+
+    .evidence-lightbox-close:hover {
+        background: rgba(255, 255, 255, 0.2);
+        transform: scale(1.1);
+    }
+
+    .evidence-empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: #94a3b8;
+    }
+
+    .evidence-empty-icon {
+        width: 3rem;
+        height: 3rem;
+        margin: 0 auto 1rem;
+        color: #cbd5e1;
+    }
+
+    /* Action Icon Buttons */
+    .quality-btn-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border: none;
+        border-radius: 0.375rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        margin: 0 0.25rem;
+        padding: 0;
+    }
+
+    .quality-btn-icon-edit {
+        background: rgba(56, 189, 248, 0.1);
+        color: #0284c7;
+    }
+
+    .quality-btn-icon-edit:hover {
+        background: rgba(56, 189, 248, 0.2);
+        transform: scale(1.1);
+    }
+
+    .quality-btn-icon-delete {
+        background: rgba(239, 68, 68, 0.1);
+        color: #dc2626;
+    }
+
+    .quality-btn-icon-delete:hover {
+        background: rgba(239, 68, 68, 0.2);
+        transform: scale(1.1);
+    }
+
+    .quality-btn-icon-warning {
+        background: rgba(251, 191, 36, 0.1);
+        color: #f59e0b;
+    }
+
+    .quality-btn-icon-warning:hover {
+        background: rgba(251, 191, 36, 0.2);
+        transform: scale(1.1);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="mb-6">
+    <div class="flex items-center gap-3 mb-2">
+        <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+            </svg>
+        </div>
+        <div>
+            <p class="text-sm text-gray-500 uppercase tracking-wide">Sistema de Gestão e Conformidade</p>
+        </div>
+    </div>
+</div>
+
+<!-- PWA Install Button -->
+<div id="pwa-install-button" style="display: none; margin-bottom: 1.5rem;">
+    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 0.75rem; padding: 1rem 1.5rem; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4); display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: all 0.3s ease;" onclick="this.querySelector('.pwa-install-btn').click()">
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <div style="width: 3rem; height: 3rem; background: rgba(255, 255, 255, 0.2); border-radius: 0.5rem; display: flex; align-items: center; justify-content: center;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+            </div>
+            <div>
+                <h3 style="color: white; font-weight: 600; font-size: 1rem; margin: 0;">Instalar Aplicativo</h3>
+                <p style="color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; margin: 0.25rem 0 0 0;">Use offline e acesse mais rápido!</p>
+            </div>
+        </div>
+        <button class="pwa-install-btn" style="background: white; color: #667eea; border: none; padding: 0.625rem 1.5rem; border-radius: 0.5rem; font-weight: 600; font-size: 0.875rem; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);">
+            Instalar
+        </button>
+    </div>
+</div>
+
+<!-- PWA Status Indicator -->
+<div id="pwa-status" style="display: none; margin-bottom: 1.5rem;">
+    <div style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 0.5rem; padding: 0.875rem 1.25rem; display: flex; align-items: center; gap: 0.75rem;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+        <span style="color: #16a34a; font-size: 0.875rem; font-weight: 500;">App instalado! Acesse pela tela inicial do seu dispositivo.</span>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="quality-stats-grid">
+    <!-- Treinamentos -->
+    <div class="quality-stat-card info">
+        <div class="quality-stat-header">
+            <div class="quality-stat-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
+                    <path d="M6 12v5c3 3 9 3 12 0v-5"></path>
+                </svg>
+            </div>
+            <span class="quality-stat-number">{{ total_treinamentos }}</span>
+        </div>
+        <div class="quality-stat-label">Treinamentos</div>
+    </div>
+
+    <!-- Visitas Técnicas -->
+    <div class="quality-stat-card success">
+        <div class="quality-stat-header">
+            <div class="quality-stat-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 11l3 3L22 4"></path>
+                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                </svg>
+            </div>
+            <span class="quality-stat-number">{{ total_visitas }}</span>
+        </div>
+        <div class="quality-stat-label">Visitas Técnicas</div>
+    </div>
+
+    <!-- Não Conformidades -->
+    <div class="quality-stat-card error">
+        <div class="quality-stat-header">
+            <div class="quality-stat-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+            </div>
+            <span class="quality-stat-number">{{ total_nao_conformidades }}</span>
+        </div>
+        <div class="quality-stat-label">Não Conformidades</div>
+        {% if nao_conformidades_atrasadas > 0 %}
+        <div class="quality-stat-alert">{{ nao_conformidades_atrasadas }} em atraso</div>
+        {% endif %}
+    </div>
+
+    <!-- Planos de Ação -->
+    <div class="quality-stat-card warning">
+        <div class="quality-stat-header">
+            <div class="quality-stat-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 20h9"></path>
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                </svg>
+            </div>
+            <span class="quality-stat-number">{{ total_planos_acao }}</span>
+        </div>
+        <div class="quality-stat-label">Planos de Ação</div>
+    </div>
+</div>
+
+<!-- Action Buttons -->
+<div class="quality-actions">
+    <button class="quality-action-btn info" onclick="openModal('treinamento')">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        Novo Treinamento
+    </button>
+
+    <button class="quality-action-btn success" onclick="openModal('visita')">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        Nova Visita Técnica
+    </button>
+
+    <button class="quality-action-btn warning" onclick="openModal('plano-acao')">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        Novo Plano de Ação
+    </button>
+</div>
+
+<!-- Content Tabs -->
+<div class="quality-tabs">
+    <!-- Tab Navigation -->
+    <div class="quality-tab-nav">
+        <button class="quality-tab-btn active" onclick="switchTab('treinamentos')">Treinamentos</button>
+        <button class="quality-tab-btn" onclick="switchTab('visitas')">Visitas Técnicas</button>
+        <button class="quality-tab-btn" onclick="switchTab('nao_conformidades')">Não Conformidades</button>
+        <button class="quality-tab-btn" onclick="switchTab('planos_acao')">Planos de Ação</button>
+    </div>
+
+    <!-- Tab Content -->
+    <div class="quality-tab-content">
+        <!-- Treinamentos Tab -->
+        <div id="tab-treinamentos" class="quality-tab-pane active">
+            <div class="quality-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Tema</th>
+                            <th>Local</th>
+                            <th>Responsável</th>
+                            <th>Status</th>
+                            <th style="width: 100px; text-align: center;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for treinamento in treinamentos_recentes %}
+                        <tr>
+                            <td>{{ treinamento.data|date:"d/m/Y" }}</td>
+                            <td><strong>{{ treinamento.tema }}</strong></td>
+                            <td>{{ treinamento.local }}</td>
+                            <td>{{ treinamento.responsavel }}</td>
+                            <td>
+                                {% if treinamento.status == 'pendente' %}
+                                <span class="quality-badge pending">Pendente</span>
+                                {% elif treinamento.status == 'em_andamento' %}
+                                <span class="quality-badge in-progress">Em Andamento</span>
+                                {% elif treinamento.status == 'concluido' %}
+                                <span class="quality-badge completed">Concluído</span>
+                                {% endif %}
+                            </td>
+                            <td style="text-align: center;">
+                                <div style="display: flex; justify-content: center; gap: 0.5rem; flex-wrap: nowrap;">
+                                    <button onclick="editItem('treinamento', '{{ treinamento.id }}')" class="quality-btn-icon quality-btn-icon-edit" title="Editar">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                        </svg>
+                                    </button>
+                                    <button onclick="deleteItem('treinamento', '{{ treinamento.id }}')" class="quality-btn-icon quality-btn-icon-delete" title="Deletar">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="3 6 5 6 21 6"></polyline>
+                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                            <line x1="10" y1="11" x2="10" y2="17"></line>
+                                            <line x1="14" y1="11" x2="14" y2="17"></line>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="quality-empty">Nenhum treinamento registrado</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Visitas Técnicas Tab -->
+        <div id="tab-visitas" class="quality-tab-pane">
+            <div class="quality-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Tipo</th>
+                            <th>Local</th>
+                            <th>Responsável</th>
+                            <th>Status</th>
+                            <th>Evidências</th>
+                            <th style="width: 100px; text-align: center;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for visita in visitas_recentes %}
+                        <tr>
+                            <td>{{ visita.data|date:"d/m/Y" }}</td>
+                            <td><strong>{{ visita.get_tipo_display }}</strong></td>
+                            <td>{{ visita.local }}</td>
+                            <td>{{ visita.responsavel }}</td>
+                            <td>
+                                {% if visita.status == 'pendente' %}
+                                <span class="quality-badge pending">Pendente</span>
+                                {% elif visita.status == 'em_andamento' %}
+                                <span class="quality-badge in-progress">Em Andamento</span>
+                                {% elif visita.status == 'concluido' %}
+                                <span class="quality-badge completed">Concluído</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if visita.evidencias_count > 0 %}
+                                <span class="evidence-badge" onclick="event.stopPropagation(); console.log('Badge clicked! ID:', '{{ visita.id }}'); openEvidenceGallery('{{ visita.id }}');">
+                                    <svg class="evidence-badge-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                        <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                                        <polyline points="21 15 16 10 5 21"></polyline>
+                                    </svg>
+                                    {{ visita.evidencias_count }} foto{{ visita.evidencias_count|pluralize }}
+                                </span>
+                                {% else %}
+                                <span class="no-evidence">Sem evidências</span>
+                                {% endif %}
+                            </td>
+                            <td style="text-align: center;">
+                                <div style="display: flex; justify-content: center; gap: 0.5rem; flex-wrap: nowrap;">
+                                    <button onclick="editItem('visita-tecnica', '{{ visita.id }}')" class="quality-btn-icon quality-btn-icon-edit" title="Editar">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                        </svg>
+                                    </button>
+                                    <button onclick="deleteItem('visita-tecnica', '{{ visita.id }}')" class="quality-btn-icon quality-btn-icon-delete" title="Deletar">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="3 6 5 6 21 6"></polyline>
+                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                            <line x1="10" y1="11" x2="10" y2="17"></line>
+                                            <line x1="14" y1="11" x2="14" y2="17"></line>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="quality-empty">Nenhuma visita registrada</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Não Conformidades Tab -->
+        <div id="tab-nao_conformidades" class="quality-tab-pane">
+            <div class="quality-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Descrição</th>
+                            <th>Visita Técnica</th>
+                            <th>Classificação</th>
+                            <th>Responsável</th>
+                            <th>Prazo</th>
+                            <th>Status</th>
+                            <th style="width: 140px; text-align: center;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for nc in nao_conformidades_pendentes %}
+                        <tr>
+                            <td>{{ nc.data_identificacao|date:"d/m/Y" }}</td>
+                            <td><strong>{{ nc.descricao|truncatewords:10 }}</strong></td>
+                            <td>
+                                {% if nc.visita_tecnica %}
+                                <a href="#" onclick="showVisitaDetails('{{ nc.visita_tecnica.id }}'); return false;" style="color: #38BDF8; text-decoration: underline;">
+                                    {{ nc.visita_tecnica.get_tipo_display }} - {{ nc.visita_tecnica.data|date:"d/m/Y" }}
+                                </a>
+                                {% else %}
+                                <span style="color: #94a3b8; font-size: 0.75rem;">Manual</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if nc.classificacao == 'baixa' %}
+                                <span class="quality-badge low">Baixa</span>
+                                {% elif nc.classificacao == 'media' %}
+                                <span class="quality-badge medium">Média</span>
+                                {% elif nc.classificacao == 'alta' %}
+                                <span class="quality-badge high">Alta</span>
+                                {% elif nc.classificacao == 'critica' %}
+                                <span class="quality-badge critical">Crítica</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ nc.responsavel }}</td>
+                            <td {% if nc.em_atraso %}style="color: #dc2626;"{% endif %}>
+                                {{ nc.prazo|date:"d/m/Y" }}
+                                {% if nc.em_atraso %}<small>(Atrasado)</small>{% endif %}
+                            </td>
+                            <td>
+                                {% if nc.status == 'pendente' %}
+                                <span class="quality-badge pending">Pendente</span>
+                                {% elif nc.status == 'em_andamento' %}
+                                <span class="quality-badge in-progress">Em Andamento</span>
+                                {% elif nc.status == 'concluido' %}
+                                <span class="quality-badge completed">Concluído</span>
+                                {% endif %}
+                            </td>
+                            <td style="text-align: center;">
+                                <div style="display: flex; justify-content: center; gap: 0.5rem; flex-wrap: nowrap;">
+                                    <button onclick="criarPlanoAcaoParaNC('{{ nc.id }}', '{{ nc.descricao|truncatewords:10|escapejs }}')" class="quality-btn-icon quality-btn-icon-warning" title="Criar Plano de Ação">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M9 11l3 3L22 4"></path>
+                                            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                                            <circle cx="9" cy="9" r="2"></circle>
+                                        </svg>
+                                    </button>
+                                    <button onclick="editItem('nao-conformidade', '{{ nc.id }}')" class="quality-btn-icon quality-btn-icon-edit" title="Editar">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                        </svg>
+                                    </button>
+                                    <button onclick="deleteItem('nao-conformidade', '{{ nc.id }}')" class="quality-btn-icon quality-btn-icon-delete" title="Deletar">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="3 6 5 6 21 6"></polyline>
+                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                            <line x1="10" y1="11" x2="10" y2="17"></line>
+                                            <line x1="14" y1="11" x2="14" y2="17"></line>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="quality-empty">Nenhuma não conformidade pendente</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Planos de Ação Tab -->
+        <div id="tab-planos_acao" class="quality-tab-pane">
+            <div class="quality-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tipo</th>
+                            <th>Descrição</th>
+                            <th>Responsável</th>
+                            <th>Prazo</th>
+                            <th>Status</th>
+                            <th>Evidências</th>
+                            <th style="width: 100px; text-align: center;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for plano in planos_acao %}
+                        <tr>
+                            <td>
+                                {% if plano.tipo_acao == 'corretiva' %}
+                                <span class="quality-badge corrective">Corretiva</span>
+                                {% else %}
+                                <span class="quality-badge preventive">Preventiva</span>
+                                {% endif %}
+                            </td>
+                            <td><strong>{{ plano.descricao|truncatewords:10 }}</strong></td>
+                            <td>{{ plano.responsavel }}</td>
+                            <td>{{ plano.prazo|date:"d/m/Y" }}</td>
+                            <td>
+                                {% if plano.status == 'pendente' %}
+                                <span class="quality-badge pending">Pendente</span>
+                                {% elif plano.status == 'em_andamento' %}
+                                <span class="quality-badge in-progress">Em Andamento</span>
+                                {% elif plano.status == 'concluido' %}
+                                <span class="quality-badge completed">Concluído</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if plano.evidencias_count > 0 %}
+                                <span class="evidence-badge" onclick="event.stopPropagation(); openPlanoAcaoEvidenceGallery('{{ plano.id }}');">
+                                    <svg class="evidence-badge-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                        <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                                        <polyline points="21 15 16 10 5 21"></polyline>
+                                    </svg>
+                                    {{ plano.evidencias_count }} foto{{ plano.evidencias_count|pluralize }}
+                                </span>
+                                {% else %}
+                                <span class="no-evidence">Sem evidências</span>
+                                {% endif %}
+                            </td>
+                            <td style="text-align: center;">
+                                <div style="display: flex; justify-content: center; gap: 0.5rem; flex-wrap: nowrap;">
+                                    <button onclick="editItem('plano-acao', '{{ plano.id }}')" class="quality-btn-icon quality-btn-icon-edit" title="Editar">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                        </svg>
+                                    </button>
+                                    <button onclick="deleteItem('plano-acao', '{{ plano.id }}')" class="quality-btn-icon quality-btn-icon-delete" title="Deletar">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="3 6 5 6 21 6"></polyline>
+                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                            <line x1="10" y1="11" x2="10" y2="17"></line>
+                                            <line x1="14" y1="11" x2="14" y2="17"></line>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="quality-empty">Nenhum plano de ação registrado</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Novo Treinamento -->
+<div id="modal-treinamento" class="quality-modal">
+    <div class="quality-modal-content">
+        <div class="quality-modal-header">
+            <span>Novo Treinamento</span>
+            <svg class="quality-modal-close-icon" onclick="closeModal('treinamento')" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+        </div>
+
+        <div id="alert-treinamento" class="quality-alert"></div>
+
+        <div class="quality-modal-body">
+            <form id="form-treinamento">
+                {% csrf_token %}
+
+                <div class="quality-form-group">
+                    <label class="quality-form-label required" for="treinamento-data">Data</label>
+                    <input type="date" id="treinamento-data" name="data" class="quality-form-input" required>
+                    <div class="quality-form-error" id="error-treinamento-data"></div>
+                </div>
+
+                <div class="quality-form-group">
+                    <label class="quality-form-label required" for="treinamento-tema">Tema</label>
+                    <input type="text" id="treinamento-tema" name="tema" class="quality-form-input" placeholder="Ex: Segurança do Trabalho" required>
+                    <div class="quality-form-error" id="error-treinamento-tema"></div>
+                </div>
+
+                <div class="quality-form-group">
+                    <label class="quality-form-label required" for="treinamento-local">Local/Contrato</label>
+                    <input type="text" id="treinamento-local" name="local" class="quality-form-input" placeholder="Ex: Contrato ABC - Sala 01" required>
+                    <div class="quality-form-error" id="error-treinamento-local"></div>
+                </div>
+
+                <div class="quality-form-group">
+                    <label class="quality-form-label required" for="treinamento-responsavel">Responsável</label>
+                    <input type="text" id="treinamento-responsavel" name="responsavel" class="quality-form-input" placeholder="Nome do responsável" required>
+                    <div class="quality-form-error" id="error-treinamento-responsavel"></div>
+                </div>
+
+                <div class="quality-form-group">
+                    <label class="quality-form-label required" for="treinamento-status">Status</label>
+                    <select id="treinamento-status" name="status" class="quality-form-select" required>
+                        <option value="">Selecione...</option>
+                        <option value="pendente">Pendente</option>
+                        <option value="em_andamento">Em Andamento</option>
+                        <option value="concluido">Concluído</option>
+                    </select>
+                    <div class="quality-form-error" id="error-treinamento-status"></div>
+                </div>
+
+                <div class="quality-form-group">
+                    <label class="quality-form-label" for="treinamento-observacoes">Observações</label>
+                    <textarea id="treinamento-observacoes" name="observacoes" class="quality-form-textarea" placeholder="Informações adicionais (opcional)"></textarea>
+                </div>
+
+                <div class="quality-form-actions">
+                    <button type="button" class="quality-btn quality-btn-secondary" onclick="closeModal('treinamento')">Cancelar</button>
+                    <button type="submit" class="quality-btn quality-btn-primary">Salvar Treinamento</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Nova Visita Técnica -->
+<div id="modal-visita" class="quality-modal">
+    <div class="quality-modal-content">
+        <div class="quality-modal-header">
+            <span>Nova Visita Técnica</span>
+            <svg class="quality-modal-close-icon" onclick="closeModal('visita')" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+        </div>
+
+        <div id="alert-visita" class="quality-alert"></div>
+
+        <div class="quality-modal-body">
+            <form id="form-visita">
+                {% csrf_token %}
+
+                <div class="quality-form-group">
+                    <label class="quality-form-label required" for="visita-data">Data</label>
+                    <input type="date" id="visita-data" name="data" class="quality-form-input" required>
+                    <div class="quality-form-error" id="error-visita-data"></div>
+                </div>
+
+                <div class="quality-form-group">
+                    <label class="quality-form-label required" for="visita-tipo">Tipo</label>
+                    <select id="visita-tipo" name="tipo" class="quality-form-select" required>
+                        <option value="">Selecione...</option>
+                        <option value="inspecao">Inspeção</option>
+                        <option value="auditoria">Auditoria</option>
+                        <option value="visita_tecnica">Visita Técnica</option>
+                    </select>
+                    <div class="quality-form-error" id="error-visita-tipo"></div>
+                </div>
+
+                <div class="quality-form-group">
+                    <label class="quality-form-label required" for="visita-local">Local</label>
+                    <input type="text" id="visita-local" name="local" class="quality-form-input" placeholder="Ex: Contrato XYZ - Unidade 2" required>
+                    <div class="quality-form-error" id="error-visita-local"></div>
+                </div>
+
+                <div class="quality-form-group">
+                    <label class="quality-form-label required" for="visita-responsavel">Responsável</label>
+                    <input type="text" id="visita-responsavel" name="responsavel" class="quality-form-input" placeholder="Nome do responsável" required>
+                    <div class="quality-form-error" id="error-visita-responsavel"></div>
+                </div>
+
+                <div class="quality-form-group">
+                    <label class="quality-form-label required" for="visita-status">Status</label>
+                    <select id="visita-status" name="status" class="quality-form-select" required>
+                        <option value="">Selecione...</option>
+                        <option value="pendente">Pendente</option>
+                        <option value="em_andamento">Em Andamento</option>
+                        <option value="concluido">Concluído</option>
+                    </select>
+                    <div class="quality-form-error" id="error-visita-status"></div>
+                </div>
+
+                <div class="quality-form-group">
+                    <label class="quality-form-label" for="visita-resultado">Resultado da Visita</label>
+                    <select id="visita-resultado" name="resultado" class="quality-form-select" onchange="toggleNaoConformeFields()">
+                        <option value="">Não avaliado</option>
+                        <option value="conforme">Conforme</option>
+                        <option value="nao_conforme">Não Conforme</option>
+                    </select>
+                    <div class="quality-form-error" id="error-visita-resultado"></div>
+                </div>
+
+                <!-- Campos Dinâmicos para Não Conformidade -->
+                <div id="nao-conforme-fields" style="display: none;">
+                    <div class="quality-form-group">
+                        <label class="quality-form-label required" for="visita-prazo-nc">Prazo para Resolução da NC</label>
+                        <input type="date" id="visita-prazo-nc" name="prazo_nc" class="quality-form-input">
+                        <div class="quality-form-error" id="error-visita-prazo-nc"></div>
+                    </div>
+
+                    <div class="quality-form-group">
+                        <label class="quality-form-label required" for="visita-criticidade-nc">Criticidade da Não Conformidade</label>
+                        <select id="visita-criticidade-nc" name="criticidade_nc" class="quality-form-select">
+                            <option value="baixa">Baixa</option>
+                            <option value="media" selected>Média</option>
+                            <option value="alta">Alta</option>
+                            <option value="critica">Crítica</option>
+                        </select>
+                        <div class="quality-form-error" id="error-visita-criticidade-nc"></div>
+                    </div>
+                </div>
+
+                <div class="quality-form-group">
+                    <label class="quality-form-label" for="visita-observacoes">Observações</label>
+                    <textarea id="visita-observacoes" name="observacoes" class="quality-form-textarea" placeholder="Informações adicionais (opcional)"></textarea>
+                </div>
+
+                <!-- Evidence Upload Section -->
+                <div class="evidence-upload-section">
+                    <div class="evidence-upload-header">
+                        <svg class="evidence-upload-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                            <polyline points="21 15 16 10 5 21"></polyline>
+                        </svg>
+                        <span>Evidências Fotográficas</span>
+                    </div>
+
+                    <input
+                        type="file"
+                        id="visita-evidencias"
+                        name="evidencias"
+                        class="evidence-file-input"
+                        accept="image/*"
+                        multiple
+                        onchange="handleEvidenceUpload(event)"
+                    >
+
+                    <label for="visita-evidencias" class="evidence-upload-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                        Selecionar Fotos
+                    </label>
+
+                    <p class="evidence-upload-help">Formatos aceitos: JPG, PNG, GIF (Máx: 5MB por foto)</p>
+
+                    <!-- Preview Grid -->
+                    <div id="evidence-preview-container" class="evidence-preview-grid"></div>
+                </div>
+
+                <div class="quality-form-actions">
+                    <button type="button" class="quality-btn quality-btn-secondary" onclick="closeModal('visita')">Cancelar</button>
+                    <button type="submit" class="quality-btn quality-btn-success">Salvar Visita</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Novo Plano de Ação -->
+<div id="modal-plano-acao" class="quality-modal">
+    <div class="quality-modal-content">
+        <div class="quality-modal-header">
+            <span>Novo Plano de Ação</span>
+            <svg class="quality-modal-close-icon" onclick="closeModal('plano-acao')" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+        </div>
+
+        <div id="alert-plano-acao" class="quality-alert"></div>
+
+        <div class="quality-modal-body">
+            <form id="form-plano-acao">
+                {% csrf_token %}
+
+                <div class="quality-form-group">
+                    <label class="quality-form-label required" for="plano-acao-nao-conformidade">Não Conformidade</label>
+                    <select id="plano-acao-nao-conformidade" name="nao_conformidade_id" class="quality-form-select" required>
+                        <option value="">Selecione uma não conformidade...</option>
+                        {% for nc in nao_conformidades_pendentes %}
+                        <option value="{{ nc.id }}">{{ nc.descricao|truncatewords:15 }} - {{ nc.data_identificacao|date:"d/m/Y" }}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="quality-form-error" id="error-plano-acao-nao-conformidade"></div>
+                </div>
+
+                <div class="quality-form-group">
+                    <label class="quality-form-label required" for="plano-acao-tipo">Tipo de Ação</label>
+                    <select id="plano-acao-tipo" name="tipo_acao" class="quality-form-select" required>
+                        <option value="">Selecione...</option>
+                        <option value="corretiva">Corretiva</option>
+                        <option value="preventiva">Preventiva</option>
+                    </select>
+                    <div class="quality-form-error" id="error-plano-acao-tipo"></div>
+                </div>
+
+                <div class="quality-form-group">
+                    <label class="quality-form-label required" for="plano-acao-descricao">Descrição da Ação</label>
+                    <textarea id="plano-acao-descricao" name="descricao" class="quality-form-textarea" placeholder="Descreva a ação que será tomada" style="min-height: 100px;" required></textarea>
+                    <div class="quality-form-error" id="error-plano-acao-descricao"></div>
+                </div>
+
+                <div class="quality-form-group">
+                    <label class="quality-form-label required" for="plano-acao-responsavel">Responsável</label>
+                    <input type="text" id="plano-acao-responsavel" name="responsavel" class="quality-form-input" placeholder="Nome do responsável pela execução" required>
+                    <div class="quality-form-error" id="error-plano-acao-responsavel"></div>
+                </div>
+
+                <div class="quality-form-group">
+                    <label class="quality-form-label required" for="plano-acao-prazo">Prazo</label>
+                    <input type="date" id="plano-acao-prazo" name="prazo" class="quality-form-input" required>
+                    <div class="quality-form-error" id="error-plano-acao-prazo"></div>
+                </div>
+
+                <div class="quality-form-group">
+                    <label class="quality-form-label required" for="plano-acao-status">Status</label>
+                    <select id="plano-acao-status" name="status" class="quality-form-select" required>
+                        <option value="">Selecione...</option>
+                        <option value="pendente" selected>Pendente</option>
+                        <option value="em_andamento">Em Andamento</option>
+                        <option value="concluido">Concluído</option>
+                    </select>
+                    <div class="quality-form-error" id="error-plano-acao-status"></div>
+                </div>
+
+                <div class="quality-form-group" style="display: flex; align-items: center; gap: 0.5rem; padding-top: 0.5rem;">
+                    <input type="checkbox" id="plano-acao-regulatorio" name="is_regulatory" style="width: 18px; height: 18px; cursor: pointer;">
+                    <label class="quality-form-label" for="plano-acao-regulatorio" style="margin-bottom: 0; cursor: pointer; color: #1e293b; font-weight: bold;">É Regulatório?</label>
+                </div>
+
+                <div class="quality-form-group">
+                    <label class="quality-form-label" for="plano-acao-observacoes">Observações</label>
+                    <textarea id="plano-acao-observacoes" name="observacoes" class="quality-form-textarea" placeholder="Informações adicionais (opcional)"></textarea>
+                </div>
+
+                <!-- Evidence Upload Section for Plano de Ação -->
+                <div class="evidence-upload-section">
+                    <div class="evidence-upload-header">
+                        <svg class="evidence-upload-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                            <polyline points="21 15 16 10 5 21"></polyline>
+                        </svg>
+                        <span>Evidências de Execução</span>
+                    </div>
+
+                    <input
+                        type="file"
+                        id="plano-acao-evidencias"
+                        name="evidencias"
+                        class="evidence-file-input"
+                        accept="image/*,application/pdf"
+                        multiple
+                        onchange="handlePlanoAcaoEvidenceUpload(event)"
+                    >
+
+                    <label for="plano-acao-evidencias" class="evidence-upload-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                        Selecionar Arquivos
+                    </label>
+
+                    <p class="evidence-upload-help">Formatos aceitos: JPG, PNG, GIF, PDF (Máx: 5MB por arquivo)</p>
+
+                    <!-- Preview Grid -->
+                    <div id="plano-acao-evidence-preview-container" class="evidence-preview-grid"></div>
+                </div>
+
+                <div class="quality-form-actions">
+                    <button type="button" class="quality-btn quality-btn-secondary" onclick="closeModal('plano-acao')">Cancelar</button>
+                    <button type="submit" class="quality-btn quality-btn-primary">Salvar Plano de Ação</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Editar Não Conformidade -->
+<div id="modal-nao-conformidade" class="quality-modal">
+    <div class="quality-modal-content">
+        <div class="quality-modal-header">
+            <span>Editar Não Conformidade</span>
+            <svg class="quality-modal-close-icon" onclick="closeModal('nao-conformidade')" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+        </div>
+
+        <div id="alert-nao-conformidade" class="quality-alert"></div>
+
+        <div class="quality-modal-body">
+            <form id="form-nao-conformidade">
+                {% csrf_token %}
+
+                <div class="quality-form-group">
+                    <label class="quality-form-label required" for="nc-data-identificacao">Data de Identificação</label>
+                    <input type="date" id="nc-data-identificacao" name="data_identificacao" class="quality-form-input" required>
+                    <div class="quality-form-error" id="error-nc-data-identificacao"></div>
+                </div>
+
+                <div class="quality-form-group">
+                    <label class="quality-form-label required" for="nc-descricao">Descrição da Não Conformidade</label>
+                    <textarea id="nc-descricao" name="descricao" class="quality-form-textarea" placeholder="Descreva a não conformidade identificada" style="min-height: 100px;" required></textarea>
+                    <div class="quality-form-error" id="error-nc-descricao"></div>
+                </div>
+
+                <div class="quality-form-group">
+                    <label class="quality-form-label required" for="nc-referencia-normativa">Referência Normativa</label>
+                    <input type="text" id="nc-referencia-normativa" name="referencia_normativa" class="quality-form-input" placeholder="Ex: ISO 9001:2015 - Cláusula 8.5.1" required>
+                    <div class="quality-form-error" id="error-nc-referencia-normativa"></div>
+                </div>
+
+                <div class="quality-form-group">
+                    <label class="quality-form-label required" for="nc-classificacao">Classificação</label>
+                    <select id="nc-classificacao" name="classificacao" class="quality-form-select" required>
+                        <option value="">Selecione...</option>
+                        <option value="baixa">Baixa</option>
+                        <option value="media">Média</option>
+                        <option value="alta">Alta</option>
+                        <option value="critica">Crítica</option>
+                    </select>
+                    <div class="quality-form-error" id="error-nc-classificacao"></div>
+                </div>
+
+                <div class="quality-form-group">
+                    <label class="quality-form-label required" for="nc-responsavel">Responsável</label>
+                    <input type="text" id="nc-responsavel" name="responsavel" class="quality-form-input" placeholder="Nome do responsável pela resolução" required>
+                    <div class="quality-form-error" id="error-nc-responsavel"></div>
+                </div>
+
+                <div class="quality-form-group">
+                    <label class="quality-form-label required" for="nc-prazo">Prazo para Resolução</label>
+                    <input type="date" id="nc-prazo" name="prazo" class="quality-form-input" required>
+                    <div class="quality-form-error" id="error-nc-prazo"></div>
+                </div>
+
+                <div class="quality-form-group">
+                    <label class="quality-form-label required" for="nc-status">Status</label>
+                    <select id="nc-status" name="status" class="quality-form-select" required>
+                        <option value="">Selecione...</option>
+                        <option value="pendente">Pendente</option>
+                        <option value="em_andamento">Em Andamento</option>
+                        <option value="concluido">Concluído</option>
+                    </select>
+                    <div class="quality-form-error" id="error-nc-status"></div>
+                </div>
+
+                <div class="quality-form-group">
+                    <label class="quality-form-label" for="nc-data-resolucao">Data de Resolução</label>
+                    <input type="date" id="nc-data-resolucao" name="data_resolucao" class="quality-form-input">
+                    <p class="quality-form-help">Campo opcional - preencher quando a não conformidade for resolvida</p>
+                </div>
+
+                <div class="quality-form-actions">
+                    <button type="button" class="quality-btn quality-btn-secondary" onclick="closeModal('nao-conformidade')">Cancelar</button>
+                    <button type="submit" class="quality-btn quality-btn-primary">Salvar Não Conformidade</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Evidence Gallery Modal -->
+<div id="evidence-gallery-modal" class="evidence-gallery-modal">
+    <div class="evidence-gallery-content">
+        <div class="evidence-gallery-header">
+            <div class="evidence-gallery-title">Evidências da Visita Técnica</div>
+            <svg class="evidence-gallery-close" onclick="closeEvidenceGallery()" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+        </div>
+
+        <div id="evidence-gallery-grid" class="evidence-gallery-grid">
+            <!-- Evidence items will be loaded here dynamically -->
+        </div>
+    </div>
+</div>
+
+<!-- Evidence Lightbox -->
+<div id="evidence-lightbox" class="evidence-lightbox" onclick="closeLightbox()">
+    <div class="evidence-lightbox-content">
+        <button class="evidence-lightbox-close" onclick="closeLightbox()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+        </button>
+        <img id="evidence-lightbox-img" class="evidence-lightbox-img" src="" alt="Evidence">
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Evidence Management
+    let evidenceFiles = [];
+    let evidenceDescriptions = {};
+
+    // Handle Evidence File Upload
+    function handleEvidenceUpload(event) {
+        const files = Array.from(event.target.files);
+        const previewContainer = document.getElementById('evidence-preview-container');
+        const maxSize = 5 * 1024 * 1024; // 5MB
+
+        files.forEach((file, index) => {
+            // Validate file size
+            if (file.size > maxSize) {
+                showAlert('visita', `A foto "${file.name}" excede o tamanho máximo de 5MB.`, false);
+                return;
+            }
+
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                showAlert('visita', `O arquivo "${file.name}" não é uma imagem válida.`, false);
+                return;
+            }
+
+            // Add to evidence files array
+            const fileId = Date.now() + index;
+            evidenceFiles.push({ id: fileId, file: file });
+
+            // Create preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const previewItem = document.createElement('div');
+                previewItem.className = 'evidence-preview-item';
+                previewItem.dataset.fileId = fileId;
+
+                previewItem.innerHTML = `
+                    <img src="${e.target.result}" alt="${file.name}" class="evidence-preview-img">
+                    <button type="button" class="evidence-preview-remove" onclick="removeEvidence(${fileId})">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                    <div class="evidence-preview-description">
+                        <input
+                            type="text"
+                            placeholder="Descrição (opcional)"
+                            data-file-id="${fileId}"
+                            onchange="updateEvidenceDescription(${fileId}, this.value)"
+                        >
+                    </div>
+                `;
+
+                previewContainer.appendChild(previewItem);
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // Clear file input to allow re-selecting same file
+        event.target.value = '';
+    }
+
+    // Remove Evidence Preview
+    function removeEvidence(fileId) {
+        // Remove from array
+        evidenceFiles = evidenceFiles.filter(item => item.id !== fileId);
+
+        // Remove from descriptions
+        delete evidenceDescriptions[fileId];
+
+        // Remove from DOM
+        const previewItem = document.querySelector(`[data-file-id="${fileId}"]`).closest('.evidence-preview-item');
+        if (previewItem) {
+            previewItem.remove();
+        }
+    }
+
+    // Update Evidence Description
+    function updateEvidenceDescription(fileId, description) {
+        evidenceDescriptions[fileId] = description;
+    }
+
+    // Clear All Evidence
+    function clearAllEvidence() {
+        evidenceFiles = [];
+        evidenceDescriptions = {};
+        const previewContainer = document.getElementById('evidence-preview-container');
+        if (previewContainer) {
+            previewContainer.innerHTML = '';
+        }
+    }
+
+    // Open Evidence Gallery
+    function openEvidenceGallery(visitaId) {
+        console.log('=== openEvidenceGallery called ===');
+        console.log('visitaId:', visitaId);
+        console.log('visitaId type:', typeof visitaId);
+
+        const modal = document.getElementById('evidence-gallery-modal');
+        const gridContainer = document.getElementById('evidence-gallery-grid');
+
+        console.log('modal element:', modal);
+        console.log('gridContainer element:', gridContainer);
+
+        if (!modal || !gridContainer) {
+            console.error('ERRO: Elementos do modal não encontrados!');
+            return;
+        }
+
+        // Clear previous content
+        gridContainer.innerHTML = '<div style="text-align:center; padding: 2rem; color: #64748b;">Carregando evidências...</div>';
+
+        // Show modal
+        modal.classList.add('active');
+        console.log('Modal classes após add active:', modal.className);
+
+        // Get CSRF token
+        const csrftoken = getCookie('csrftoken');
+        console.log('CSRF token:', csrftoken);
+
+        const apiUrl = `/api/gestao-qualidade/visita-tecnica/${visitaId}/evidencias/`;
+        console.log('Fazendo fetch para:', apiUrl);
+
+        // Fetch evidence from API
+        fetch(apiUrl, {
+            method: 'GET',
+            headers: {
+                'X-CSRFToken': csrftoken
+            }
+        })
+        .then(response => {
+            console.log('Resposta recebida:', response.status, response.statusText);
+            return response.json();
+        })
+        .then(data => {
+            console.log('Dados recebidos:', data);
+            if (data.evidencias && data.evidencias.length > 0) {
+                gridContainer.innerHTML = '';
+                data.evidencias.forEach(evidence => {
+                    // Usar arquivo_url que vem da API
+                    const imageUrl = evidence.arquivo_url || evidence.imagem_url;
+                    console.log('Evidência:', evidence.id, 'URL:', imageUrl);
+
+                    const item = document.createElement('div');
+                    item.className = 'evidence-gallery-item';
+                    item.innerHTML = `
+                        <div class="evidence-gallery-img-wrapper" onclick="openLightbox('${imageUrl}')">
+                            <img src="${imageUrl}" alt="${evidence.descricao || 'Evidência'}" class="evidence-gallery-img">
+                            <div class="evidence-gallery-zoom-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="11" cy="11" r="8"></circle>
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                    <line x1="11" y1="8" x2="11" y2="14"></line>
+                                    <line x1="8" y1="11" x2="14" y2="11"></line>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="evidence-gallery-info">
+                            <div class="evidence-gallery-description">
+                                ${evidence.descricao || 'Sem descrição'}
+                            </div>
+                            <div class="evidence-gallery-actions">
+                                <a href="${imageUrl}" download class="evidence-download-btn">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                        <polyline points="7 10 12 15 17 10"></polyline>
+                                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                                    </svg>
+                                    Download
+                                </a>
+                            </div>
+                        </div>
+                    `;
+                    gridContainer.appendChild(item);
+                });
+            } else {
+                gridContainer.innerHTML = `
+                    <div class="evidence-empty-state">
+                        <svg class="evidence-empty-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                            <polyline points="21 15 16 10 5 21"></polyline>
+                        </svg>
+                        <p>Nenhuma evidência encontrada</p>
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('=== ERRO ao carregar evidências ===');
+            console.error('Error:', error);
+            console.error('Error type:', typeof error);
+            console.error('Error stack:', error.stack);
+            gridContainer.innerHTML = `
+                <div class="evidence-empty-state">
+                    <p style="color: #dc2626;">Erro ao carregar evidências. Tente novamente.</p>
+                    <small style="color: #64748b; display: block; margin-top: 0.5rem;">Verifique o console para mais detalhes</small>
+                </div>
+            `;
+        });
+    }
+
+    // Close Evidence Gallery
+    function closeEvidenceGallery() {
+        const modal = document.getElementById('evidence-gallery-modal');
+        modal.classList.remove('active');
+    }
+
+    // Open Lightbox
+    function openLightbox(imageUrl) {
+        event.stopPropagation();
+        const lightbox = document.getElementById('evidence-lightbox');
+        const img = document.getElementById('evidence-lightbox-img');
+        img.src = imageUrl;
+        lightbox.classList.add('active');
+    }
+
+    // Close Lightbox
+    function closeLightbox() {
+        const lightbox = document.getElementById('evidence-lightbox');
+        lightbox.classList.remove('active');
+    }
+
+    // Show Visita Details (opens evidence gallery)
+    function showVisitaDetails(visitaId) {
+        openEvidenceGallery(visitaId);
+    }
+
+    // Close gallery on overlay click
+    document.addEventListener('DOMContentLoaded', function() {
+        const galleryModal = document.getElementById('evidence-gallery-modal');
+        if (galleryModal) {
+            galleryModal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeEvidenceGallery();
+                }
+            });
+        }
+    });
+
+    // Tab Switching
+    function switchTab(tabName) {
+        // Remove active from all tabs
+        document.querySelectorAll('.quality-tab-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelectorAll('.quality-tab-pane').forEach(pane => {
+            pane.classList.remove('active');
+        });
+
+        // Add active to selected tab
+        event.target.classList.add('active');
+        document.getElementById('tab-' + tabName).classList.add('active');
+    }
+
+    // Modal Functions
+    function openModal(type) {
+        const modal = document.getElementById('modal-' + type);
+        modal.classList.add('active');
+
+        // Reset form and alerts when opening
+        const form = document.getElementById('form-' + type);
+        if (form) {
+            form.reset();
+            clearFormErrors(type);
+        }
+        hideAlert(type);
+
+        // Clear edit mode attributes when opening for new record
+        if (modal) {
+            modal.removeAttribute('data-edit-id');
+            modal.removeAttribute('data-edit-tipo');
+
+            // Ensure title is set to default (new record)
+            const titleElement = modal.querySelector('.quality-modal-header span');
+            if (titleElement) {
+                let defaultTitle = '';
+                if (type === 'treinamento') defaultTitle = 'Novo Treinamento';
+                else if (type === 'visita') defaultTitle = 'Nova Visita Técnica';
+                else if (type === 'plano-acao') defaultTitle = 'Novo Plano de Ação';
+
+                if (defaultTitle) titleElement.textContent = defaultTitle;
+            }
+        }
+
+        // Clear evidence displays
+        if (type === 'visita') {
+            clearAllEvidence();
+        }
+        if (type === 'plano-acao') {
+            clearAllPlanoAcaoEvidence();
+        }
+    }
+
+    function closeModal(type) {
+        const modal = document.getElementById('modal-' + type);
+        modal.classList.remove('active');
+        const form = document.getElementById('form-' + type);
+        if (form) {
+            form.reset();
+            clearFormErrors(type);
+        }
+        hideAlert(type);
+
+        // Clear evidence if closing visita modal
+        if (type === 'visita') {
+            clearAllEvidence();
+        }
+
+        // Clear evidence if closing plano-acao modal
+        if (type === 'plano-acao') {
+            clearAllPlanoAcaoEvidence();
+
+            // Re-habilitar o select de NC e limpar flag de origem
+            const selectNC = document.getElementById('plano-acao-nao-conformidade');
+            if (selectNC) {
+                selectNC.disabled = false;
+                selectNC.style.backgroundColor = '';
+                selectNC.style.cursor = '';
+                selectNC.style.pointerEvents = '';
+            }
+            modal.removeAttribute('data-nc-origem');
+        }
+
+        // Clear edit mode attributes and reset title
+        if (modal) {
+            modal.removeAttribute('data-edit-id');
+            modal.removeAttribute('data-edit-tipo');
+
+            // Reset modal title to default
+            const titleElement = modal.querySelector('.quality-modal-header span');
+            if (titleElement) {
+                let defaultTitle = '';
+                if (type === 'treinamento') defaultTitle = 'Novo Treinamento';
+                else if (type === 'visita') defaultTitle = 'Nova Visita Técnica';
+                else if (type === 'plano-acao') defaultTitle = 'Novo Plano de Ação';
+
+                if (defaultTitle) titleElement.textContent = defaultTitle;
+            }
+        }
+    }
+
+    // Criar Plano de Ação para uma Não Conformidade específica
+    function criarPlanoAcaoParaNC(ncId, ncDescricao) {
+        // Abrir modal de plano de ação
+        const modal = document.getElementById('modal-plano-acao');
+        modal.classList.add('active');
+
+        // Reset form e limpar alertas
+        const form = document.getElementById('form-plano-acao');
+        if (form) {
+            form.reset();
+            clearFormErrors('plano-acao');
+        }
+        hideAlert('plano-acao');
+
+        // Limpar evidências
+        clearAllPlanoAcaoEvidence();
+
+        // Pré-preencher o select com a NC
+        const selectNC = document.getElementById('plano-acao-nao-conformidade');
+        if (selectNC) {
+            selectNC.value = ncId;
+            // Adicionar visual feedback de readonly sem usar disabled
+            selectNC.style.backgroundColor = '#475569'; // slate-600 mais escuro
+            selectNC.style.cursor = 'not-allowed';
+            selectNC.style.pointerEvents = 'none'; // Bloquear interação
+        }
+
+        // Marcar flag para saber que veio da NC
+        modal.setAttribute('data-nc-origem', ncId);
+
+        // Atualizar título do modal para contexto
+        const titleElement = modal.querySelector('.quality-modal-header span');
+        if (titleElement) {
+            titleElement.textContent = 'Novo Plano de Ação para NC';
+        }
+    }
+
+    // Close modal on overlay click
+    document.querySelectorAll('.quality-modal').forEach(modal => {
+        modal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.classList.remove('active');
+            }
+        });
+    });
+
+    // Alert Functions
+    function showAlert(type, message, isSuccess) {
+        const alert = document.getElementById('alert-' + type);
+        alert.className = 'quality-alert show ' + (isSuccess ? 'quality-alert-success' : 'quality-alert-error');
+        alert.textContent = message;
+    }
+
+    function hideAlert(type) {
+        const alert = document.getElementById('alert-' + type);
+        alert.className = 'quality-alert';
+        alert.textContent = '';
+    }
+
+    // Form Error Functions
+    function clearFormErrors(type) {
+        const formId = 'form-' + type;
+        const errorElements = document.querySelectorAll('#' + formId + ' .quality-form-error');
+        errorElements.forEach(el => {
+            el.textContent = '';
+        });
+    }
+
+    function showFieldError(type, fieldName, message) {
+        const errorElement = document.getElementById('error-' + type + '-' + fieldName);
+        if (errorElement) {
+            errorElement.textContent = message;
+        }
+    }
+
+    // CSRF Token Helper
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // Form Submission Handler
+    function handleFormSubmit(event, type, apiUrl) {
+        event.preventDefault();
+
+        const form = event.target;
+        const submitBtn = form.querySelector('button[type="submit"]');
+
+        // Disable submit button
+        submitBtn.disabled = true;
+        const originalText = submitBtn.textContent;
+        submitBtn.textContent = 'Salvando...';
+
+        // Clear previous errors
+        clearFormErrors(type);
+        hideAlert(type);
+
+        // Get CSRF token
+        const csrftoken = getCookie('csrftoken');
+
+        // Check if modal is in edit mode
+        const modal = document.getElementById(`modal-${type}`);
+        const editId = modal ? modal.getAttribute('data-edit-id') : null;
+        const editTipo = modal ? modal.getAttribute('data-edit-tipo') : null;
+        const isEditMode = editId && editTipo;
+
+        // Determine API URL and HTTP method
+        let finalApiUrl = apiUrl;
+        let httpMethod = 'POST';
+
+        if (isEditMode) {
+            // Use PUT for updates and construct update URL
+            httpMethod = 'PUT';
+            finalApiUrl = `/api/gestao-qualidade/${editTipo}/${editId}/atualizar/`;
+            console.log('Edit mode detected, using PUT to:', finalApiUrl);
+        }
+
+        // Prepare request based on type
+        let requestBody;
+        let requestHeaders = {
+            'X-CSRFToken': csrftoken
+        };
+
+        if (type === 'visita') {
+            // Use FormData for visita (even without files, to maintain consistency)
+            const formData = new FormData();
+
+            // Collect form data
+            const formDataObj = new FormData(form);
+            const visitaData = {};
+
+            // Separate 'resultado', 'prazo_nc', 'criticidade_nc' from other fields
+            let resultadoValue = '';
+            let prazoNcValue = '';
+            let criticidadeNcValue = '';
+
+            formDataObj.forEach((value, key) => {
+                if (key !== 'csrfmiddlewaretoken' && key !== 'evidencias' && key !== 'resultado' && key !== 'prazo_nc' && key !== 'criticidade_nc') {
+                    visitaData[key] = value;
+                } else if (key === 'resultado') {
+                    resultadoValue = value;
+                } else if (key === 'prazo_nc') {
+                    prazoNcValue = value;
+                } else if (key === 'criticidade_nc') {
+                    criticidadeNcValue = value;
+                }
+            });
+
+            // Add checklist field (empty object for now, can be enhanced later)
+            visitaData['checklist'] = {};
+
+            // Append the 'data' field as JSON string
+            formData.append('data', JSON.stringify(visitaData));
+
+            // Append the 'resultado' field separately
+            formData.append('resultado', resultadoValue);
+
+            // If resultado is nao_conforme, add prazo_nc and criticidade_nc
+            if (resultadoValue === 'nao_conforme') {
+                formData.append('prazo_nc', prazoNcValue);
+                formData.append('criticidade_nc', criticidadeNcValue);
+            }
+
+            // Add evidence files with descriptions
+            evidenceFiles.forEach((item, index) => {
+                formData.append(`evidencia_${index}`, item.file);
+                const description = evidenceDescriptions[item.id] || '';
+                formData.append(`evidencia_${index}_descricao`, description);
+            });
+
+            requestBody = formData;
+            // Don't set Content-Type header - browser will set it with boundary
+        } else if (type === 'plano-acao') {
+            // Use FormData for plano-acao to support file uploads
+            const formData = new FormData();
+
+            // Collect form data
+            const formDataObj = new FormData(form);
+            const planoData = {};
+
+            formDataObj.forEach((value, key) => {
+                if (key !== 'csrfmiddlewaretoken' && key !== 'evidencias') {
+                    planoData[key] = value;
+                }
+            });
+
+            // Append the 'data' field as JSON string
+            formData.append('data', JSON.stringify(planoData));
+
+            // Add evidence files with descriptions
+            planoAcaoEvidenceFiles.forEach((item, index) => {
+                formData.append(`evidencia_${index}`, item.file);
+                const description = planoAcaoEvidenceDescriptions[item.id] || '';
+                formData.append(`evidencia_${index}_descricao`, description);
+            });
+
+            requestBody = formData;
+            // Don't set Content-Type header - browser will set it with boundary
+        } else {
+            // Use JSON for non-file submissions (treinamento, plano-acao)
+            const formData = new FormData(form);
+            const data = {};
+            formData.forEach((value, key) => {
+                if (key !== 'csrfmiddlewaretoken' && key !== 'evidencias') {
+                    data[key] = value;
+                }
+            });
+
+            requestBody = JSON.stringify(data);
+            requestHeaders['Content-Type'] = 'application/json';
+        }
+
+        // Make AJAX request
+        fetch(finalApiUrl, {
+            method: httpMethod,
+            headers: requestHeaders,
+            body: requestBody
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => {
+                    throw err;
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Success
+            const successMessage = isEditMode ? 'Registro atualizado com sucesso!' : 'Registro salvo com sucesso!';
+            showAlert(type, successMessage, true);
+
+            // Reset form
+            form.reset();
+
+            // Clear evidence if it's a visita form
+            if (type === 'visita') {
+                clearAllEvidence();
+            }
+
+            // Clear evidence if it's a plano-acao form
+            if (type === 'plano-acao') {
+                clearAllPlanoAcaoEvidence();
+            }
+
+            // Clear edit mode attributes
+            if (modal && isEditMode) {
+                modal.removeAttribute('data-edit-id');
+                modal.removeAttribute('data-edit-tipo');
+
+                // Reset modal title to default
+                const titleElement = modal.querySelector('.quality-modal-header span');
+                if (titleElement) {
+                    let defaultTitle = '';
+                    if (type === 'treinamento') defaultTitle = 'Novo Treinamento';
+                    else if (type === 'visita') defaultTitle = 'Nova Visita Técnica';
+                    else if (type === 'plano-acao') defaultTitle = 'Novo Plano de Ação';
+
+                    if (defaultTitle) titleElement.textContent = defaultTitle;
+                }
+            }
+
+            // Wait 1 second then close modal and reload page
+            setTimeout(() => {
+                closeModal(type);
+                location.reload();
+            }, 1000);
+        })
+        .catch(error => {
+            // Error handling
+            if (error.errors) {
+                // Field-specific errors
+                for (const [field, messages] of Object.entries(error.errors)) {
+                    if (Array.isArray(messages)) {
+                        showFieldError(type, field, messages[0]);
+                    }
+                }
+                showAlert(type, 'Por favor, corrija os erros no formulário.', false);
+            } else if (error.error) {
+                showAlert(type, error.error, false);
+            } else if (error.message) {
+                showAlert(type, error.message, false);
+            } else {
+                showAlert(type, 'Erro ao salvar. Tente novamente.', false);
+            }
+        })
+        .finally(() => {
+            // Re-enable submit button
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalText;
+        });
+    }
+
+    // Form Event Listeners
+    document.addEventListener('DOMContentLoaded', function() {
+        // Treinamento Form
+        const formTreinamento = document.getElementById('form-treinamento');
+        if (formTreinamento) {
+            formTreinamento.addEventListener('submit', function(e) {
+                handleFormSubmit(e, 'treinamento', '/api/gestao-qualidade/treinamento/criar/');
+            });
+        }
+
+        // Visita Form
+        const formVisita = document.getElementById('form-visita');
+        if (formVisita) {
+            formVisita.addEventListener('submit', function(e) {
+                handleFormSubmit(e, 'visita', '/api/gestao-qualidade/visita-tecnica/criar/');
+            });
+        }
+
+        // Plano de Ação Form
+        const formPlanoAcao = document.getElementById('form-plano-acao');
+        if (formPlanoAcao) {
+            formPlanoAcao.addEventListener('submit', function(e) {
+                handleFormSubmit(e, 'plano-acao', '/api/gestao-qualidade/plano-acao/criar/');
+            });
+        }
+
+        // Set default date to today for all date inputs when modal opens
+        const dateInputs = document.querySelectorAll('input[type="date"]');
+        const today = new Date().toISOString().split('T')[0];
+        dateInputs.forEach(input => {
+            if (input.id.includes('data') && !input.id.includes('prazo')) {
+                input.value = today;
+            }
+        });
+    });
+
+    // Real-time validation helpers
+    function validateRequired(input) {
+        if (!input.value.trim()) {
+            const fieldName = input.name.replace('_', '-');
+            const modalType = input.closest('form').id.replace('form-', '');
+            showFieldError(modalType, fieldName, 'Este campo é obrigatório.');
+            return false;
+        }
+        return true;
+    }
+
+    // Add blur event listeners for real-time validation
+    document.addEventListener('DOMContentLoaded', function() {
+        const requiredInputs = document.querySelectorAll('.quality-form-input[required], .quality-form-select[required], .quality-form-textarea[required]');
+
+        requiredInputs.forEach(input => {
+            input.addEventListener('blur', function() {
+                if (this.value.trim()) {
+                    // Clear error if field has value
+                    const fieldName = this.name.replace('_', '-');
+                    const modalType = this.closest('form').id.replace('form-', '');
+                    const errorElement = document.getElementById('error-' + modalType + '-' + fieldName);
+                    if (errorElement) {
+                        errorElement.textContent = '';
+                    }
+                }
+            });
+        });
+    });
+
+    // ========================================
+    // TAREFA 1: CAMPOS DINÂMICOS NC
+    // ========================================
+    function toggleNaoConformeFields() {
+        const resultado = document.getElementById('visita-resultado').value;
+        const ncFields = document.getElementById('nao-conforme-fields');
+        const prazoInput = document.getElementById('visita-prazo-nc');
+        const criticidadeInput = document.getElementById('visita-criticidade-nc');
+
+        if (resultado === 'nao_conforme') {
+            ncFields.style.display = 'block';
+            prazoInput.required = true;
+            criticidadeInput.required = true;
+        } else {
+            ncFields.style.display = 'none';
+            prazoInput.required = false;
+            criticidadeInput.required = false;
+            prazoInput.value = '';
+        }
+    }
+
+    // ========================================
+    // FUNCIONALIDADE DE EDICAO
+    // ========================================
+
+    // Helper function to convert date from DD/MM/YYYY to YYYY-MM-DD
+    function formatDateForInput(dateStr) {
+        // Tratar valores undefined, null, objetos, etc
+        if (!dateStr || typeof dateStr !== 'string') {
+            console.log('[formatDateForInput] Valor inválido:', dateStr, 'tipo:', typeof dateStr);
+            return '';
+        }
+
+        // If already in YYYY-MM-DD format, return as is
+        if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+            return dateStr;
+        }
+
+        // Convert DD/MM/YYYY to YYYY-MM-DD
+        if (dateStr.includes('/')) {
+            const parts = dateStr.split('/');
+            if (parts.length === 3) {
+                return `${parts[2]}-${parts[1]}-${parts[0]}`;
+            }
+        }
+
+        return dateStr;
+    }
+
+    function editItem(tipo, id) {
+        console.log(`[EDIT] Iniciando edição - Tipo: ${tipo}, ID: ${id}`);
+
+        // Map tipo to API endpoint and modal ID
+        let apiEndpoint = '';
+        let modalId = '';
+        let modalTitle = '';
+
+        if (tipo === 'treinamento') {
+            apiEndpoint = `/api/gestao-qualidade/treinamento/${id}/`;
+            modalId = 'treinamento';
+            modalTitle = 'Editar Treinamento';
+        } else if (tipo === 'visita-tecnica') {
+            apiEndpoint = `/api/gestao-qualidade/visita-tecnica/${id}/`;
+            modalId = 'visita';
+            modalTitle = 'Editar Visita Técnica';
+        } else if (tipo === 'nao-conformidade') {
+            apiEndpoint = `/api/gestao-qualidade/nao-conformidade/${id}/`;
+            modalId = 'nao-conformidade';
+            modalTitle = 'Editar Não Conformidade';
+        } else if (tipo === 'plano-acao') {
+            apiEndpoint = `/api/gestao-qualidade/plano-acao/${id}/`;
+            modalId = 'plano-acao';
+            modalTitle = 'Editar Plano de Ação';
+        } else {
+            console.error('[EDIT] Tipo desconhecido:', tipo);
+            alert('Erro: tipo de registro desconhecido');
+            return;
+        }
+
+        console.log(`[EDIT] Endpoint: ${apiEndpoint}, Modal ID: ${modalId}`);
+
+        // Fetch data from API
+        fetch(apiEndpoint, {
+            method: 'GET',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(response => {
+            console.log('[EDIT] Response recebida:', {
+                status: response.status,
+                ok: response.ok,
+                statusText: response.statusText,
+                headers: {
+                    contentType: response.headers.get('content-type')
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Erro HTTP! Status: ${response.status} - ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then(responseData => {
+            console.log('[EDIT] Dados JSON parseados com sucesso:', responseData);
+
+            // Extrair dados corretos - pode vir como {success: true, data: {...}} ou direto
+            const data = responseData.data || responseData;
+            console.log('[EDIT] Dados extraídos:', data);
+
+            // Get modal and form elements
+            const modal = document.getElementById(`modal-${modalId}`);
+            const form = document.getElementById(`form-${modalId}`);
+
+            console.log('[EDIT] Elementos encontrados:', {
+                modal: modal ? 'OK' : 'NÃO ENCONTRADO',
+                form: form ? 'OK' : 'NÃO ENCONTRADO',
+                modalId: `modal-${modalId}`,
+                formId: `form-${modalId}`
+            });
+
+            if (!modal || !form) {
+                console.error('[EDIT] ERRO: Modal ou formulário não encontrado!');
+                alert('Erro interno: modal ou formulário não encontrado.');
+                return;
+            }
+
+            // Populate form fields based on type
+            try {
+                if (tipo === 'treinamento') {
+                    console.log('[EDIT] Preenchendo campos de TREINAMENTO');
+                    document.getElementById('treinamento-data').value = formatDateForInput(data.data);
+                    document.getElementById('treinamento-tema').value = data.tema || '';
+                    document.getElementById('treinamento-local').value = data.local || '';
+                    document.getElementById('treinamento-responsavel').value = data.responsavel || '';
+                    document.getElementById('treinamento-status').value = data.status || '';
+                    document.getElementById('treinamento-observacoes').value = data.observacoes || '';
+                    console.log('[EDIT] Campos de treinamento preenchidos com sucesso');
+                }
+                else if (tipo === 'visita-tecnica') {
+                    console.log('[EDIT] Preenchendo campos de VISITA TÉCNICA');
+                    console.log('[EDIT] Campos esperados:', {
+                        data: data.data,
+                        tipo: data.tipo,
+                        local: data.local,
+                        responsavel: data.responsavel,
+                        status: data.status,
+                        resultado_conformidade: data.resultado_conformidade,
+                        prazo_nc: data.prazo_nc,
+                        criticidade_nc: data.criticidade_nc
+                    });
+
+                    // Verificar se os elementos existem antes de atribuir
+                    const visitaData = document.getElementById('visita-data');
+                    const visitaTipo = document.getElementById('visita-tipo');
+                    const visitaLocal = document.getElementById('visita-local');
+                    const visitaResponsavel = document.getElementById('visita-responsavel');
+                    const visitaStatus = document.getElementById('visita-status');
+                    const visitaResultado = document.getElementById('visita-resultado');
+                    const visitaObservacoes = document.getElementById('visita-observacoes');
+
+                    console.log('[EDIT] Elementos de visita encontrados:', {
+                        'visita-data': visitaData ? 'OK' : 'NÃO ENCONTRADO',
+                        'visita-tipo': visitaTipo ? 'OK' : 'NÃO ENCONTRADO',
+                        'visita-local': visitaLocal ? 'OK' : 'NÃO ENCONTRADO',
+                        'visita-responsavel': visitaResponsavel ? 'OK' : 'NÃO ENCONTRADO',
+                        'visita-status': visitaStatus ? 'OK' : 'NÃO ENCONTRADO',
+                        'visita-resultado': visitaResultado ? 'OK' : 'NÃO ENCONTRADO',
+                        'visita-observacoes': visitaObservacoes ? 'OK' : 'NÃO ENCONTRADO'
+                    });
+
+                    if (visitaData) visitaData.value = formatDateForInput(data.data);
+                    if (visitaTipo) visitaTipo.value = data.tipo || '';
+                    if (visitaLocal) visitaLocal.value = data.local || '';
+                    if (visitaResponsavel) visitaResponsavel.value = data.responsavel || '';
+                    if (visitaStatus) visitaStatus.value = data.status || '';
+                    if (visitaResultado) visitaResultado.value = data.resultado_conformidade || '';
+                    if (visitaObservacoes) visitaObservacoes.value = data.observacoes || '';
+
+                    console.log('[EDIT] Campos básicos preenchidos');
+
+                    // Handle NC fields
+                    if (data.resultado_conformidade === 'nao_conforme') {
+                        console.log('[EDIT] Resultado não conforme detectado, preenchendo campos NC');
+                        const visitaPrazoNc = document.getElementById('visita-prazo-nc');
+                        const visitaCriticidadeNc = document.getElementById('visita-criticidade-nc');
+
+                        if (visitaPrazoNc) visitaPrazoNc.value = formatDateForInput(data.prazo_nc);
+                        if (visitaCriticidadeNc) visitaCriticidadeNc.value = data.criticidade_nc || 'media';
+
+                        toggleNaoConformeFields();
+                        console.log('[EDIT] Campos NC preenchidos e visibilidade ajustada');
+                    }
+                    console.log('[EDIT] Campos de visita técnica preenchidos com sucesso');
+                }
+                else if (tipo === 'nao-conformidade') {
+                    console.log('[EDIT] Preenchendo campos de NÃO CONFORMIDADE');
+                    document.getElementById('nc-data-identificacao').value = formatDateForInput(data.data_identificacao);
+                    document.getElementById('nc-descricao').value = data.descricao || '';
+                    document.getElementById('nc-referencia-normativa').value = data.referencia_normativa || '';
+                    document.getElementById('nc-classificacao').value = data.classificacao || '';
+                    document.getElementById('nc-responsavel').value = data.responsavel || '';
+                    document.getElementById('nc-prazo').value = formatDateForInput(data.prazo);
+                    document.getElementById('nc-status').value = data.status || '';
+
+                    const dataResolucaoField = document.getElementById('nc-data-resolucao');
+                    if (dataResolucaoField) {
+                        dataResolucaoField.value = data.data_resolucao ? formatDateForInput(data.data_resolucao) : '';
+                    }
+
+                    console.log('[EDIT] Campos de não conformidade preenchidos com sucesso');
+                }
+                else if (tipo === 'plano-acao') {
+                    console.log('[EDIT] Preenchendo campos de PLANO DE AÇÃO');
+                    document.getElementById('plano-acao-nao-conformidade').value = data.nao_conformidade_id || '';
+                    document.getElementById('plano-acao-tipo').value = data.tipo_acao || '';
+                    document.getElementById('plano-acao-descricao').value = data.descricao || '';
+                    document.getElementById('plano-acao-responsavel').value = data.responsavel || '';
+                    document.getElementById('plano-acao-prazo').value = formatDateForInput(data.prazo);
+                    document.getElementById('plano-acao-status').value = data.status || '';
+                    document.getElementById('plano-acao-observacoes').value = data.observacoes || '';
+                    console.log('[EDIT] Campos de plano de ação preenchidos com sucesso');
+                }
+            } catch (fieldError) {
+                console.error('[EDIT] ERRO ao preencher campos:', fieldError);
+                alert(`Erro ao preencher formulário: ${fieldError.message}`);
+                return;
+            }
+
+            // Mark modal as edit mode
+            modal.setAttribute('data-edit-id', id);
+            modal.setAttribute('data-edit-tipo', tipo);
+            console.log('[EDIT] Modal marcado em modo edição');
+
+            // Change modal title
+            const titleElement = modal.querySelector('.quality-modal-header span');
+            if (titleElement) {
+                titleElement.textContent = modalTitle;
+                console.log('[EDIT] Título do modal atualizado');
+            }
+
+            // Open the modal
+            modal.classList.add('active');
+            clearFormErrors(modalId);
+            hideAlert(modalId);
+            console.log('[EDIT] Modal aberto com sucesso!');
+        })
+        .catch(error => {
+            console.error('[EDIT] ERRO CAPTURADO no catch:', {
+                message: error.message,
+                stack: error.stack,
+                error: error
+            });
+            alert(`Erro ao carregar dados para edição: ${error.message}\n\nVerifique o console para mais detalhes.`);
+        });
+    }
+
+    // ========================================
+    // DELETE FUNCTIONALITY
+    // ========================================
+
+    function deleteItem(tipo, id) {
+        if (!confirm('Tem certeza que deseja deletar este registro?')) {
+            return;
+        }
+
+        const csrftoken = getCookie('csrftoken');
+        const apiUrl = `/api/gestao-qualidade/${tipo}/${id}/deletar/`;
+
+        fetch(apiUrl, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': csrftoken
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Erro ao deletar');
+            }
+            return response.json();
+        })
+        .then(data => {
+            alert('Registro deletado com sucesso!');
+            location.reload();
+        })
+        .catch(error => {
+            console.error('Erro:', error);
+            alert('Erro ao deletar o registro. Tente novamente.');
+        });
+    }
+
+    // ========================================
+    // TAREFA 3: UPLOAD DE EVIDÊNCIAS PLANO DE AÇÃO
+    // ========================================
+    let planoAcaoEvidenceFiles = [];
+    let planoAcaoEvidenceDescriptions = {};
+
+    function handlePlanoAcaoEvidenceUpload(event) {
+        const files = Array.from(event.target.files);
+        const previewContainer = document.getElementById('plano-acao-evidence-preview-container');
+        const maxSize = 5 * 1024 * 1024; // 5MB
+
+        files.forEach((file, index) => {
+            // Validate file size
+            if (file.size > maxSize) {
+                showAlert('plano-acao', `O arquivo "${file.name}" excede o tamanho máximo de 5MB.`, false);
+                return;
+            }
+
+            // Validate file type
+            const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf'];
+            if (!validTypes.includes(file.type)) {
+                showAlert('plano-acao', `O arquivo "${file.name}" não é um formato válido.`, false);
+                return;
+            }
+
+            // Add to evidence files array
+            const fileId = Date.now() + index;
+            planoAcaoEvidenceFiles.push({ id: fileId, file: file });
+
+            // Create preview
+            const previewItem = document.createElement('div');
+            previewItem.className = 'evidence-preview-item';
+            previewItem.dataset.fileId = fileId;
+
+            if (file.type === 'application/pdf') {
+                // PDF preview
+                previewItem.innerHTML = `
+                    <div style="width: 100%; height: 120px; display: flex; align-items: center; justify-content: center; background: #f8fafc; border: 1px solid #e2e8f0;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                            <polyline points="10 9 9 9 8 9"></polyline>
+                        </svg>
+                    </div>
+                    <button type="button" class="evidence-preview-remove" onclick="removePlanoAcaoEvidence(${fileId})">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                    <div class="evidence-preview-description">
+                        <input
+                            type="text"
+                            placeholder="Descrição (opcional)"
+                            data-file-id="${fileId}"
+                            onchange="updatePlanoAcaoEvidenceDescription(${fileId}, this.value)"
+                        >
+                    </div>
+                `;
+                previewContainer.appendChild(previewItem);
+            } else {
+                // Image preview
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewItem.innerHTML = `
+                        <img src="${e.target.result}" alt="${file.name}" class="evidence-preview-img">
+                        <button type="button" class="evidence-preview-remove" onclick="removePlanoAcaoEvidence(${fileId})">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                        </button>
+                        <div class="evidence-preview-description">
+                            <input
+                                type="text"
+                                placeholder="Descrição (opcional)"
+                                data-file-id="${fileId}"
+                                onchange="updatePlanoAcaoEvidenceDescription(${fileId}, this.value)"
+                            >
+                        </div>
+                    `;
+                    previewContainer.appendChild(previewItem);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Clear file input
+        event.target.value = '';
+    }
+
+    function removePlanoAcaoEvidence(fileId) {
+        // Remove from array
+        planoAcaoEvidenceFiles = planoAcaoEvidenceFiles.filter(item => item.id !== fileId);
+
+        // Remove from descriptions
+        delete planoAcaoEvidenceDescriptions[fileId];
+
+        // Remove from DOM
+        const previewItem = document.querySelector(`#plano-acao-evidence-preview-container [data-file-id="${fileId}"]`);
+        if (previewItem) {
+            previewItem.closest('.evidence-preview-item').remove();
+        }
+    }
+
+    function updatePlanoAcaoEvidenceDescription(fileId, description) {
+        planoAcaoEvidenceDescriptions[fileId] = description;
+    }
+
+    function clearAllPlanoAcaoEvidence() {
+        planoAcaoEvidenceFiles = [];
+        planoAcaoEvidenceDescriptions = {};
+        const previewContainer = document.getElementById('plano-acao-evidence-preview-container');
+        if (previewContainer) {
+            previewContainer.innerHTML = '';
+        }
+    }
+
+    // Open Plano de Ação Evidence Gallery
+    function openPlanoAcaoEvidenceGallery(planoId) {
+        const modal = document.getElementById('evidence-gallery-modal');
+        const gridContainer = document.getElementById('evidence-gallery-grid');
+        const title = modal.querySelector('.evidence-gallery-title');
+
+        if (!modal || !gridContainer) {
+            console.error('Elementos do modal não encontrados!');
+            return;
+        }
+
+        // Update title
+        title.textContent = 'Evidências do Plano de Ação';
+
+        // Clear previous content
+        gridContainer.innerHTML = '<div style="text-align:center; padding: 2rem; color: #64748b;">Carregando evidências...</div>';
+
+        // Show modal
+        modal.classList.add('active');
+
+        const csrftoken = getCookie('csrftoken');
+        const apiUrl = `/api/gestao-qualidade/plano-acao/${planoId}/evidencias/`;
+
+        fetch(apiUrl, {
+            method: 'GET',
+            headers: {
+                'X-CSRFToken': csrftoken
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.evidencias && data.evidencias.length > 0) {
+                gridContainer.innerHTML = '';
+                data.evidencias.forEach(evidence => {
+                    const imageUrl = evidence.arquivo_url || evidence.imagem_url;
+
+                    const item = document.createElement('div');
+                    item.className = 'evidence-gallery-item';
+                    item.innerHTML = `
+                        <div class="evidence-gallery-img-wrapper" onclick="openLightbox('${imageUrl}')">
+                            <img src="${imageUrl}" alt="${evidence.descricao || 'Evidência'}" class="evidence-gallery-img">
+                            <div class="evidence-gallery-zoom-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="11" cy="11" r="8"></circle>
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                    <line x1="11" y1="8" x2="11" y2="14"></line>
+                                    <line x1="8" y1="11" x2="14" y2="11"></line>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="evidence-gallery-info">
+                            <div class="evidence-gallery-description">
+                                ${evidence.descricao || 'Sem descrição'}
+                            </div>
+                            <div class="evidence-gallery-actions">
+                                <a href="${imageUrl}" download class="evidence-download-btn">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                        <polyline points="7 10 12 15 17 10"></polyline>
+                                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                                    </svg>
+                                    Download
+                                </a>
+                            </div>
+                        </div>
+                    `;
+                    gridContainer.appendChild(item);
+                });
+            } else {
+                gridContainer.innerHTML = `
+                    <div class="evidence-empty-state">
+                        <svg class="evidence-empty-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                            <polyline points="21 15 16 10 5 21"></polyline>
+                        </svg>
+                        <p>Nenhuma evidência encontrada</p>
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Erro ao carregar evidências:', error);
+            gridContainer.innerHTML = `
+                <div class="evidence-empty-state">
+                    <p style="color: #dc2626;">Erro ao carregar evidências. Tente novamente.</p>
+                </div>
+            `;
+        });
+    }
+
+    // Update closeModal to clear plano acao evidence
+    const originalCloseModal = closeModal;
+    closeModal = function(type) {
+        if (type === 'plano-acao') {
+            clearAllPlanoAcaoEvidence();
+        }
+        originalCloseModal(type);
+    };
+
+    // ============ PWA Install Detection ============
+    // Detecta se o app já está instalado
+    function checkIfPWAInstalled() {
+        // Verifica se está rodando em standalone mode (app instalado)
+        if (window.matchMedia('(display-mode: standalone)').matches ||
+            window.navigator.standalone === true) {
+            console.log('[PWA] App está instalado e rodando em modo standalone');
+            document.getElementById('pwa-status').style.display = 'block';
+            document.getElementById('pwa-install-button').style.display = 'none';
+            return true;
+        }
+        return false;
+    }
+
+    // Verifica ao carregar a página
+    checkIfPWAInstalled();
+
+    // Monitora mudanças no display mode
+    window.matchMedia('(display-mode: standalone)').addEventListener('change', (e) => {
+        if (e.matches) {
+            document.getElementById('pwa-status').style.display = 'block';
+            document.getElementById('pwa-install-button').style.display = 'none';
+        }
+    });
+</script>
+{% endblock %}

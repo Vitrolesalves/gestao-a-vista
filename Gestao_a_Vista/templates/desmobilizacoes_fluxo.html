@@ -1,0 +1,1486 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<style>
+    /* --- Estilos Gerais --- */
+    .desmobilizacoes-container {
+        padding: 1.5rem;
+        background-color: #FFFFFF;
+        min-height: calc(100vh - 60px);
+        display: flex;
+        flex-direction: column;
+        color: #1E293B;
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+
+    .header-section {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+
+    .title-gradient {
+        color: #1A2A45;
+        font-size: 28px;
+        font-weight: 800;
+        margin: 0;
+        text-transform: uppercase;
+        letter-spacing: -0.5px;
+    }
+
+    .subtitle-text {
+        color: #475569;
+        font-size: 0.9rem;
+        margin-top: 4px;
+    }
+
+    .btn-premium {
+        background: #1A2A45;
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 4px 14px rgba(26, 42, 69, 0.2);
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        cursor: pointer;
+        text-decoration: none;
+    }
+
+    .btn-premium:hover {
+        transform: translateY(-2px);
+        background: #111C30;
+        box-shadow: 0 6px 20px rgba(26, 42, 69, 0.35);
+        color: white;
+    }
+
+    /* --- Stats Grid --- */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1.25rem;
+        margin-bottom: 2.5rem;
+    }
+
+    .stat-card {
+        background: #FFFFFF;
+        border: 1px solid #E2E8F0;
+        border-radius: 16px;
+        padding: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1.25rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    .stat-card:hover {
+        transform: translateY(-4px);
+        border-color: #1A2A45;
+        box-shadow: 0 10px 20px rgba(26, 42, 69, 0.06);
+    }
+
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+    }
+
+    .stat-icon.total { background: rgba(26, 42, 69, 0.1); color: #1A2A45; }
+    .stat-icon.andamento { background: rgba(59, 130, 246, 0.12); color: #1D4ED8; }
+    .stat-icon.pausada { background: rgba(245, 158, 11, 0.12); color: #D97706; }
+    .stat-icon.concluida { background: rgba(34, 197, 94, 0.12); color: #15803D; }
+
+    .stat-info h3 {
+        font-size: 0.85rem;
+        color: #64748B;
+        margin: 0;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .stat-info p {
+        font-size: 1.75rem;
+        font-weight: 800;
+        color: #1E293B;
+        margin: 4px 0 0 0;
+    }
+
+    /* --- Kanban Board --- */
+    .kanban-board {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.5rem;
+        align-items: start;
+        flex-grow: 1;
+    }
+
+    @media (max-width: 1024px) {
+        .kanban-board {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .kanban-column {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 20px;
+        padding: 1.25rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        min-height: 500px;
+        transition: all 0.3s ease;
+    }
+
+    .column-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-bottom: 0.75rem;
+        border-bottom: 2px solid #E2E8F0;
+        margin-bottom: 0.5rem;
+    }
+
+    .column-title {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: #0F172A;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .column-count {
+        background: #E2E8F0;
+        color: #475569;
+        font-size: 0.8rem;
+        font-weight: 700;
+        padding: 0.2rem 0.6rem;
+        border-radius: 999px;
+    }
+
+    /* Column Themes */
+    .column-andamento .column-header { border-color: #93C5FD; }
+    .column-andamento .column-title { color: #1E40AF; }
+    .column-pausada .column-header { border-color: #FDE047; }
+    .column-pausada .column-title { color: #9A3412; }
+    .column-concluida .column-header { border-color: #86EFAC; }
+    .column-concluida .column-title { color: #065F46; }
+
+    /* --- Kanban Cards --- */
+    .kanban-cards-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        min-height: 400px;
+    }
+
+    .kanban-card {
+        background: #FFFFFF;
+        border: 1px solid #E2E8F0;
+        border-radius: 16px;
+        padding: 1.25rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .kanban-card:hover {
+        transform: translateY(-4px) scale(1.01);
+        border-color: #CBD5E1;
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.05);
+    }
+
+    .card-cr-tag {
+        background: #F1F5F9;
+        color: #1E293B;
+        font-size: 0.75rem;
+        font-weight: 700;
+        padding: 0.25rem 0.6rem;
+        border-radius: 6px;
+        display: inline-block;
+        margin-bottom: 0.75rem;
+    }
+
+    .card-title {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #0F172A;
+        margin: 0 0 0.5rem 0;
+        line-height: 1.3;
+    }
+
+    .card-desc {
+        font-size: 0.85rem;
+        color: #64748B;
+        margin-bottom: 1rem;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    /* Progress bar */
+    .card-progress-label {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #64748B;
+        margin-bottom: 0.35rem;
+    }
+
+    .progress-bar-bg {
+        background: #E2E8F0;
+        height: 6px;
+        border-radius: 99px;
+        overflow: hidden;
+        margin-bottom: 1.25rem;
+    }
+
+    .progress-bar-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #60A5FA, #34D399);
+        border-radius: 99px;
+        transition: width 0.4s ease;
+    }
+
+    /* Parallel Sector Badges */
+    .sector-badges-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.5rem;
+        border-top: 1px dashed #E2E8F0;
+        padding-top: 1rem;
+    }
+
+    .sector-badge {
+        font-size: 0.75rem;
+        font-weight: 700;
+        padding: 0.3rem 0.5rem;
+        border-radius: 6px;
+        text-align: center;
+        border: 1px solid transparent;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.25rem;
+    }
+
+    .sector-badge.pending {
+        background: #F8FAFC;
+        color: #64748B;
+        border-color: #E2E8F0;
+    }
+
+    .sector-badge.success {
+        background: #ECFDF5;
+        color: #065F46;
+        border-color: #A7F3D0;
+    }
+
+    /* --- Modals --- */
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(15, 23, 42, 0.4);
+        backdrop-filter: blur(4px);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        animation: fadeIn 0.25s ease both;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    .modal-box {
+        background: #FFFFFF;
+        border-radius: 20px;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        width: 100%;
+        max-width: 950px;
+        max-height: 90vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        animation: scaleUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+
+    @keyframes scaleUp {
+        from { transform: scale(0.95); opacity: 0; }
+        to { transform: scale(1); opacity: 1; }
+    }
+
+    .modal-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid #E2E8F0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #F8FAFC;
+    }
+
+    .modal-body {
+        padding: 0;
+        overflow-y: auto;
+        flex-grow: 1;
+        display: flex;
+    }
+
+    .modal-footer {
+        padding: 1.25rem 1.5rem;
+        border-top: 1px solid #E2E8F0;
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        background: #F8FAFC;
+    }
+
+    /* Modal Tabs Layout */
+    .modal-sidebar {
+        width: 240px;
+        border-right: 1px solid #E2E8F0;
+        background: #F8FAFC;
+        display: flex;
+        flex-direction: column;
+        padding: 1rem 0;
+        gap: 0.25rem;
+    }
+
+    .tab-btn {
+        background: transparent;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        text-align: left;
+        font-weight: 600;
+        font-size: 0.85rem;
+        color: #475569;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-left: 4px solid transparent;
+        transition: all 0.2s ease;
+    }
+
+    .tab-btn:hover {
+        background: #F1F5F9;
+        color: #1E293B;
+    }
+
+    .tab-btn.active {
+        background: #EFF6FF;
+        color: #1D4ED8;
+        border-left-color: #3B82F6;
+    }
+
+    .tab-status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+    }
+    .tab-status-dot.pending { background: #CBD5E1; }
+    .tab-status-dot.success { background: #10B981; }
+
+    .modal-content-panel {
+        flex-grow: 1;
+        padding: 2rem;
+        overflow-y: auto;
+    }
+
+    /* Question list item */
+    .question-item {
+        background: #FFFFFF;
+        border: 1px solid #E2E8F0;
+        border-radius: 12px;
+        padding: 1.25rem;
+        margin-bottom: 1.25rem;
+        transition: all 0.2s ease;
+    }
+
+    .question-item:hover {
+        border-color: #CBD5E1;
+    }
+
+    .question-header {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+    }
+
+    .checkbox-premium {
+        width: 20px;
+        height: 20px;
+        border-radius: 6px;
+        border: 2px solid #CBD5E1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+        margin-top: 2px;
+    }
+
+    .checkbox-premium.checked {
+        background: #10B981;
+        border-color: #10B981;
+        color: white;
+    }
+
+    .question-text {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #1E293B;
+        line-height: 1.4;
+    }
+
+    .form-textarea {
+        width: 100%;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 0.6rem 0.8rem;
+        font-size: 0.85rem;
+        color: #334155;
+        resize: vertical;
+        outline: none;
+        transition: border-color 0.2s ease;
+    }
+
+    .form-textarea:focus {
+        border-color: #3B82F6;
+    }
+
+    /* Attachments Style */
+    .attachments-section {
+        margin-top: 1rem;
+        background: #F8FAFC;
+        border-radius: 8px;
+        padding: 0.75rem;
+        border: 1px dashed #E2E8F0;
+    }
+
+    .file-pill {
+        background: #FFFFFF;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        padding: 0.25rem 0.6rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #334155;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+    }
+
+    .file-pill a {
+        color: #1D4ED8;
+        text-decoration: none;
+    }
+
+    .file-pill a:hover {
+        text-decoration: underline;
+    }
+
+    .file-remove-btn {
+        background: transparent;
+        border: none;
+        color: #EF4444;
+        cursor: pointer;
+        padding: 0;
+        font-weight: 800;
+        font-size: 0.8rem;
+        display: flex;
+        align-items: center;
+    }
+
+    .btn-attach {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        background: #E2E8F0;
+        color: #475569;
+        font-size: 0.75rem;
+        font-weight: 700;
+        padding: 0.4rem 0.75rem;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .btn-attach:hover {
+        background: #CBD5E1;
+        color: #1E293B;
+    }
+
+    .close-btn {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #64748B;
+        cursor: pointer;
+        transition: color 0.2s ease;
+    }
+
+    .close-btn:hover {
+        color: #0F172A;
+    }
+
+    .flex-col { display: flex; flex-direction: column; }
+    .flex-row { display: flex; flex-direction: row; }
+    .gap-2 { gap: 0.5rem; }
+    .mb-2 { margin-bottom: 0.5rem; }
+    .mb-4 { margin-bottom: 1rem; }
+    .hidden { display: none !important; }
+    .w-full { width: 100%; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="desmobilizacoes-container">
+    
+    <!-- Header Section -->
+    <div class="header-section">
+        <div>
+            <h1 class="title-gradient">Fluxo de Desmobilização de CR</h1>
+            <div class="subtitle-text">Acompanhamento e encerramento de CR em paralelo por departamento</div>
+        </div>
+        <button class="btn-premium" onclick="openCreateModal()">
+            <svg style="width:20px;height:20px" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            Abrir Desmobilização
+        </button>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon total">
+                <svg style="width:24px; height:24px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/>
+                </svg>
+            </div>
+            <div class="stat-info">
+                <h3>Total de CRs</h3>
+                <p>{{ total_cards }}</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon andamento">
+                <svg style="width:24px; height:24px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                </svg>
+            </div>
+            <div class="stat-info">
+                <h3>Em Andamento</h3>
+                <p>{{ em_andamento_count }}</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon pausada">
+                <svg style="width:24px; height:24px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <div class="stat-info">
+                <h3>Pausadas</h3>
+                <p>{{ pausada_count }}</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon concluida">
+                <svg style="width:24px; height:24px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <div class="stat-info">
+                <h3>Concluídas</h3>
+                <p>{{ concluida_count }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Kanban Board -->
+    <div class="kanban-board">
+        
+        <!-- EM ANDAMENTO -->
+        <div class="kanban-column column-andamento">
+            <div class="column-header">
+                <span class="column-title">
+                    <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#38BDF8;"></span>
+                    Em Andamento
+                </span>
+                <span class="column-count">{{ cards_andamento|length }}</span>
+            </div>
+            <div class="kanban-cards-wrapper" id="lane-andamento">
+                {% for card in cards_andamento %}
+                <div class="kanban-card" id="card-{{ card.id }}" onclick="openDetailsModal('{{ card.id }}')">
+                    <span class="card-cr-tag">{{ card.cr }}</span>
+                    <h4 class="card-title">{{ card.cr }}</h4>
+                    {% if card.cr_descricao %}
+                    <p class="card-desc">{{ card.cr_descricao }}</p>
+                    {% endif %}
+                    
+                    <div style="font-size:0.7rem; color:#64748B; margin-bottom:0.75rem; line-height:1.2;">
+                        Aberto por <strong>{{ card.created_by_name }}</strong> em {{ card.created_at|date:"d/m/Y H:i" }}
+                    </div>
+                    {% if card.data_desmobilizacao %}
+                    <div style="font-size:0.72rem; color:#E11D48; font-weight:700; margin-top:-0.5rem; margin-bottom:0.75rem; display:flex; align-items:center; gap:0.25rem;">
+                        <svg style="width:13px; height:13px; color:#E11D48; flex-shrink:0;" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="16" y1="2" x2="16" y2="6"></line>
+                            <line x1="8" y1="2" x2="8" y2="6"></line>
+                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                        </svg>
+                        <span>Solicitação: {{ card.data_desmobilizacao|date:"d/m/Y" }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="card-progress-label">
+                        <span>Checklist Geral</span>
+                        <span id="card-progress-text-{{ card.id }}">{{ card.concluidas }}/{{ card.total_perguntas }}</span>
+                    </div>
+                    <div class="progress-bar-bg">
+                        <div class="progress-bar-fill" id="card-progress-fill-{{ card.id }}" style="width: {{ card.porcentagem }}%"></div>
+                    </div>
+
+                    <!-- Sector badges -->
+                    <div class="sector-badges-grid" id="card-sectors-grid-{{ card.id }}">
+                        {% for area, stat in card.areas_status.items %}
+                        <div class="sector-badge {% if stat.concluido %}success{% else %}pending{% endif %}" id="card-{{ card.id }}-sector-{{ area }}" title="{% if stat.concluido %}Concluído em: {{ stat.concluido_em }}{% else %}{{ stat.concluidas_count }} de {{ stat.total_count }} concluídas{% endif %}">
+                            {% if stat.concluido %}
+                            ✓ {% if area == 'PEC' %}PEC/ FINANCEIRO{% else %}{{ area }}{% endif %} {% if stat.concluido_em_curto %}({{ stat.concluido_em_curto }}){% endif %}
+                            {% else %}
+                            {% if area == 'PEC' %}PEC/ FINANCEIRO{% else %}{{ area }}{% endif %}
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% empty %}
+                <div style="text-align:center; padding: 3rem 0; color: #94A3B8; font-size: 0.85rem;">Nenhum card em andamento</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- PAUSADA -->
+        <div class="kanban-column column-pausada">
+            <div class="column-header">
+                <span class="column-title">
+                    <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#F59E0B;"></span>
+                    Pausadas
+                </span>
+                <span class="column-count">{{ cards_pausada|length }}</span>
+            </div>
+            <div class="kanban-cards-wrapper" id="lane-pausada">
+                {% for card in cards_pausada %}
+                <div class="kanban-card" id="card-{{ card.id }}" onclick="openDetailsModal('{{ card.id }}')">
+                    <span class="card-cr-tag">{{ card.cr }}</span>
+                    <h4 class="card-title">{{ card.cr }}</h4>
+                    {% if card.cr_descricao %}
+                    <p class="card-desc">{{ card.cr_descricao }}</p>
+                    {% endif %}
+                    
+                    <div style="font-size:0.7rem; color:#64748B; margin-bottom:0.75rem; line-height:1.2;">
+                        Aberto por <strong>{{ card.created_by_name }}</strong> em {{ card.created_at|date:"d/m/Y H:i" }}
+                    </div>
+                    {% if card.data_desmobilizacao %}
+                    <div style="font-size:0.72rem; color:#E11D48; font-weight:700; margin-top:-0.5rem; margin-bottom:0.75rem; display:flex; align-items:center; gap:0.25rem;">
+                        <svg style="width:13px; height:13px; color:#E11D48; flex-shrink:0;" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="16" y1="2" x2="16" y2="6"></line>
+                            <line x1="8" y1="2" x2="8" y2="6"></line>
+                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                        </svg>
+                        <span>Solicitação: {{ card.data_desmobilizacao|date:"d/m/Y" }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="card-progress-label">
+                        <span>Checklist Geral</span>
+                        <span id="card-progress-text-{{ card.id }}">{{ card.concluidas }}/{{ card.total_perguntas }}</span>
+                    </div>
+                    <div class="progress-bar-bg">
+                        <div class="progress-bar-fill" id="card-progress-fill-{{ card.id }}" style="width: {{ card.porcentagem }}%"></div>
+                    </div>
+
+                    <!-- Sector badges -->
+                    <div class="sector-badges-grid" id="card-sectors-grid-{{ card.id }}">
+                        {% for area, stat in card.areas_status.items %}
+                        <div class="sector-badge {% if stat.concluido %}success{% else %}pending{% endif %}" id="card-{{ card.id }}-sector-{{ area }}" title="{% if stat.concluido %}Concluído em: {{ stat.concluido_em }}{% else %}{{ stat.concluidas_count }} de {{ stat.total_count }} concluídas{% endif %}">
+                            {% if stat.concluido %}
+                            ✓ {% if area == 'PEC' %}PEC/ FINANCEIRO{% else %}{{ area }}{% endif %} {% if stat.concluido_em_curto %}({{ stat.concluido_em_curto }}){% endif %}
+                            {% else %}
+                            {% if area == 'PEC' %}PEC/ FINANCEIRO{% else %}{{ area }}{% endif %}
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% empty %}
+                <div style="text-align:center; padding: 3rem 0; color: #94A3B8; font-size: 0.85rem;">Nenhum card pausado</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- CONCLUIDA -->
+        <div class="kanban-column column-concluida">
+            <div class="column-header">
+                <span class="column-title">
+                    <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#10B981;"></span>
+                    Concluídas
+                </span>
+                <span class="column-count">{{ cards_concluida|length }}</span>
+            </div>
+            <div class="kanban-cards-wrapper" id="lane-concluida">
+                {% for card in cards_concluida %}
+                <div class="kanban-card" id="card-{{ card.id }}" onclick="openDetailsModal('{{ card.id }}')">
+                    <span class="card-cr-tag">{{ card.cr }}</span>
+                    <h4 class="card-title">{{ card.cr }}</h4>
+                    {% if card.cr_descricao %}
+                    <p class="card-desc">{{ card.cr_descricao }}</p>
+                    {% endif %}
+                    
+                    <div style="font-size:0.7rem; color:#64748B; margin-bottom:0.75rem; line-height:1.2;">
+                        Aberto por <strong>{{ card.created_by_name }}</strong> em {{ card.created_at|date:"d/m/Y H:i" }}
+                    </div>
+                    {% if card.data_desmobilizacao %}
+                    <div style="font-size:0.72rem; color:#E11D48; font-weight:700; margin-top:-0.5rem; margin-bottom:0.75rem; display:flex; align-items:center; gap:0.25rem;">
+                        <svg style="width:13px; height:13px; color:#E11D48; flex-shrink:0;" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="16" y1="2" x2="16" y2="6"></line>
+                            <line x1="8" y1="2" x2="8" y2="6"></line>
+                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                        </svg>
+                        <span>Solicitação: {{ card.data_desmobilizacao|date:"d/m/Y" }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="card-progress-label">
+                        <span>Checklist Geral</span>
+                        <span id="card-progress-text-{{ card.id }}">{{ card.concluidas }}/{{ card.total_perguntas }}</span>
+                    </div>
+                    <div class="progress-bar-bg">
+                        <div class="progress-bar-fill" id="card-progress-fill-{{ card.id }}" style="width: {{ card.porcentagem }}%"></div>
+                    </div>
+
+                    <!-- Sector badges -->
+                    <div class="sector-badges-grid" id="card-sectors-grid-{{ card.id }}">
+                        {% for area, stat in card.areas_status.items %}
+                        <div class="sector-badge {% if stat.concluido %}success{% else %}pending{% endif %}" id="card-{{ card.id }}-sector-{{ area }}" title="{% if stat.concluido %}Concluído em: {{ stat.concluido_em }}{% else %}{{ stat.concluidas_count }} de {{ stat.total_count }} concluídas{% endif %}">
+                            {% if stat.concluido %}
+                            ✓ {% if area == 'PEC' %}PEC/ FINANCEIRO{% else %}{{ area }}{% endif %} {% if stat.concluido_em_curto %}({{ stat.concluido_em_curto }}){% endif %}
+                            {% else %}
+                            {% if area == 'PEC' %}PEC/ FINANCEIRO{% else %}{{ area }}{% endif %}
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% empty %}
+                <div style="text-align:center; padding: 3rem 0; color: #94A3B8; font-size: 0.85rem;">Nenhum card concluído</div>
+                {% endfor %}
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- MODAL CRIAR DESMOBILIZAÇÃO -->
+<div class="modal-overlay" id="create-modal">
+    <div class="modal-box" style="max-width: 500px;">
+        <div class="modal-header">
+            <h3 style="margin:0; font-weight:800; color:#1A2A45;">ABRIR DESMOBILIZAÇÃO</h3>
+            <button class="close-btn" onclick="closeCreateModal()">&times;</button>
+        </div>
+        <form id="create-form" onsubmit="handleCreateSubmit(event)">
+            {% csrf_token %}
+            <div class="modal-body" style="padding: 1.5rem; display:block;">
+                <div class="flex-col mb-4">
+                    <label style="font-size:0.8rem; font-weight:700; color:#475569; margin-bottom:0.35rem;">CR a ser desmobilizado (Código)*</label>
+                    <input type="text" name="cr" required placeholder="Ex: CR 100234" style="padding:0.6rem 0.8rem; border:1px solid #E2E8F0; border-radius:8px; font-size:0.9rem;">
+                </div>
+                <div class="flex-col mb-4">
+                    <label style="font-size:0.8rem; font-weight:700; color:#475569; margin-bottom:0.35rem;">Descrição do CR / Cliente</label>
+                    <input type="text" name="cr_descricao" placeholder="Ex: Unidade Alpha - Itaú" style="padding:0.6rem 0.8rem; border:1px solid #E2E8F0; border-radius:8px; font-size:0.9rem;">
+                </div>
+                <div class="flex-col">
+                    <label style="font-size:0.8rem; font-weight:700; color:#475569; margin-bottom:0.35rem;">Data de Solicitação</label>
+                    <input type="date" name="data_desmobilizacao" style="padding:0.6rem 0.8rem; border:1px solid #E2E8F0; border-radius:8px; font-size:0.9rem; color: #475569;">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-premium" style="background:#E2E8F0; color:#475569; box-shadow:none;" onclick="closeCreateModal()">Cancelar</button>
+                <button type="submit" class="btn-premium">Abrir Fluxo</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL DETALHES & CHECKLISTS DAS ÁREAS -->
+<div class="modal-overlay" id="details-modal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <div>
+                <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+                    <span class="card-cr-tag" id="modal-cr-tag">CR</span>
+                    <span class="card-cr-tag" id="modal-date-tag" style="background:#FFE4E6; color:#E11D48; border:1px solid #FECDD3; display:none; font-weight:700;"></span>
+                </div>
+                <h3 id="modal-title" style="margin:4px 0 0 0; font-weight:800; color:#1A2A45; font-size:1.3rem;">Checklist de Desmobilização</h3>
+            </div>
+            <button class="close-btn" onclick="closeDetailsModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            
+            <!-- Sidebar with sectors tabs -->
+            <div class="modal-sidebar" id="modal-sidebar-tabs">
+                <!-- Rendered dynamically -->
+            </div>
+
+            <!-- Content Area -->
+            <div class="modal-content-panel">
+                <form id="save-area-form" onsubmit="handleSaveArea(event)">
+                    {% csrf_token %}
+                    <div id="questions-container">
+                        <!-- Questions rendered dynamically -->
+                    </div>
+                </form>
+            </div>
+
+        </div>
+        <div class="modal-footer">
+            <div style="margin-right:auto; display:flex; gap:0.5rem; align-items:center;" id="modal-status-buttons">
+                <!-- Pausar/Retomar buttons -->
+            </div>
+            {% if request.user.role == 'administrador' %}
+            <button type="button" class="btn-premium" style="background:#FEE2E2; color:#991B1B; border:1px solid #FCA5A5; box-shadow:none; display:inline-flex; align-items:center; gap:0.5rem; margin-right:0.5rem;" onclick="excluirCardDesmobilizacao()">
+                <svg style="width:16px; height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+                Excluir
+            </button>
+            {% endif %}
+            <button type="button" class="btn-premium" style="background:#E2E8F0; color:#475569; box-shadow:none;" onclick="closeDetailsModal()">Fechar</button>
+            <button type="submit" form="save-area-form" class="btn-premium" id="btn-save-area">Salvar Respostas</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // State Map for files selected but not yet uploaded
+    let selectedFilesMap = {}; // preguntaId -> Array of File objects
+    // State Map for files deleted from server
+    let deletedFilesMap = {}; // preguntaId -> Array of attachment IDs
+    
+    let currentCardId = null;
+    let currentActiveArea = null;
+    let cardData = null;
+
+    // --- Modal Create ---
+    function openCreateModal() {
+        document.getElementById('create-modal').style.display = 'flex';
+    }
+    function closeCreateModal() {
+        document.getElementById('create-modal').style.display = 'none';
+        document.getElementById('create-form').reset();
+    }
+
+    async function handleCreateSubmit(e) {
+        e.preventDefault();
+        const form = document.getElementById('create-form');
+        const formData = new FormData(form);
+
+        try {
+            Swal.fire({ title: 'Criando fluxo de desmobilização...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+            
+            const response = await fetch('{% url "gestao_a_vista:desmobilizacoes_fluxo_criar" %}', {
+                method: 'POST',
+                body: formData
+            });
+            const result = await response.json();
+            
+            if (result.success) {
+                Swal.fire('Sucesso!', result.message, 'success').then(() => {
+                    location.reload();
+                });
+            } else {
+                Swal.fire('Erro!', result.message, 'error');
+            }
+        } catch (err) {
+            Swal.fire('Erro!', 'Ocorreu um erro na requisição.', 'error');
+        }
+    }
+
+    // --- Modal Details ---
+    async function openDetailsModal(cardId) {
+        currentCardId = cardId;
+        selectedFilesMap = {};
+        deletedFilesMap = {};
+
+        try {
+            Swal.fire({ title: 'Carregando detalhes...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+            
+            const response = await fetch(`{% url "gestao_a_vista:desmobilizacoes_fluxo_card_details" %}?id=${cardId}`);
+            const result = await response.json();
+            
+            Swal.close();
+
+            if (result.success) {
+                cardData = result;
+                document.getElementById('modal-cr-tag').innerText = result.cr;
+                document.getElementById('modal-title').innerText = `${result.cr} - ${result.cr_descricao || ''}`;
+                
+                const dateTag = document.getElementById('modal-date-tag');
+                if (result.data_desmobilizacao) {
+                    dateTag.innerText = `Solicitação: ${result.data_desmobilizacao}`;
+                    dateTag.style.display = 'inline-block';
+                } else {
+                    dateTag.style.display = 'none';
+                }
+                
+                // Set default active tab (SUPRIMENTOS or another)
+                currentActiveArea = 'SUPRIMENTOS';
+                renderTabs();
+                renderQuestionsPanel();
+                renderStatusButtons();
+                
+                document.getElementById('details-modal').style.display = 'flex';
+            } else {
+                Swal.fire('Erro!', result.message, 'error');
+            }
+        } catch (err) {
+            Swal.fire('Erro!', 'Falha ao carregar detalhes.', 'error');
+        }
+    }
+
+    function closeDetailsModal() {
+        document.getElementById('details-modal').style.display = 'none';
+        currentCardId = null;
+        currentActiveArea = null;
+        cardData = null;
+    }
+
+    // --- Tab Renderer ---
+    function renderTabs() {
+        const sidebar = document.getElementById('modal-sidebar-tabs');
+        sidebar.innerHTML = '';
+        
+        const areas = ['SUPRIMENTOS', 'SESMT', 'QUALIDADE', 'PEC', 'PROJETOS', 'TI'];
+        
+        areas.forEach(area => {
+            const btn = document.createElement('button');
+            btn.className = `tab-btn ${currentActiveArea === area ? 'active' : ''}`;
+            btn.type = 'button';
+            btn.onclick = () => switchTab(area);
+            
+            // Check if all questions in this area are completed
+            const areaQuestions = cardData.respostas.filter(r => r.area === area);
+            const isCompleted = areaQuestions.length > 0 && areaQuestions.every(q => q.concluido);
+            
+            const areaStat = cardData.areas_status[area];
+            const conclMsg = (areaStat && areaStat.concluido && areaStat.concluido_em_curto) ? `<span style="font-size:0.65rem; font-weight:normal; color:#10B981; display:block; margin-top:2px;">Concluído: ${areaStat.concluido_em_curto}</span>` : '';
+            
+            const areaDisplay = area === 'PEC' ? 'PEC/ FINANCEIRO' : area;
+            btn.innerHTML = `
+                <div style="display:flex; flex-direction:column; align-items:flex-start; line-height:1.2;">
+                    <span>${areaDisplay}</span>
+                    ${conclMsg}
+                </div>
+                <span class="tab-status-dot ${isCompleted ? 'success' : 'pending'}"></span>
+            `;
+            sidebar.appendChild(btn);
+        });
+    }
+
+    function switchTab(area) {
+        // Save current active tab to avoid losing data or alert user? 
+        // We let them click tabs freely and hit Save Respostas explicitly.
+        currentActiveArea = area;
+        renderTabs();
+        renderQuestionsPanel();
+    }
+
+    // --- Render Questions for Active Sector ---
+    function renderQuestionsPanel() {
+        const container = document.getElementById('questions-container');
+        container.innerHTML = '';
+
+        const areaQuestions = cardData.respostas.filter(r => r.area === currentActiveArea);
+
+        if (areaQuestions.length === 0) {
+            container.innerHTML = `<div style="text-align:center; padding: 2rem; color: #94A3B8;">Nenhuma pergunta configurada.</div>`;
+            return;
+        }
+
+        areaQuestions.forEach(q => {
+            // Initialize structures if not present
+            if (!selectedFilesMap[q.id]) selectedFilesMap[q.id] = [];
+            if (!deletedFilesMap[q.id]) deletedFilesMap[q.id] = [];
+
+            const isChecked = q.concluido;
+
+            const item = document.createElement('div');
+            item.className = 'question-item';
+            
+            item.innerHTML = `
+                <!-- Hidden input to declare which questions are processed -->
+                <input type="hidden" name="pergunta_ids" value="${q.id}">
+                
+                <div class="question-header">
+                    <div class="checkbox-premium ${isChecked ? 'checked' : ''}" id="checkbox-${q.id}" onclick="toggleQuestionCheck('${q.id}')">
+                        <svg style="width:14px;height:14px; display:${isChecked ? 'block' : 'none'}" fill="none" stroke="currentColor" viewBox="0 0 24 24" id="check-icon-${q.id}">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3.5" d="M5 13l4 4L19 7"/>
+                        </svg>
+                    </div>
+                    <input type="hidden" name="concluido_${q.id}" id="concluido-val-${q.id}" value="${isChecked}">
+                    <span class="question-text">${q.texto_pergunta}</span>
+                </div>
+                
+                <div class="flex-col mb-2">
+                    <label style="font-size:0.75rem; font-weight:700; color:#64748B; margin-bottom:0.25rem;">Notas / Comentários</label>
+                    <textarea name="observacoes_${q.id}" rows="2" class="form-textarea" placeholder="Digite observações importantes sobre esta entrega...">${q.resposta_texto}</textarea>
+                </div>
+
+                <!-- Multiple attachments section (Planner list upload style) -->
+                <div class="attachments-section">
+                    <label style="font-size:0.75rem; font-weight:700; color:#64748B; display:block; margin-bottom:0.5rem;">Fotos & Documentos Comprobatórios</label>
+                    
+                    <!-- Existing files from server -->
+                    <div class="flex flex-wrap gap-2 mb-2" id="existing-files-${q.id}">
+                        ${q.anexos.map(an => {
+                            const isDeleted = deletedFilesMap[q.id].includes(an.id);
+                            if (isDeleted) return '';
+                            return `
+                                <span class="file-pill" id="anexo-pill-${an.id}">
+                                    📄 <a href="${an.url}" target="_blank">${an.nome}</a>
+                                    <button type="button" class="file-remove-btn" onclick="markAttachmentDeleted('${q.id}', '${an.id}')">&times;</button>
+                                </span>
+                            `;
+                        }).join('')}
+                    </div>
+
+                    <!-- Selected local files list pending upload -->
+                    <div class="flex flex-wrap gap-2 mb-2" id="selected-files-${q.id}">
+                        <!-- Rendered via JS -->
+                    </div>
+
+                    <!-- Action button -->
+                    <div>
+                        <label class="btn-attach">
+                            <svg style="width:14px;height:14px" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+                            </svg>
+                            Adicionar Arquivo
+                            <input type="file" multiple class="hidden" onchange="handleFileSelection(event, '${q.id}')">
+                        </label>
+                    </div>
+                </div>
+            `;
+            container.appendChild(item);
+            renderSelectedLocalFiles(q.id);
+        });
+    }
+
+    // Toggle checkbox completeness UI state
+    function toggleQuestionCheck(qid) {
+        const box = document.getElementById(`checkbox-${qid}`);
+        const checkIcon = document.getElementById(`check-icon-${qid}`);
+        const valInput = document.getElementById(`concluido-val-${qid}`);
+        
+        if (box.classList.contains('checked')) {
+            box.classList.remove('checked');
+            checkIcon.style.display = 'none';
+            valInput.value = 'false';
+        } else {
+            box.classList.add('checked');
+            checkIcon.style.display = 'block';
+            valInput.value = 'true';
+        }
+    }
+
+    // Mark server attachment for deletion
+    function markAttachmentDeleted(qid, anexoId) {
+        deletedFilesMap[qid].push(anexoId);
+        const pill = document.getElementById(`anexo-pill-${anexoId}`);
+        if (pill) pill.remove();
+    }
+
+    // Handle local file selection per question
+    function handleFileSelection(e, qid) {
+        const files = Array.from(e.target.files);
+        if (files.length === 0) return;
+
+        // Add to our state array
+        selectedFilesMap[qid] = selectedFilesMap[qid].concat(files);
+        renderSelectedLocalFiles(qid);
+        
+        // Clear input value to let them select same file again if they want
+        e.target.value = '';
+    }
+
+    // Render local selected files pills
+    function renderSelectedLocalFiles(qid) {
+        const wrapper = document.getElementById(`selected-files-${qid}`);
+        if (!wrapper) return;
+        wrapper.innerHTML = '';
+
+        selectedFilesMap[qid].forEach((file, index) => {
+            const pill = document.createElement('span');
+            pill.className = 'file-pill';
+            pill.style.borderColor = '#93C5FD';
+            pill.style.background = '#EFF6FF';
+            pill.innerHTML = `
+                📎 <span style="max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${file.name}</span>
+                <button type="button" class="file-remove-btn" onclick="removeLocalFile('${qid}', ${index})">&times;</button>
+            `;
+            wrapper.appendChild(pill);
+        });
+    }
+
+    // Remove local file from pending upload
+    function removeLocalFile(qid, idx) {
+        selectedFilesMap[qid].splice(idx, 1);
+        renderSelectedLocalFiles(qid);
+    }
+
+    // --- Save Sector Responses via AJAX FormData ---
+    async function handleSaveArea(e) {
+        e.preventDefault();
+        
+        const form = document.getElementById('save-area-form');
+        const formData = new FormData(form);
+
+        // Gather all question IDs in active view
+        const areaQuestions = cardData.respostas.filter(r => r.area === currentActiveArea);
+        
+        areaQuestions.forEach(q => {
+            // Append deleted attachments list as stringified JSON
+            formData.append(`delete_anexos_${q.id}`, JSON.stringify(deletedFilesMap[q.id]));
+            
+            // Append local selected files to upload
+            selectedFilesMap[q.id].forEach(file => {
+                formData.append(`anexos_${q.id}`, file);
+            });
+        });
+
+        try {
+            Swal.fire({ title: 'Salvando checklist e anexos...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+            
+            const response = await fetch('{% url "gestao_a_vista:desmobilizacoes_fluxo_salvar" %}', {
+                method: 'POST',
+                body: formData
+            });
+            const result = await response.json();
+            
+            if (result.success) {
+                // Real-time update of background card statistics on the DOM
+                updateKanbanCardDOM(currentCardId, result);
+
+                Swal.fire({
+                    title: 'Salvo!',
+                    text: 'Respostas e arquivos salvos com sucesso.',
+                    icon: 'success',
+                    timer: 1500,
+                    showConfirmButton: false
+                }).then(() => {
+                    // Hot update our local dataset or reload details to refresh UI status
+                    openDetailsModal(currentCardId);
+                });
+            } else {
+                Swal.fire('Erro!', result.message, 'error');
+            }
+        } catch (err) {
+            Swal.fire('Erro!', 'Erro ao salvar dados.', 'error');
+        }
+    }
+
+    // --- Render Status Control buttons ---
+    function renderStatusButtons() {
+        const div = document.getElementById('modal-status-buttons');
+        div.innerHTML = '';
+
+        if (cardData.status === 'em_andamento') {
+            const btn = document.createElement('button');
+            btn.className = 'btn-premium';
+            btn.type = 'button';
+            btn.style.background = '#FBBF24'; // Soft pastel yellow/gold
+            btn.style.color = '#78350F';
+            btn.style.boxShadow = 'none';
+            btn.innerHTML = `
+                <svg style="width:16px; height:16px; display:inline-block; vertical-align:middle; margin-right:6px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>Pausar Fluxo
+            `;
+            btn.onclick = () => updateCardStatus('pausada');
+            div.appendChild(btn);
+        } else if (cardData.status === 'pausada') {
+            const btn = document.createElement('button');
+            btn.className = 'btn-premium';
+            btn.type = 'button';
+            btn.style.background = '#60A5FA'; // Soft pastel blue
+            btn.style.color = '#1E3A8A';
+            btn.style.boxShadow = 'none';
+            btn.innerHTML = `
+                <svg style="width:16px; height:16px; display:inline-block; vertical-align:middle; margin-right:6px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>Retomar Fluxo
+            `;
+            btn.onclick = () => updateCardStatus('em_andamento');
+            div.appendChild(btn);
+        }
+        
+        // If not completed yet, let them manually finalize if they need 
+        if (cardData.status !== 'concluida') {
+            const btnComplete = document.createElement('button');
+            btnComplete.className = 'btn-premium';
+            btnComplete.type = 'button';
+            btnComplete.style.background = '#34D399'; // Soft pastel mint green
+            btnComplete.style.color = '#064E3B';
+            btnComplete.style.boxShadow = 'none';
+            btnComplete.innerHTML = `
+                <svg style="width:16px; height:16px; display:inline-block; vertical-align:middle; margin-right:6px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>Concluir Tudo
+            `;
+            btnComplete.onclick = () => updateCardStatus('concluida');
+            div.appendChild(btnComplete);
+        }
+    }
+
+    async function updateCardStatus(newStatus) {
+        try {
+            Swal.fire({ title: 'Atualizando status...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+            
+            const formData = new FormData();
+            formData.append('id', currentCardId);
+            formData.append('status', newStatus);
+            formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+            const response = await fetch('{% url "gestao_a_vista:desmobilizacoes_fluxo_status" %}', {
+                method: 'POST',
+                body: formData
+            });
+            const result = await response.json();
+            
+            if (result.success) {
+                Swal.close();
+                closeDetailsModal();
+                
+                // Move card to new status column list in real-time
+                moveCardToCorrectLane(result.card_id, result.status);
+                updateLaneCounters();
+
+                Swal.fire({
+                    title: 'Atualizado!',
+                    text: result.message,
+                    icon: 'success',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+            } else {
+                Swal.fire('Erro!', result.message, 'error');
+            }
+        } catch (err) {
+            Swal.fire('Erro!', 'Erro ao atualizar status.', 'error');
+        }
+    }
+
+    // --- Helper Functions for Zero-Refresh Real-Time DOM Updates ---
+    function updateKanbanCardDOM(cardId, data) {
+        // 1. Update text stats (e.g. 11/25)
+        const statsSpan = document.getElementById(`card-progress-text-${cardId}`);
+        if (statsSpan) {
+            statsSpan.textContent = `${data.concluidas}/${data.total_perguntas}`;
+        }
+        
+        // 2. Update progress bar fill width
+        const fillBar = document.getElementById(`card-progress-fill-${cardId}`);
+        if (fillBar) {
+            fillBar.style.width = `${data.porcentagem}%`;
+        }
+        
+        // 3. Update all sector badges status classes and icons
+        if (data.areas_status) {
+            for (const [area, info] of Object.entries(data.areas_status)) {
+                const badge = document.getElementById(`card-${cardId}-sector-${area}`);
+                if (badge) {
+                    const areaDisplay = area === 'PEC' ? 'PEC/ FINANCEIRO' : area;
+                    if (info.concluido) {
+                        badge.title = info.concluido_em ? `Concluído em: ${info.concluido_em}` : `${info.concluidas_count} de ${info.total_count} concluídas`;
+                        badge.className = 'sector-badge success';
+                        const cur = info.concluido_em_curto ? ` (${info.concluido_em_curto})` : '';
+                        badge.innerHTML = `✓ ${areaDisplay}${cur}`;
+                    } else {
+                        badge.title = `${info.concluidas_count} de ${info.total_count} concluídas`;
+                        badge.className = 'sector-badge pending';
+                        badge.innerHTML = areaDisplay;
+                    }
+                }
+            }
+        }
+        
+        // 4. Move to correct lane if all questions have been completed
+        moveCardToCorrectLane(cardId, data.status);
+        updateLaneCounters();
+    }
+
+    function moveCardToCorrectLane(cardId, targetStatus) {
+        const card = document.getElementById(`card-${cardId}`);
+        if (!card) return;
+        
+        let targetLaneId = '';
+        if (targetStatus === 'em_andamento') {
+            targetLaneId = 'lane-andamento';
+        } else if (targetStatus === 'pausada') {
+            targetLaneId = 'lane-pausada';
+        } else if (targetStatus === 'concluida') {
+            targetLaneId = 'lane-concluida';
+        }
+        
+        const targetLane = document.getElementById(targetLaneId);
+        if (!targetLane) return;
+        
+        // Check if the card is already in the target lane
+        if (card.parentNode.id !== targetLaneId) {
+            // Remove empty placeholder
+            const emptyMsg = targetLane.querySelector('div[style*="text-align:center"]');
+            if (emptyMsg) {
+                emptyMsg.remove();
+            }
+            
+            // Append card
+            targetLane.appendChild(card);
+        }
+    }
+
+    function updateLaneCounters() {
+        const lanes = [
+            { id: 'lane-andamento', counterClass: '.column-andamento .column-count' },
+            { id: 'lane-pausada', counterClass: '.column-pausada .column-count' },
+            { id: 'lane-concluida', counterClass: '.column-concluida .column-count' }
+        ];
+        
+        lanes.forEach(lane => {
+            const wrapper = document.getElementById(lane.id);
+            if (wrapper) {
+                const cardCount = wrapper.querySelectorAll('.kanban-card').length;
+                const counter = document.querySelector(lane.counterClass);
+                if (counter) {
+                    counter.textContent = cardCount;
+                }
+                
+                // Toggle empty lane placeholder
+                const cards = wrapper.querySelectorAll('.kanban-card');
+                if (cards.length === 0) {
+                    let emptyMsg = wrapper.querySelector('.empty-lane-placeholder');
+                    if (!emptyMsg) {
+                        emptyMsg = document.createElement('div');
+                        emptyMsg.className = 'empty-lane-placeholder';
+                        emptyMsg.style.textAlign = 'center';
+                        emptyMsg.style.padding = '3rem 0';
+                        emptyMsg.style.color = '#94A3B8';
+                        emptyMsg.style.fontSize = '0.85rem';
+                        
+                        if (lane.id === 'lane-andamento') {
+                            emptyMsg.textContent = 'Nenhum card em andamento';
+                        } else if (lane.id === 'lane-pausada') {
+                            emptyMsg.textContent = 'Nenhum card pausado';
+                        } else if (lane.id === 'lane-concluida') {
+                            emptyMsg.textContent = 'Nenhum card concluído';
+                        }
+                        wrapper.appendChild(emptyMsg);
+                    }
+                } else {
+                    const emptyMsg = wrapper.querySelector('.empty-lane-placeholder');
+                    if (emptyMsg) {
+                        emptyMsg.remove();
+                    }
+                }
+            }
+        });
+    }
+
+    async function excluirCardDesmobilizacao() {
+        if (!currentCardId) return;
+        
+        const confirmResult = await Swal.fire({
+            title: 'Tem certeza?',
+            text: "Esta ação é irreversível e excluirá todo o progresso e anexos deste fluxo de desmobilização!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#EF4444',
+            cancelButtonColor: '#64748B',
+            confirmButtonText: 'Sim, excluir!',
+            cancelButtonText: 'Cancelar'
+        });
+
+        if (confirmResult.isConfirmed) {
+            try {
+                Swal.fire({ title: 'Excluindo fluxo...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+                
+                const formData = new FormData();
+                formData.append('id', currentCardId);
+                formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+                const response = await fetch('{% url "gestao_a_vista:desmobilizacoes_fluxo_excluir" %}', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    Swal.close();
+                    closeDetailsModal();
+                    
+                    // Remove card from DOM in real-time!
+                    const card = document.getElementById(`card-${currentCardId}`);
+                    if (card) {
+                        card.remove();
+                    }
+                    updateLaneCounters();
+
+                    Swal.fire({
+                        title: 'Excluído!',
+                        text: result.message,
+                        icon: 'success',
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
+                } else {
+                    Swal.fire('Erro!', result.message, 'error');
+                }
+            } catch (err) {
+                Swal.fire('Erro!', 'Erro ao excluir fluxo.', 'error');
+            }
+        }
+    }
+</script>
+{% endblock %}

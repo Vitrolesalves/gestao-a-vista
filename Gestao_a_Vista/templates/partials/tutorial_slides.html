@@ -1,0 +1,595 @@
+{% comment %}
+Deck de slides do tutorial "Tour pelo Gestão à Vista".
+Reutilizado em dois lugares:
+  1. Modal de primeiro acesso (base.html) — exibido UMA única vez por usuário
+  2. Página Ajuda (ajuda.html) — sempre disponível, último item do menu
+Os slides são condicionais às permissões do usuário (user_has_permissions),
+então cada pessoa só vê o tour das abas que realmente enxerga no menu.
+{% endcomment %}
+
+<style>
+    /* ══ Tutorial deck ══════════════════════════════════════ */
+    .tut-deck { display: flex; flex-direction: column; background: var(--gray-50); border-radius: var(--r-lg); overflow: hidden; }
+
+    .tut-body { display: flex; min-height: 26rem; }
+
+    /* Mini réplica do menu lateral real */
+    .tut-mini-sidebar { width: 12.5rem; flex-shrink: 0; background: var(--sidebar-bg); padding: .6rem .45rem; display: none; flex-direction: column; gap: 1px; overflow-y: auto; max-height: 34rem; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.15) transparent; }
+    @media (min-width: 768px) { .tut-mini-sidebar { display: flex; } }
+    .tut-mini-brand { display: flex; align-items: center; gap: .45rem; padding: .35rem .5rem .65rem; border-bottom: 1px solid rgba(255,255,255,.09); margin-bottom: .45rem; }
+    .tut-mini-brand-icon { width: 1.4rem; height: 1.4rem; border-radius: 4px; background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.25); display: flex; align-items: center; justify-content: center; color: #fff; font-size: .6rem; }
+    .tut-mini-brand span { color: #fff; font-size: .66rem; font-weight: 700; letter-spacing: .01em; }
+    .tut-nav-item { display: flex; align-items: center; gap: .45rem; color: rgba(255,255,255,.62); font-size: .68rem; font-weight: 500; padding: .34rem .55rem; border-radius: 6px; cursor: pointer; transition: .15s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tut-nav-item i { width: .85rem; text-align: center; font-size: .62rem; flex-shrink: 0; }
+    .tut-nav-item:hover { color: #fff; background: rgba(255,255,255,.07); }
+    .tut-nav-item.on { color: #fff; background: rgba(255,255,255,.16); box-shadow: inset 0 0 0 1px rgba(255,255,255,.22); font-weight: 700; }
+    .tut-nav-item.on i { color: var(--sky); }
+
+    /* Palco dos slides */
+    .tut-stage { flex: 1; position: relative; display: flex; align-items: stretch; min-width: 0; }
+    .tut-slide { display: none; flex: 1; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 1.6rem 1.8rem 1.2rem; animation: tutFade .25s ease; }
+    .tut-slide.on { display: flex; }
+    @keyframes tutFade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+    .tut-slide h5 { font-weight: 800; color: var(--gray-900); margin: .9rem 0 .3rem; letter-spacing: -.01em; }
+    .tut-slide h5 i { color: var(--navy); margin-right: .45rem; }
+    .tut-points { list-style: none; padding: 0; margin: .35rem 0 0; display: flex; flex-direction: column; gap: .22rem; }
+    .tut-points li { font-size: .82rem; color: var(--gray-600); }
+    .tut-points li i { color: var(--green); font-size: .68rem; margin-right: .35rem; }
+    .tut-badge-admin { display: inline-block; background: var(--amber-faint); color: var(--amber); font-size: .64rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: .18rem .55rem; border-radius: 999px; margin-top: .5rem; }
+
+    /* ══ Mocks (miniaturas visuais das páginas) ══════════════ */
+    .tm { width: 100%; max-width: 23rem; background: #fff; border: 1px solid var(--gray-200); border-radius: 10px; box-shadow: var(--shadow-md); padding: .8rem; text-align: left; }
+    .tm-chrome { display: flex; gap: .28rem; margin-bottom: .65rem; }
+    .tm-chrome span { width: .5rem; height: .5rem; border-radius: 50%; background: var(--gray-200); }
+    .tm-chrome span:first-child { background: #fca5a5; }
+    .tm-chrome span:nth-child(2) { background: #fcd34d; }
+    .tm-chrome span:nth-child(3) { background: #86efac; }
+
+    .tm-row { display: flex; gap: .45rem; margin-bottom: .5rem; }
+    .tm-row:last-child { margin-bottom: 0; }
+
+    .tm-line { height: .42rem; border-radius: 3px; background: var(--gray-200); }
+    .tm-line.dk { background: var(--gray-300); }
+    .w25 { width: 25%; } .w40 { width: 40%; } .w55 { width: 55%; } .w70 { width: 70%; } .w85 { width: 85%; } .w100 { width: 100%; }
+
+    .tm-stat { flex: 1; border-radius: 7px; padding: .5rem .55rem; color: #fff; }
+    .tm-stat b { display: block; font-size: .85rem; line-height: 1; }
+    .tm-stat small { font-size: .5rem; text-transform: uppercase; letter-spacing: .03em; opacity: .85; }
+    .tm-navy { background: linear-gradient(135deg, var(--navy), var(--navy-mid)); }
+    .tm-green { background: linear-gradient(135deg, #22c55e, #15803d); }
+    .tm-red { background: linear-gradient(135deg, #ef4444, #b91c1c); }
+    .tm-amber { background: linear-gradient(135deg, #f59e0b, #b45309); }
+    .tm-sky { background: linear-gradient(135deg, #0ea5e9, #0369a1); }
+
+    .tm-panel { flex: 1; border: 1px solid var(--gray-200); border-radius: 7px; padding: .5rem; }
+    .tm-bars { display: flex; align-items: flex-end; gap: .3rem; height: 3rem; margin-top: .4rem; }
+    .tm-bars span { flex: 1; border-radius: 3px 3px 0 0; background: var(--navy); opacity: .85; }
+    .tm-bars .sky { background: var(--sky); }
+
+    .tm-trow { display: flex; align-items: center; gap: .5rem; padding: .34rem .45rem; border-radius: 5px; background: var(--gray-50); margin-bottom: .3rem; }
+    .tm-trow:last-child { margin-bottom: 0; }
+    .tm-dot { width: .55rem; height: .55rem; border-radius: 50%; flex-shrink: 0; }
+    .tm-dot.g { background: var(--green); } .tm-dot.r { background: var(--red); } .tm-dot.a { background: var(--amber); }
+    .tm-pill { font-size: .5rem; font-weight: 700; padding: .12rem .45rem; border-radius: 999px; text-transform: uppercase; flex-shrink: 0; margin-left: auto; }
+    .tm-pill.g { background: #dcfce7; color: #15803d; } .tm-pill.r { background: #fee2e2; color: #b91c1c; } .tm-pill.a { background: #fef3c7; color: #92400e; }
+
+    .tm-btn { display: inline-flex; align-items: center; gap: .3rem; background: var(--navy); color: #fff; font-size: .58rem; font-weight: 600; padding: .3rem .65rem; border-radius: 5px; }
+    .tm-drop { border: 2px dashed var(--gray-300); border-radius: 7px; padding: .8rem; text-align: center; color: var(--gray-400); font-size: .62rem; margin-bottom: .5rem; }
+    .tm-drop i { display: block; font-size: 1rem; margin-bottom: .25rem; color: var(--navy); }
+
+    .tm-kcol { flex: 1; background: var(--gray-100); border-radius: 7px; padding: .4rem; }
+    .tm-kcol > small { display: block; font-size: .52rem; font-weight: 700; text-transform: uppercase; color: var(--gray-500); margin-bottom: .3rem; }
+    .tm-kcard { background: #fff; border: 1px solid var(--gray-200); border-radius: 5px; padding: .32rem .4rem; margin-bottom: .3rem; box-shadow: var(--shadow-xs); }
+    .tm-kcard:last-child { margin-bottom: 0; }
+
+    .tm-cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: .22rem; }
+    .tm-cal span { aspect-ratio: 1; border-radius: 4px; background: var(--gray-100); position: relative; }
+    .tm-cal span.ev::after { content: ''; position: absolute; bottom: .12rem; left: 50%; transform: translateX(-50%); width: .28rem; height: .28rem; border-radius: 50%; background: var(--sky); }
+    .tm-cal span.ev.g::after { background: var(--green); }
+    .tm-cal span.ev.a::after { background: var(--amber); }
+    .tm-cal span.hoje { background: var(--navy); }
+
+    .tm-qr { width: 4.2rem; height: 4.2rem; border-radius: 6px; flex-shrink: 0; background:
+        linear-gradient(90deg, var(--navy) 25%, transparent 25%, transparent 50%, var(--navy) 50%, var(--navy) 60%, transparent 60%, transparent 75%, var(--navy) 75%),
+        linear-gradient(var(--navy) 25%, transparent 25%, transparent 45%, var(--navy) 45%, var(--navy) 55%, transparent 55%, transparent 80%, var(--navy) 80%);
+        background-size: 100% 100%; border: 3px solid var(--navy); }
+
+    .tm-steps { display: flex; align-items: center; gap: .25rem; }
+    .tm-step { flex: 1; text-align: center; font-size: .5rem; font-weight: 700; padding: .34rem .15rem; border-radius: 5px; background: var(--gray-100); color: var(--gray-500); }
+    .tm-step.done { background: var(--green-faint); color: var(--green); }
+    .tm-step.now { background: var(--navy); color: #fff; }
+    .tm-arrow { color: var(--gray-300); font-size: .55rem; flex-shrink: 0; }
+
+    .tm-switch { width: 1.5rem; height: .8rem; border-radius: 999px; background: var(--green); position: relative; margin-left: auto; flex-shrink: 0; }
+    .tm-switch::after { content: ''; position: absolute; top: .09rem; right: .12rem; width: .62rem; height: .62rem; border-radius: 50%; background: #fff; }
+    .tm-switch.off { background: var(--gray-300); }
+    .tm-switch.off::after { right: auto; left: .12rem; }
+
+    .tm-link-card { flex: 1; border: 1px solid var(--gray-200); border-radius: 7px; padding: .5rem; display: flex; flex-direction: column; gap: .3rem; align-items: flex-start; }
+    .tm-link-ic { width: 1.3rem; height: 1.3rem; border-radius: 5px; color: #fff; display: flex; align-items: center; justify-content: center; font-size: .55rem; }
+
+    .tut-hero-icon { width: 4.2rem; height: 4.2rem; border-radius: 16px; background: linear-gradient(135deg, var(--navy), var(--navy-mid)); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.7rem; box-shadow: var(--shadow-lg); }
+
+    /* Rodapé: navegação do deck */
+    .tut-footer { display: flex; align-items: center; gap: .8rem; padding: .8rem 1.2rem; background: #fff; border-top: 1px solid var(--gray-200); }
+    .tut-progress { font-size: .72rem; font-weight: 700; color: var(--gray-500); min-width: 3.2rem; }
+    .tut-dots { flex: 1; display: flex; justify-content: center; gap: .32rem; flex-wrap: wrap; }
+    .tut-dot { width: .5rem; height: .5rem; border-radius: 999px; border: none; padding: 0; background: var(--gray-300); cursor: pointer; transition: .18s; }
+    .tut-dot.on { background: var(--navy); width: 1.15rem; }
+    .tut-btn { border: none; border-radius: 8px; font-size: .8rem; font-weight: 700; padding: .45rem 1rem; transition: .15s; }
+    .tut-btn-prev { background: var(--gray-100); color: var(--gray-600); }
+    .tut-btn-prev:disabled { opacity: .4; cursor: default; }
+    .tut-btn-next, .tut-btn-finish { background: var(--navy); color: #fff; }
+    .tut-btn-next:hover, .tut-btn-finish:hover { background: var(--navy-mid); }
+    .tut-btn-finish { background: var(--green); }
+    .tut-btn-finish:hover { background: #15803d; }
+</style>
+
+<div class="tut-deck">
+    <div class="tut-body">
+
+        <!-- Mini menu lateral (réplica do menu real, item ativo acompanha o slide) -->
+        <aside class="tut-mini-sidebar">
+            <div class="tut-mini-brand">
+                <div class="tut-mini-brand-icon"><i class="fas fa-chart-bar"></i></div>
+                <span>Gestão à Vista</span>
+            </div>
+            <div class="tut-nav-item" data-key="home"><i class="fas fa-home"></i>Home</div>
+            {% if user_has_permissions.controle_acessos %}
+            <div class="tut-nav-item" data-key="admin"><i class="fas fa-users-cog"></i>Controle de Usuários</div>
+            {% endif %}
+            {% if request.user.is_global_admin %}
+            <div class="tut-nav-item" data-key="admin"><i class="fas fa-map-marker-alt"></i>Gerenciar Regionais</div>
+            {% endif %}
+            {% if user_has_permissions.dashboard %}
+            <div class="tut-nav-item" data-key="dashboard"><i class="fas fa-chart-bar"></i>Dashboards</div>
+            {% endif %}
+            {% if user_has_permissions.financeiro %}
+            <div class="tut-nav-item" data-key="financeiro"><i class="fas fa-dollar-sign"></i>Financeiro</div>
+            {% endif %}
+            {% if user_has_permissions.monitoramento %}
+            <div class="tut-nav-item" data-key="monitoramento"><i class="fas fa-check-circle"></i>Monitoramento</div>
+            {% endif %}
+            {% if user_has_permissions.gestao_salas or user_has_permissions.reserva_salas or user_has_permissions.calendario_reservas %}
+            <div class="tut-nav-item" data-key="reservas"><i class="fas fa-building"></i>Gestão de Reservas</div>
+            {% endif %}
+            {% if user_has_permissions.planner or user_has_permissions.explorer %}
+            <div class="tut-nav-item" data-key="projetos"><i class="fas fa-clipboard-list"></i>Projetos</div>
+            {% endif %}
+            {% if user_has_permissions.torre_controle %}
+            <div class="tut-nav-item" data-key="torre"><i class="fas fa-broadcast-tower"></i>Torre de Controle</div>
+            {% endif %}
+            {% if user_has_permissions.relatorios %}
+            <div class="tut-nav-item" data-key="relatorios"><i class="fas fa-file-alt"></i>Relatórios</div>
+            {% endif %}
+            {% if user_has_permissions.gestao_qualidade %}
+            <div class="tut-nav-item" data-key="qualidade"><i class="fas fa-shield-alt"></i>Gestão da Qualidade</div>
+            {% endif %}
+            {% if user_has_permissions.calendario_2026 %}
+            <div class="tut-nav-item" data-key="calendario"><i class="fas fa-calendar-alt"></i>Calendário 2026</div>
+            {% endif %}
+            {% if user_has_permissions.psicossocial %}
+            <div class="tut-nav-item" data-key="psico"><i class="fas fa-heartbeat"></i>Psico NR1</div>
+            {% endif %}
+            {% if user_has_permissions.qr_generator or user_has_permissions.etiquetas_generator %}
+            <div class="tut-nav-item" data-key="geradores"><i class="fas fa-qrcode"></i>Geradores</div>
+            {% endif %}
+            {% if user_has_permissions.desativacao_cr or user_has_permissions.controle_chips or user_has_permissions.implantacoes_opsvista or user_has_permissions.implantacoes_fluxo or user_has_permissions.desmobilizacoes_fluxo %}
+            <div class="tut-nav-item" data-key="acompanhamento"><i class="fas fa-tasks"></i>Acompanhamento</div>
+            {% endif %}
+            {% if user_has_permissions.cmo_efetivo %}
+            <div class="tut-nav-item" data-key="cmo"><i class="fas fa-user-shield"></i>CMO</div>
+            {% endif %}
+            {% if user_has_permissions.links_importantes %}
+            <div class="tut-nav-item" data-key="links"><i class="fas fa-link"></i>Links Importantes</div>
+            {% endif %}
+            <div class="tut-nav-item" data-key="ajuda"><i class="fas fa-question-circle"></i>Ajuda</div>
+        </aside>
+
+        <!-- Slides -->
+        <div class="tut-stage">
+
+            <div class="tut-slide" data-key="">
+                <div class="tut-hero-icon"><i class="fas fa-chart-bar"></i></div>
+                <h5>Bem-vindo ao Gestão à Vista!</h5>
+                <ul class="tut-points">
+                    <li>Aqui você acompanha qualidade e operações num só lugar.</li>
+                    <li>Vamos fazer um tour rápido e visual pelas abas do sistema.</li>
+                    <li><b>Leva menos de 2 minutos.</b></li>
+                </ul>
+            </div>
+
+            <div class="tut-slide" data-key="">
+                <div class="tm">
+                    <div class="tm-chrome"><span></span><span></span><span></span></div>
+                    <div class="tm-row">
+                        <div style="width:30%; background:var(--sidebar-bg); border-radius:7px; padding:.45rem; display:flex; flex-direction:column; gap:.3rem;">
+                            <div class="tm-line w85" style="background:rgba(255,255,255,.35)"></div>
+                            <div class="tm-line w70" style="background:rgba(255,255,255,.2)"></div>
+                            <div class="tm-line w85" style="background:rgba(255,255,255,.2)"></div>
+                            <div class="tm-line w55" style="background:rgba(255,255,255,.2)"></div>
+                            <div class="tm-line w70" style="background:rgba(255,255,255,.2)"></div>
+                        </div>
+                        <div style="flex:1; display:flex; flex-direction:column; gap:.4rem;">
+                            <div class="tm-line dk w100" style="height:.65rem;"></div>
+                            <div class="tm-line w85"></div>
+                            <div class="tm-line w70"></div>
+                            <div class="tm-line w85"></div>
+                        </div>
+                    </div>
+                </div>
+                <h5><i class="fas fa-bars"></i>O menu é sua bússola</h5>
+                <ul class="tut-points">
+                    <li><i class="fas fa-check"></i>Tudo fica no <b>menu azul à esquerda</b>.</li>
+                    <li><i class="fas fa-check"></i>Itens com <b>seta ›</b> abrem sub-opções.</li>
+                    <li><i class="fas fa-check"></i>Dá para recolher o menu e navegar só pelos ícones.</li>
+                </ul>
+            </div>
+
+            <div class="tut-slide" data-key="home">
+                <div class="tm">
+                    <div class="tm-chrome"><span></span><span></span><span></span></div>
+                    <div class="tm-row">
+                        <div class="tm-stat tm-navy"><b>12</b><small>Painéis</small></div>
+                        <div class="tm-stat tm-sky"><b>34</b><small>Reservas</small></div>
+                        <div class="tm-stat tm-green"><b>OK</b><small>Sistemas</small></div>
+                    </div>
+                    <div class="tm-row"><div class="tm-line w70"></div></div>
+                    <div class="tm-row"><div class="tm-line w55"></div></div>
+                </div>
+                <h5><i class="fas fa-home"></i>Home</h5>
+                <ul class="tut-points">
+                    <li><i class="fas fa-check"></i>Sua página inicial, com a visão geral do dia.</li>
+                    <li><i class="fas fa-check"></i>Sempre dá para voltar clicando em <b>Home</b>.</li>
+                </ul>
+            </div>
+
+            {% if user_has_permissions.controle_acessos or request.user.is_global_admin %}
+            <div class="tut-slide" data-key="admin">
+                <div class="tm">
+                    <div class="tm-chrome"><span></span><span></span><span></span></div>
+                    <div class="tm-trow"><i class="fas fa-user-circle" style="color:var(--gray-400)"></i><div class="tm-line w40"></div><div class="tm-switch"></div></div>
+                    <div class="tm-trow"><i class="fas fa-user-circle" style="color:var(--gray-400)"></i><div class="tm-line w55"></div><div class="tm-switch"></div></div>
+                    <div class="tm-trow"><i class="fas fa-user-circle" style="color:var(--gray-400)"></i><div class="tm-line w40"></div><div class="tm-switch off"></div></div>
+                </div>
+                <h5><i class="fas fa-users-cog"></i>Administração</h5>
+                <ul class="tut-points">
+                    <li><i class="fas fa-check"></i><b>Controle de Usuários</b>: crie contas e escolha o que cada um vê.</li>
+                    <li><i class="fas fa-check"></i><b>Gerenciar Regionais</b>: cada regional com seus próprios dados.</li>
+                </ul>
+                <span class="tut-badge-admin"><i class="fas fa-lock"></i> visível só para administradores</span>
+            </div>
+            {% endif %}
+
+            {% if user_has_permissions.dashboard %}
+            <div class="tut-slide" data-key="dashboard">
+                <div class="tm">
+                    <div class="tm-chrome"><span></span><span></span><span></span></div>
+                    <div class="tm-row">
+                        <div class="tm-panel"><div class="tm-line w55"></div><div class="tm-bars"><span style="height:45%"></span><span style="height:80%" class="sky"></span><span style="height:60%"></span><span style="height:95%" class="sky"></span></div></div>
+                        <div class="tm-panel"><div class="tm-line w40"></div><div class="tm-bars"><span style="height:70%" class="sky"></span><span style="height:40%"></span><span style="height:85%"></span><span style="height:55%" class="sky"></span></div></div>
+                    </div>
+                </div>
+                <h5><i class="fas fa-chart-bar"></i>Dashboards</h5>
+                <ul class="tut-points">
+                    <li><i class="fas fa-check"></i>Painéis de indicadores por cliente e serviço.</li>
+                    <li><i class="fas fa-check"></i>Clique em um card para abrir o painel completo.</li>
+                </ul>
+            </div>
+            {% endif %}
+
+            {% if user_has_permissions.financeiro %}
+            <div class="tut-slide" data-key="financeiro">
+                <div class="tm">
+                    <div class="tm-chrome"><span></span><span></span><span></span></div>
+                    <div class="tm-drop"><i class="fas fa-cloud-upload-alt"></i>Arraste a planilha aqui</div>
+                    <div class="tm-trow"><i class="fas fa-file-excel" style="color:var(--green)"></i><div class="tm-line w55"></div><span class="tm-pill g">ok</span></div>
+                    <div class="tm-trow"><i class="fas fa-file-excel" style="color:var(--green)"></i><div class="tm-line w40"></div><span class="tm-pill a">processando</span></div>
+                </div>
+                <h5><i class="fas fa-dollar-sign"></i>Financeiro</h5>
+                <ul class="tut-points">
+                    <li><i class="fas fa-check"></i>Envie as planilhas pelo <b>upload guiado</b>.</li>
+                    <li><i class="fas fa-check"></i>Acompanhe o processamento e consulte os dados.</li>
+                </ul>
+            </div>
+            {% endif %}
+
+            {% if user_has_permissions.monitoramento %}
+            <div class="tut-slide" data-key="monitoramento">
+                <div class="tm">
+                    <div class="tm-chrome"><span></span><span></span><span></span></div>
+                    <div class="tm-trow"><span class="tm-dot g"></span><div class="tm-line w55"></div><span class="tm-pill g">no ar</span></div>
+                    <div class="tm-trow"><span class="tm-dot g"></span><div class="tm-line w40"></div><span class="tm-pill g">no ar</span></div>
+                    <div class="tm-trow"><span class="tm-dot r"></span><div class="tm-line w55"></div><span class="tm-pill r">erro</span></div>
+                </div>
+                <h5><i class="fas fa-check-circle"></i>Monitoramento</h5>
+                <ul class="tut-points">
+                    <li><i class="fas fa-check"></i>Saúde das atualizações em tempo real.</li>
+                    <li><i class="fas fa-check"></i><b>Verde</b> = tudo certo · <b>Vermelho</b> = precisa de atenção.</li>
+                </ul>
+            </div>
+            {% endif %}
+
+            {% if user_has_permissions.gestao_salas or user_has_permissions.reserva_salas or user_has_permissions.calendario_reservas %}
+            <div class="tut-slide" data-key="reservas">
+                <div class="tm">
+                    <div class="tm-chrome"><span></span><span></span><span></span></div>
+                    <div class="tm-cal">
+                        <span></span><span></span><span class="ev"></span><span></span><span class="ev g"></span><span></span><span></span>
+                        <span></span><span class="hoje"></span><span></span><span class="ev"></span><span></span><span></span><span class="ev a"></span>
+                    </div>
+                    <div class="tm-row" style="margin-top:.5rem; margin-bottom:0;"><span class="tm-btn"><i class="fas fa-plus"></i>Reservar sala</span></div>
+                </div>
+                <h5><i class="fas fa-building"></i>Gestão de Reservas</h5>
+                <ul class="tut-points">
+                    <li><i class="fas fa-check"></i>Reserve salas de reunião em poucos cliques.</li>
+                    <li><i class="fas fa-check"></i>Veja todas as reservas no <b>calendário</b>.</li>
+                </ul>
+            </div>
+            {% endif %}
+
+            {% if user_has_permissions.planner or user_has_permissions.explorer %}
+            <div class="tut-slide" data-key="projetos">
+                <div class="tm">
+                    <div class="tm-chrome"><span></span><span></span><span></span></div>
+                    <div class="tm-row" style="margin-bottom:0;">
+                        <div class="tm-kcol"><small>A fazer</small><div class="tm-kcard"><div class="tm-line w85"></div></div><div class="tm-kcard"><div class="tm-line w55"></div></div></div>
+                        <div class="tm-kcol"><small>Fazendo</small><div class="tm-kcard"><div class="tm-line w70"></div></div></div>
+                        <div class="tm-kcol"><small>Feito</small><div class="tm-kcard"><div class="tm-line w55"></div></div><div class="tm-kcard"><div class="tm-line w85"></div></div></div>
+                    </div>
+                </div>
+                <h5><i class="fas fa-clipboard-list"></i>Projetos</h5>
+                <ul class="tut-points">
+                    <li><i class="fas fa-check"></i><b>Planner</b>: projetos em quadro — arraste os cards entre etapas.</li>
+                    <li><i class="fas fa-check"></i><b>Arquivos</b>: documentos organizados por área.</li>
+                </ul>
+            </div>
+            {% endif %}
+
+            {% if user_has_permissions.torre_controle %}
+            <div class="tut-slide" data-key="torre">
+                <div class="tm">
+                    <div class="tm-chrome"><span></span><span></span><span></span></div>
+                    <div class="tm-trow"><i class="fas fa-book" style="color:var(--navy)"></i><div class="tm-line w55"></div><span class="tm-pill a">pendente</span></div>
+                    <div class="tm-trow"><i class="fas fa-book" style="color:var(--navy)"></i><div class="tm-line w40"></div><span class="tm-pill g">tratada</span></div>
+                    <div class="tm-trow"><i class="fas fa-shield-alt" style="color:var(--navy)"></i><div class="tm-line w55"></div><span class="tm-pill g">auditado</span></div>
+                </div>
+                <h5><i class="fas fa-broadcast-tower"></i>Torre de Controle</h5>
+                <ul class="tut-points">
+                    <li><i class="fas fa-check"></i><b>Livro de Ocorrências</b>: registre e acompanhe cada ocorrência.</li>
+                    <li><i class="fas fa-check"></i><b>Auditor de Ronda</b>: auditorias e planos de ação.</li>
+                </ul>
+            </div>
+            {% endif %}
+
+            {% if user_has_permissions.relatorios %}
+            <div class="tut-slide" data-key="relatorios">
+                <div class="tm">
+                    <div class="tm-chrome"><span></span><span></span><span></span></div>
+                    <div class="tm-trow"><i class="fas fa-file-pdf" style="color:var(--red)"></i><div class="tm-line w55"></div><i class="fas fa-download" style="color:var(--gray-400); margin-left:auto;"></i></div>
+                    <div class="tm-trow"><i class="fas fa-file-excel" style="color:var(--green)"></i><div class="tm-line w70"></div><i class="fas fa-download" style="color:var(--gray-400); margin-left:auto;"></i></div>
+                    <div class="tm-trow"><i class="fas fa-file-pdf" style="color:var(--red)"></i><div class="tm-line w40"></div><i class="fas fa-download" style="color:var(--gray-400); margin-left:auto;"></i></div>
+                </div>
+                <h5><i class="fas fa-file-alt"></i>Relatórios</h5>
+                <ul class="tut-points">
+                    <li><i class="fas fa-check"></i>Relatórios prontos para consultar e baixar.</li>
+                </ul>
+            </div>
+            {% endif %}
+
+            {% if user_has_permissions.gestao_qualidade %}
+            <div class="tut-slide" data-key="qualidade">
+                <div class="tm">
+                    <div class="tm-chrome"><span></span><span></span><span></span></div>
+                    <div class="tm-trow"><i class="fas fa-check-square" style="color:var(--green)"></i><div class="tm-line w70"></div></div>
+                    <div class="tm-trow"><i class="fas fa-check-square" style="color:var(--green)"></i><div class="tm-line w55"></div></div>
+                    <div class="tm-trow"><i class="far fa-square" style="color:var(--gray-400)"></i><div class="tm-line w40"></div></div>
+                </div>
+                <h5><i class="fas fa-shield-alt"></i>Gestão da Qualidade</h5>
+                <ul class="tut-points">
+                    <li><i class="fas fa-check"></i>Documentos, checklists e indicadores da Qualidade.</li>
+                </ul>
+            </div>
+            {% endif %}
+
+            {% if user_has_permissions.calendario_2026 %}
+            <div class="tut-slide" data-key="calendario">
+                <div class="tm">
+                    <div class="tm-chrome"><span></span><span></span><span></span></div>
+                    <div class="tm-cal">
+                        <span class="ev g"></span><span></span><span></span><span class="ev"></span><span></span><span></span><span class="ev a"></span>
+                        <span></span><span></span><span class="hoje"></span><span></span><span class="ev"></span><span></span><span></span>
+                    </div>
+                </div>
+                <h5><i class="fas fa-calendar-alt"></i>Calendário 2026</h5>
+                <ul class="tut-points">
+                    <li><i class="fas fa-check"></i>Eventos e datas importantes do ano, num lugar só.</li>
+                </ul>
+            </div>
+            {% endif %}
+
+            {% if user_has_permissions.psicossocial %}
+            <div class="tut-slide" data-key="psico">
+                <div class="tm">
+                    <div class="tm-chrome"><span></span><span></span><span></span></div>
+                    <div class="tm-trow"><i class="fas fa-heartbeat" style="color:var(--red)"></i><div class="tm-line w55"></div><span class="tm-pill g">ativo</span></div>
+                    <div class="tm-row" style="margin:.45rem 0 0;">
+                        <div class="tm-panel"><div class="tm-line w40" style="margin-bottom:.3rem;"></div><div class="tm-line dk w85"></div></div>
+                        <div class="tm-panel"><div class="tm-line w55" style="margin-bottom:.3rem;"></div><div class="tm-line dk w70"></div></div>
+                    </div>
+                </div>
+                <h5><i class="fas fa-heartbeat"></i>Psico NR1</h5>
+                <ul class="tut-points">
+                    <li><i class="fas fa-check"></i>Projetos de <b>Avaliação Psicossocial</b> (NR-1).</li>
+                    <li><i class="fas fa-check"></i>Base de colaboradores para as avaliações.</li>
+                </ul>
+            </div>
+            {% endif %}
+
+            {% if user_has_permissions.qr_generator or user_has_permissions.etiquetas_generator %}
+            <div class="tut-slide" data-key="geradores">
+                <div class="tm">
+                    <div class="tm-chrome"><span></span><span></span><span></span></div>
+                    <div class="tm-row" style="margin-bottom:0; align-items:center;">
+                        <div class="tm-qr"></div>
+                        <div style="flex:1; display:flex; flex-direction:column; gap:.35rem;">
+                            <div class="tm-line dk w70"></div>
+                            <div class="tm-line w55"></div>
+                            <span class="tm-btn"><i class="fas fa-download"></i>Baixar PDF</span>
+                        </div>
+                    </div>
+                </div>
+                <h5><i class="fas fa-qrcode"></i>Geradores</h5>
+                <ul class="tut-points">
+                    <li><i class="fas fa-check"></i>Gere <b>QR Codes</b> e <b>etiquetas</b> em PDF.</li>
+                    <li><i class="fas fa-check"></i>Preencha os dados, clique em gerar e baixe.</li>
+                </ul>
+            </div>
+            {% endif %}
+
+            {% if user_has_permissions.desativacao_cr or user_has_permissions.controle_chips or user_has_permissions.implantacoes_opsvista or user_has_permissions.implantacoes_fluxo or user_has_permissions.desmobilizacoes_fluxo %}
+            <div class="tut-slide" data-key="acompanhamento">
+                <div class="tm">
+                    <div class="tm-chrome"><span></span><span></span><span></span></div>
+                    <div class="tm-steps">
+                        <div class="tm-step done">Início</div><i class="fas fa-chevron-right tm-arrow"></i>
+                        <div class="tm-step done">Análise</div><i class="fas fa-chevron-right tm-arrow"></i>
+                        <div class="tm-step now">Execução</div><i class="fas fa-chevron-right tm-arrow"></i>
+                        <div class="tm-step">Concluído</div>
+                    </div>
+                </div>
+                <h5><i class="fas fa-tasks"></i>Acompanhamento</h5>
+                <ul class="tut-points">
+                    <li><i class="fas fa-check"></i>Fluxos de <b>implantação</b>, <b>desmobilização</b>, <b>chips</b> e <b>CRs</b>.</li>
+                    <li><i class="fas fa-check"></i>Cada card mostra em que etapa o processo está.</li>
+                </ul>
+            </div>
+            {% endif %}
+
+            {% if user_has_permissions.cmo_efetivo %}
+            <div class="tut-slide" data-key="cmo">
+                <div class="tm">
+                    <div class="tm-chrome"><span></span><span></span><span></span></div>
+                    <div class="tm-row">
+                        <div class="tm-stat tm-green"><b>42</b><small>Conforme</small></div>
+                        <div class="tm-stat tm-red"><b>3</b><small>Não conf.</small></div>
+                        <div class="tm-stat tm-amber"><b>5</b><small>Faltas</small></div>
+                    </div>
+                    <div class="tm-trow"><div class="tm-line w55"></div><span class="tm-pill g">coberto</span></div>
+                </div>
+                <h5><i class="fas fa-user-shield"></i>CMO — Conformidade de Efetivo</h5>
+                <ul class="tut-points">
+                    <li><i class="fas fa-check"></i>Substitui a planilha diária (PDM).</li>
+                    <li><i class="fas fa-check"></i>Faltas, coberturas e lançamentos num painel só.</li>
+                </ul>
+            </div>
+            {% endif %}
+
+            {% if user_has_permissions.links_importantes %}
+            <div class="tut-slide" data-key="links">
+                <div class="tm">
+                    <div class="tm-chrome"><span></span><span></span><span></span></div>
+                    <div class="tm-row" style="margin-bottom:0;">
+                        <div class="tm-link-card"><div class="tm-link-ic" style="background:linear-gradient(135deg,#0ea5e9,#0369a1)"><i class="fas fa-external-link-alt"></i></div><div class="tm-line w85"></div></div>
+                        <div class="tm-link-card"><div class="tm-link-ic" style="background:linear-gradient(135deg,#2563eb,#1e3a8a)"><i class="fas fa-external-link-alt"></i></div><div class="tm-line w70"></div></div>
+                        <div class="tm-link-card"><div class="tm-link-ic" style="background:linear-gradient(135deg,#16a34a,#15803d)"><i class="fas fa-external-link-alt"></i></div><div class="tm-line w85"></div></div>
+                    </div>
+                </div>
+                <h5><i class="fas fa-link"></i>Links Importantes</h5>
+                <ul class="tut-points">
+                    <li><i class="fas fa-check"></i>Atalhos para os sistemas do grupo (Sistema 360, OpsVista...).</li>
+                    <li><i class="fas fa-check"></i>Clique em <b>Abrir</b> e o sistema abre em outra aba.</li>
+                </ul>
+            </div>
+            {% endif %}
+
+            <div class="tut-slide" data-key="ajuda">
+                <div class="tut-hero-icon" style="background:linear-gradient(135deg,#16a34a,#15803d)"><i class="fas fa-question"></i></div>
+                <h5>Precisou rever? É só abrir a Ajuda</h5>
+                <ul class="tut-points">
+                    <li><i class="fas fa-check"></i>Este tour fica guardado na aba <b>Ajuda</b>.</li>
+                    <li><i class="fas fa-check"></i>Sempre o <b>último item do menu</b>, quando precisar.</li>
+                    <li><i class="fas fa-check"></i>Bom trabalho! 🚀</li>
+                </ul>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Navegação do deck -->
+    <div class="tut-footer">
+        <span class="tut-progress">1 / 1</span>
+        <button type="button" class="tut-btn tut-btn-prev"><i class="fas fa-chevron-left"></i></button>
+        <div class="tut-dots"></div>
+        <button type="button" class="tut-btn tut-btn-next">Próximo <i class="fas fa-chevron-right"></i></button>
+        <button type="button" class="tut-btn tut-btn-finish d-none"><i class="fas fa-check"></i> Começar a usar</button>
+    </div>
+</div>
+
+<script>
+    (function () {
+        if (window.__tutDeckInitRegistered) return;
+        window.__tutDeckInitRegistered = true;
+
+        function tutInitDeck(deck) {
+            if (deck.dataset.tutInit) return;
+            deck.dataset.tutInit = '1';
+
+            var slides = Array.prototype.slice.call(deck.querySelectorAll('.tut-slide'));
+            var items = Array.prototype.slice.call(deck.querySelectorAll('.tut-nav-item'));
+            var prev = deck.querySelector('.tut-btn-prev');
+            var next = deck.querySelector('.tut-btn-next');
+            var finish = deck.querySelector('.tut-btn-finish');
+            var progress = deck.querySelector('.tut-progress');
+            var dotsBox = deck.querySelector('.tut-dots');
+            var current = 0;
+
+            slides.forEach(function (_, idx) {
+                var d = document.createElement('button');
+                d.type = 'button';
+                d.className = 'tut-dot';
+                d.addEventListener('click', function () { go(idx); });
+                dotsBox.appendChild(d);
+            });
+            var dots = Array.prototype.slice.call(dotsBox.children);
+
+            items.forEach(function (it) {
+                it.addEventListener('click', function () {
+                    for (var i = 0; i < slides.length; i++) {
+                        if (slides[i].dataset.key === it.dataset.key) { go(i); return; }
+                    }
+                });
+            });
+
+            function go(n) {
+                current = Math.max(0, Math.min(slides.length - 1, n));
+                var key = slides[current].dataset.key;
+                slides.forEach(function (s, i) { s.classList.toggle('on', i === current); });
+                dots.forEach(function (d, i) { d.classList.toggle('on', i === current); });
+                items.forEach(function (it) { it.classList.toggle('on', key !== '' && it.dataset.key === key); });
+                progress.textContent = (current + 1) + ' / ' + slides.length;
+                prev.disabled = current === 0;
+                next.classList.toggle('d-none', current === slides.length - 1);
+                finish.classList.toggle('d-none', current !== slides.length - 1);
+            }
+
+            prev.addEventListener('click', function () { go(current - 1); });
+            next.addEventListener('click', function () { go(current + 1); });
+            finish.addEventListener('click', function () {
+                deck.dispatchEvent(new CustomEvent('tutorial:finish', { bubbles: true }));
+            });
+
+            go(0);
+        }
+
+        function initAll() {
+            document.querySelectorAll('.tut-deck').forEach(tutInitDeck);
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initAll);
+        } else {
+            initAll();
+        }
+    })();
+</script>

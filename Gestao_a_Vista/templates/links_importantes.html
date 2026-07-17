@@ -1,0 +1,251 @@
+{% extends 'base.html' %}
+
+{% block title %}Links Importantes{% endblock %}
+{% block page_title %}Links Importantes — Fácil Acesso{% endblock %}
+
+{% block extra_css %}
+<style>
+    .li-title {
+        background: linear-gradient(to right, #0F172A, #1e40af);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-size: 26px;
+        font-weight: bold;
+        margin: 0;
+        text-transform: uppercase;
+    }
+
+    .link-card { border: none; box-shadow: 0 1px 3px rgba(15,23,42,.08); transition: transform .15s ease, box-shadow .15s ease; height: 100%; }
+    .link-card:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(15,23,42,.14); }
+    .link-card.is-inativo { opacity: .55; }
+
+    .link-icon { width: 3rem; height: 3rem; border-radius: .65rem; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 1.15rem; flex-shrink: 0; }
+    .link-c1 { background: linear-gradient(135deg, #0ea5e9, #0369a1); }
+    .link-c2 { background: linear-gradient(135deg, #2563eb, #1e3a8a); }
+    .link-c3 { background: linear-gradient(135deg, #16a34a, #15803d); }
+    .link-c4 { background: linear-gradient(135deg, #d97706, #b45309); }
+    .link-c5 { background: linear-gradient(135deg, #64748b, #334155); }
+
+    .badge-inativo { font-size: .65rem; text-transform: uppercase; letter-spacing: .03em; }
+    .link-actions .btn { padding: .2rem .45rem; }
+
+    /* Botões seguem o azul-escuro (navy) do design do site, não o azul padrão do Bootstrap */
+    .btn-primary { background-color: var(--navy); border-color: var(--navy); }
+    .btn-primary:hover, .btn-primary:focus, .btn-primary:active { background-color: var(--navy-mid) !important; border-color: var(--navy-mid) !important; }
+    .btn-outline-primary { color: var(--navy); border-color: var(--navy); }
+    .btn-outline-primary:hover, .btn-outline-primary:focus, .btn-outline-primary:active { background-color: var(--navy) !important; border-color: var(--navy) !important; color: #fff !important; }
+    .text-primary { color: var(--navy) !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+        <div class="d-flex align-items-center gap-2">
+            <i class="fas fa-link fs-3 text-primary"></i>
+            <div>
+                <h1 class="li-title mb-0">Links Importantes</h1>
+                <p class="text-muted mb-0 small">Atalhos de fácil acesso aos sistemas usados no dia a dia</p>
+            </div>
+        </div>
+        <button type="button" class="btn btn-primary btn-sm" onclick="abrirModalLink()">
+            <i class="fas fa-plus me-1"></i>Adicionar Link
+        </button>
+    </div>
+
+    {% if links %}
+    <div class="row g-3">
+        {% for link in links %}
+        <div class="col-6 col-md-4 col-lg-3">
+            <div class="card link-card {% if not link.ativo %}is-inativo{% endif %}">
+                <div class="card-body d-flex flex-column">
+                    <div class="d-flex align-items-start gap-2 mb-2">
+                        {% cycle 'link-c1' 'link-c2' 'link-c3' 'link-c4' 'link-c5' as link_color silent %}
+                        <div class="link-icon {{ link_color }}"><i class="fas fa-external-link-alt"></i></div>
+                        <div class="flex-grow-1">
+                            <h6 class="mb-0 fw-bold">
+                                {{ link.titulo }}
+                                {% if not link.ativo %}<span class="badge bg-secondary badge-inativo">Inativo</span>{% endif %}
+                            </h6>
+                            {% if link.descricao %}<p class="text-muted small mb-0">{{ link.descricao }}</p>{% endif %}
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mt-auto pt-2">
+                        <a href="{{ link.url }}" target="_blank" rel="noopener" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-external-link-alt me-1"></i>Abrir
+                        </a>
+                        <div class="link-actions d-flex gap-1">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" title="Editar"
+                                data-id="{{ link.id }}" data-titulo="{{ link.titulo }}" data-url="{{ link.url }}"
+                                data-descricao="{{ link.descricao }}" data-ordem="{{ link.ordem }}"
+                                data-ativo="{{ link.ativo|yesno:'true,false' }}"
+                                onclick="abrirModalLinkEdicao(this)">
+                                <i class="fas fa-pen"></i>
+                            </button>
+                            <button type="button" class="btn btn-outline-danger btn-sm" title="Excluir"
+                                data-id="{{ link.id }}" data-titulo="{{ link.titulo }}"
+                                onclick="excluirLink(this)">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center text-muted py-5">
+        <i class="fas fa-link fa-2x mb-2 d-block"></i>
+        <p class="mb-2">Nenhum link cadastrado ainda.</p>
+        <button type="button" class="btn btn-primary btn-sm" onclick="abrirModalLink()">
+            <i class="fas fa-plus me-1"></i>Adicionar Link
+        </button>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
+
+{% block modals %}
+<div class="modal fade" id="modalLink" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalLinkTitulo">Adicionar Link</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="formLink">
+                <div class="modal-body">
+                    <input type="hidden" id="link_id">
+                    <div class="mb-2">
+                        <label class="form-label small">Título *</label>
+                        <input type="text" class="form-control" id="link_titulo" maxlength="100" required>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small">URL *</label>
+                        <input type="url" class="form-control" id="link_url" placeholder="https://..." required>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small">Descrição</label>
+                        <input type="text" class="form-control" id="link_descricao" maxlength="255">
+                    </div>
+                    <div class="row">
+                        <div class="col-6 mb-2">
+                            <label class="form-label small">Ordem de exibição</label>
+                            <input type="number" class="form-control" id="link_ordem" min="0" placeholder="Automática">
+                        </div>
+                        <div class="col-6 mb-2 d-flex align-items-end">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="link_ativo" checked>
+                                <label class="form-check-label small" for="link_ativo">Ativo (visível na lista)</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="small text-danger d-none" id="linkErro"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="salvarLink(this)">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<form style="display:none;">{% csrf_token %}</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const csrfTokenLinks = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    const URL_LINKS_SALVAR = '{% url "gestao_a_vista:links_importantes_salvar" %}';
+    const URL_LINKS_EXCLUIR = '{% url "gestao_a_vista:links_importantes_excluir" %}';
+
+    function getHeadersLinks() {
+        return { 'X-CSRFToken': csrfTokenLinks, 'Content-Type': 'application/json' };
+    }
+
+    function abrirModalLink() {
+        document.getElementById('formLink').reset();
+        document.getElementById('modalLinkTitulo').textContent = 'Adicionar Link';
+        document.getElementById('link_id').value = '';
+        document.getElementById('link_ativo').checked = true;
+        document.getElementById('linkErro').classList.add('d-none');
+        new bootstrap.Modal(document.getElementById('modalLink')).show();
+    }
+
+    function abrirModalLinkEdicao(btn) {
+        document.getElementById('formLink').reset();
+        document.getElementById('modalLinkTitulo').textContent = 'Editar Link';
+        document.getElementById('link_id').value = btn.dataset.id;
+        document.getElementById('link_titulo').value = btn.dataset.titulo;
+        document.getElementById('link_url').value = btn.dataset.url;
+        document.getElementById('link_descricao').value = btn.dataset.descricao;
+        document.getElementById('link_ordem').value = btn.dataset.ordem;
+        document.getElementById('link_ativo').checked = btn.dataset.ativo === 'true';
+        document.getElementById('linkErro').classList.add('d-none');
+        new bootstrap.Modal(document.getElementById('modalLink')).show();
+    }
+
+    function salvarLink(btn) {
+        const form = document.getElementById('formLink');
+        if (!form.checkValidity()) { form.reportValidity(); return; }
+        if (btn.disabled) return;
+
+        const erroEl = document.getElementById('linkErro');
+        erroEl.classList.add('d-none');
+        btn.disabled = true;
+
+        const payload = {
+            id: document.getElementById('link_id').value || null,
+            titulo: document.getElementById('link_titulo').value.trim(),
+            url: document.getElementById('link_url').value.trim(),
+            descricao: document.getElementById('link_descricao').value.trim(),
+            ordem: document.getElementById('link_ordem').value || null,
+            ativo: document.getElementById('link_ativo').checked,
+        };
+
+        fetch(URL_LINKS_SALVAR, { method: 'POST', headers: getHeadersLinks(), body: JSON.stringify(payload) })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    erroEl.textContent = data.message || 'Erro ao salvar o link.';
+                    erroEl.classList.remove('d-none');
+                    btn.disabled = false;
+                }
+            })
+            .catch(() => {
+                erroEl.textContent = 'Erro de comunicação com o servidor.';
+                erroEl.classList.remove('d-none');
+                btn.disabled = false;
+            });
+    }
+
+    function excluirLink(btn) {
+        const id = btn.dataset.id;
+        const titulo = btn.dataset.titulo;
+        if (!confirm('Excluir o link "' + titulo + '"?')) return;
+        btn.disabled = true;
+
+        fetch(URL_LINKS_EXCLUIR, { method: 'POST', headers: getHeadersLinks(), body: JSON.stringify({ id: id }) })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    alert(data.message || 'Erro ao excluir o link.');
+                    btn.disabled = false;
+                }
+            })
+            .catch(() => {
+                alert('Erro de comunicação com o servidor.');
+                btn.disabled = false;
+            });
+    }
+</script>
+{% endblock %}

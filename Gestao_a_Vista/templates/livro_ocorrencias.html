@@ -1,0 +1,2032 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Livro de Ocorrências{% endblock %}
+
+{% block extra_css %}
+<style>
+    .livro-title {
+        background: linear-gradient(to right, #0F172A, #1e40af);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-size: 26px;
+        font-weight: bold;
+        margin: 0;
+        text-transform: uppercase;
+    }
+
+    .livro-icon {
+        width: 32px;
+        height: 32px;
+        background: #0F172A;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 16px;
+    }
+
+    .kpi-card {
+        border: none;
+        color: white;
+        transition: 0.2s;
+        cursor: pointer;
+    }
+
+    .kpi-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .bg-nc {
+        background: linear-gradient(135deg, #ef4444, #b91c1c);
+    }
+
+    .bg-aprovacao {
+        background: linear-gradient(135deg, #f59e0b, #b45309);
+    }
+
+    .bg-compras {
+        background: linear-gradient(135deg, #1e293b, #334155);
+    }
+
+    .bg-retirada {
+        background: linear-gradient(135deg, #22c55e, #15803d);
+    }
+
+    .kpi-value {
+        font-size: 2.5rem;
+        font-weight: 800;
+    }
+
+    .kpi-label {
+        font-size: 1rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .nav-tabs .nav-link {
+        color: #64748b;
+        font-weight: 500;
+    }
+
+    .nav-tabs .nav-link.active {
+        background-color: #f8fafc;
+        border-bottom-color: transparent;
+        font-weight: bold;
+        color: #1e40af;
+    }
+
+    /* Estilo Especial para a Aba de Auditoria */
+    .tab-reincidencia {
+        color: #dc2626 !important;
+        font-weight: 700;
+    }
+
+    .tab-reincidencia.active {
+        background-color: #fef2f2 !important;
+        color: #b91c1c !important;
+        border-bottom-color: #fef2f2 !important;
+    }
+
+    .tab-content {
+        background: #f8fafc;
+        border: 1px solid #dee2e6;
+        border-top: none;
+        padding: 20px;
+        border-radius: 0 0 8px 8px;
+    }
+
+    .table-hover tbody tr {
+        cursor: pointer;
+    }
+
+    .chart-card {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        border: 1px solid #e2e8f0;
+        cursor: pointer;
+        height: 100%;
+        transition: border-color 0.2s;
+    }
+
+    .chart-title {
+        font-weight: 700;
+        color: #334155;
+        margin-bottom: 20px;
+        text-transform: uppercase;
+        font-size: 0.9rem;
+        border-bottom: 1px solid #f1f5f9;
+        padding-bottom: 10px;
+    }
+
+    .chart-scroll-wrapper {
+        position: relative;
+        height: 400px;
+        overflow-y: auto;
+    }
+
+    .chart-dynamic-height {
+        position: relative;
+        width: 100%;
+    }
+
+    .btn-gradient-fab {
+        background: linear-gradient(to right, #0F172A, #1e40af);
+        color: white;
+        border: none;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .btn-gradient-fab:hover {
+        transform: scale(1.05);
+        box-shadow: 0 10px 20px rgba(15, 23, 42, 0.4) !important;
+        color: white;
+    }
+
+    .kanban-col-container {
+        background-color: #f1f5f9;
+        border-radius: 8px;
+        padding: 10px;
+        height: 60vh;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .kanban-col-header {
+        font-weight: bold;
+        text-align: center;
+        padding: 10px;
+        border-radius: 6px;
+        color: white;
+        margin-bottom: 10px;
+        text-transform: uppercase;
+    }
+
+    .kanban-items-scroll {
+        flex: 1;
+        overflow-y: auto;
+        padding-right: 5px;
+    }
+
+    .kanban-mini-card {
+        background: white;
+        padding: 12px;
+        border-radius: 6px;
+        margin-bottom: 10px;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        border-left: 4px solid #cbd5e1;
+        transition: all 0.2s;
+    }
+
+    .kanban-mini-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .border-nc {
+        border-left-color: #dc2626 !important;
+    }
+
+    .border-warn {
+        border-left-color: #f59e0b !important;
+    }
+
+    .border-dark {
+        border-left-color: #1e293b !important;
+    }
+
+    .border-ok {
+        border-left-color: #16a34a !important;
+    }
+
+    .modal-header-custom {
+        color: white;
+    }
+
+    .bg-header-nc {
+        background-color: #dc2626;
+    }
+
+    .bg-header-warn {
+        background-color: #d97706;
+    }
+
+    .bg-header-ok {
+        background-color: #16a34a;
+    }
+
+    .bg-header-dark {
+        background-color: #1e293b;
+    }
+
+    .btn-primary,
+    .btn-info {
+        background: linear-gradient(135deg, #1e293b, #334155) !important;
+        border: none !important;
+        color: white !important;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        transition: all 0.2s ease-in-out;
+    }
+
+    .btn-primary:hover,
+    .btn-info:hover {
+        background: linear-gradient(135deg, #0f172a, #1e293b) !important;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        color: white !important;
+    }
+
+    .btn-outline-primary {
+        color: #1e293b !important;
+        border: 2px solid #1e293b !important;
+        background: transparent !important;
+        font-weight: 600;
+        transition: all 0.2s ease-in-out;
+    }
+
+    .btn-outline-primary:hover {
+        background: linear-gradient(135deg, #1e293b, #334155) !important;
+        border-color: transparent !important;
+        color: white !important;
+        transform: translateY(-2px);
+    }
+
+    .bg-info {
+        background: linear-gradient(135deg, #1e293b, #334155) !important;
+        color: white !important;
+    }
+
+    .text-info {
+        background: linear-gradient(135deg, #1e293b, #334155) !important;
+        -webkit-background-clip: text !important;
+        background-clip: text !important;
+        -webkit-text-fill-color: transparent !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 main-gradient-bg">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex align-items-center gap-3">
+            <div class="livro-icon"><i class="fas fa-book"></i></div>
+            <h1 class="livro-title">Livro de Ocorrências</h1>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+
+            <div class="btn-group shadow-sm" role="group">
+                <a href="?dias=30"
+                    class="btn {% if dias_atuais == '30' %}btn-primary{% else %}btn-outline-primary{% endif %} fw-bold px-3">30
+                    Dias</a>
+                <a href="?dias=60"
+                    class="btn {% if dias_atuais == '60' %}btn-primary{% else %}btn-outline-primary{% endif %} fw-bold px-3">60
+                    Dias</a>
+                <a href="?dias=90"
+                    class="btn {% if dias_atuais == '90' %}btn-primary{% else %}btn-outline-primary{% endif %} fw-bold px-3">90
+                    Dias</a>
+            </div>
+
+            <span class="text-muted d-none d-md-inline ms-2"><i class="fas fa-sync-alt me-1"></i> Tempo Real</span>
+            <button class="btn btn-outline-primary fw-bold px-3 py-2 ms-2" type="button" data-bs-toggle="offcanvas"
+                data-bs-target="#offcanvasHistorico">
+                <i class="fas fa-history me-1"></i> Histórico Geral
+            </button>
+        </div>
+    </div>
+
+    <button class="btn btn-gradient-fab rounded-circle shadow-lg p-3"
+        style="position: fixed; bottom: 30px; right: 30px; z-index: 1000;" onclick="abrirKanbanGeral()"
+        title="Abrir Quadro Kanban">
+        <i class="fas fa-columns fa-2x"></i>
+    </button>
+
+    <ul class="nav nav-tabs" id="ocorrenciaTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="dash-tab" data-bs-toggle="tab" data-bs-target="#dash" type="button"
+                role="tab">Dashboard Geral</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="nc-tab" data-bs-toggle="tab" data-bs-target="#nc" type="button" role="tab">NCs
+                (Criar Plano)</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="aprovacao-tab" data-bs-toggle="tab" data-bs-target="#aprovacao" type="button"
+                role="tab">Em Aprovação</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="comp-tab" data-bs-toggle="tab" data-bs-target="#compra" type="button"
+                role="tab">Compras</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="retirada-tab" data-bs-toggle="tab" data-bs-target="#retirada" type="button"
+                role="tab">Retiradas</button>
+        </li>
+
+        {% if user.role == 'administrador' or user.is_superuser %}
+        <li class="nav-item" role="presentation">
+            <button class="nav-link tab-reincidencia" id="reincidencias-tab" data-bs-toggle="tab"
+                data-bs-target="#reincidencias" type="button" role="tab">
+                <i class="fas fa-clipboard-check text-danger"></i> Auditoria
+            </button>
+        </li>
+        {% endif %}
+        
+        <!-- NOVA ABA DE RETROSPECTIVA -->
+        {% if user.role == 'administrador' or user.is_superuser %}
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="retrospectiva-tab" data-bs-toggle="tab"
+                data-bs-target="#retrospectiva" type="button" role="tab" onclick="carregarRetrospectiva()">
+                <i class="fas fa-chart-line text-primary"></i> Retrospectiva
+            </button>
+        </li>
+        {% endif %}
+    </ul>
+
+    <div class="tab-content" id="ocorrenciaTabsContent">
+
+        <div class="tab-pane fade show active" id="dash" role="tabpanel">
+            <div class="row g-4 mb-4">
+                <div class="col-md-3">
+                    <div class="card kpi-card bg-nc" onclick="mudarAba('nc-tab')">
+                        <div class="card-body d-flex justify-content-between align-items-center p-4">
+                            <div>
+                                <div class="kpi-value">{{ kanban.nao_conforme|length }}</div>
+                                <div class="kpi-label">NCs Encontradas</div>
+                            </div>
+                            <i class="fas fa-exclamation-triangle fa-2x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card kpi-card bg-aprovacao" onclick="mudarAba('aprovacao-tab')">
+                        <div class="card-body d-flex justify-content-between align-items-center p-4">
+                            <div>
+                                <div class="kpi-value">{{ planos_em_aprovacao|length }}</div>
+                                <div class="kpi-label">Em Aprovação</div>
+                            </div>
+                            <i class="fas fa-hourglass-half fa-2x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card kpi-card bg-compras" onclick="mudarAba('comp-tab')">
+                        <div class="card-body d-flex justify-content-between align-items-center p-4">
+                            <div>
+                                <div class="kpi-value">{{ total_compras }}</div>
+                                <div class="kpi-label">Ações de Compra</div>
+                            </div>
+                            <i class="fas fa-shopping-cart fa-2x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card kpi-card bg-retirada" onclick="mudarAba('retirada-tab')">
+                        <div class="card-body d-flex justify-content-between align-items-center p-4">
+                            <div>
+                                <div class="kpi-value">{{ planos_compra_entregue|length }}</div>
+                                <div class="kpi-label">Para Retirada</div>
+                            </div>
+                            <i class="fas fa-box-open fa-2x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="chart-card">
+                        <div class="chart-title">Distribuição Geral de NCs</div>
+                        <div style="position: relative; height: 300px; width: 100%;">
+                            <canvas id="chartPizza"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="chart-card">
+                        <div class="chart-title">Itens Faltantes (Top NC)</div>
+                        <div class="chart-scroll-wrapper">
+                            <div class="chart-dynamic-height js-dynamic-chart"
+                                data-multiplier="{{ charts.itens_labels|length|default:10|add:5 }}"
+                                style="min-height: 400px;">
+                                <canvas id="chartItens"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="chart-card">
+                        <div class="chart-title">CRs com Ocorrências (NC)</div>
+                        <div class="chart-scroll-wrapper">
+                            <div class="chart-dynamic-height js-dynamic-chart"
+                                data-multiplier="{{ charts.crs_labels|length|default:10|add:5 }}"
+                                style="min-height: 400px;">
+                                <canvas id="chartCRs"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if user.role == 'administrador' or user.is_superuser %}
+        <div class="tab-pane fade" id="reincidencias" role="tabpanel">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="text-danger fw-bold m-0"><i class="fas fa-clipboard-check"></i> Controle e Histórico de
+                    Auditoria</h4>
+                <span class="badge bg-danger p-2"><i class="fas fa-lock me-1"></i> Acesso Restrito</span>
+            </div>
+
+            <div class="bg-white rounded shadow-sm" style="height: 70vh; overflow: hidden; border: 1px solid #fee2e2;">
+                <iframe src="{% url 'gestao_a_vista:painel_reincidencias' %}"
+                    style="width: 100%; height: 100%; border: none;"></iframe>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="tab-pane fade" id="nc" role="tabpanel">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="text-danger fw-bold m-0"><i class="fas fa-exclamation-circle"></i> Não Conformidades
+                    Pendentes</h4>
+            </div>
+
+            <div class="row mb-3 g-2">
+                <div class="col-md-4">
+                    <div class="input-group shadow-sm">
+                        <span class="input-group-text bg-white"><i class="fas fa-hashtag text-muted"></i></span>
+                        <input type="text" id="search-cr-nc" class="form-control" placeholder="Buscar por CR...">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="input-group shadow-sm">
+                        <span class="input-group-text bg-white"><i class="fas fa-box text-muted"></i></span>
+                        <input type="text" id="search-item-nc" class="form-control"
+                            placeholder="Buscar por Item ou Colaborador...">
+                    </div>
+                </div>
+                <div class="col-md-4 d-flex align-items-center">
+                    <input type="date" id="date-nc" class="form-control shadow-sm me-2"
+                        title="Filtrar por data da ocorrência">
+                    <div class="form-check form-switch mb-0 ms-1" style="white-space: nowrap;">
+                        <input class="form-check-input" type="checkbox" id="filter-reg-nc">
+                        <label class="form-check-label fw-bold small" for="filter-reg-nc" style="color: #1e293b;">Só
+                            Regulatório</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-responsive bg-white rounded shadow-sm">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>CR</th>
+                            <th>Colaborador</th>
+                            <th>Item Avaliado</th>
+                            <th>Data</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-nc">
+                        {% for item in kanban.nao_conforme %}
+                        <tr data-date="{{ item.data_iso }}">
+                            <td class="fw-bold">
+                                {{ item.cr }} 
+                                <span class="badge bg-light text-dark border ms-1" title="Número do Chamado">#{{ item.chamado }}</span>
+                                <br><small class="text-muted">{{ item.item }}</small>
+                                <br><small class="text-secondary fw-normal"><i class="fas fa-comment-dots me-1"></i> {{ item.resposta|truncatechars:100 }}</small>
+                                {% if item.is_regulatory %}
+                                <br><span class="badge mt-1" style="background-color: #1e293b; color: #f8f9fa;"><i
+                                        class="fas fa-balance-scale"></i> Regulatório</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ item.colaborador }}</td>
+                            <td>{{ item.item }}</td>
+                            <td>{{ item.data_display|default:"-" }}</td>
+                            <td>
+                                <button class="btn btn-sm btn-secondary text-white me-1"
+                                    title="Ver Detalhes do Checklist"
+                                    onclick="abrirModalDetalhes('{{ item.estrutura_id }}', '{{ item.item|escapejs }}', 'nao_conforme')">
+                                    <i class="fas fa-eye"></i> Detalhes
+                                </button>
+
+                                {% if item.tem_historico %}
+                                <button class="btn btn-sm btn-info text-white me-1" title="Histórico do Item"
+                                    onclick="abrirHistoricoItem('{{ item.cr|escapejs }}', '{{ item.item|escapejs }}')">
+                                    <i class="fas fa-history"></i> Histórico
+                                </button>
+                                {% endif %}
+
+                                <button class="btn btn-sm btn-primary"
+                                    onclick="abrirModalCriarPlano('{{ item.item|escapejs }}', '{{ item.colaborador|escapejs }}', '{{ item.cr|escapejs }}')">
+                                    <i class="fas fa-plus"></i> Criar Plano
+                                </button>
+                                <button class="btn btn-sm btn-warning ms-1" title="Enviar para Auditoria"
+                                    onclick="abrirModalAuditoria('{{ item.item|escapejs }}', '{{ item.cr|escapejs }}')">
+                                    <i class="fas fa-paper-plane"></i> Auditoria
+                                </button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr class="empty-row">
+                            <td colspan="5" class="text-center py-4">Nenhuma NC pendente no momento.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="text-center mt-3">
+                <button id="btnMore-nc" class="btn btn-outline-primary fw-bold px-4" style="display: none;"><i
+                        class="fas fa-chevron-down"></i> Carregar Mais 10</button>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="aprovacao" role="tabpanel">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="text-warning fw-bold m-0"><i class="fas fa-hourglass-half"></i> Aguardando Aprovação</h4>
+            </div>
+
+            <div class="row mb-3 g-2">
+                <div class="col-md-4">
+                    <div class="input-group shadow-sm">
+                        <span class="input-group-text bg-white"><i class="fas fa-hashtag text-muted"></i></span>
+                        <input type="text" id="search-cr-aprovacao" class="form-control" placeholder="Buscar por CR...">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="input-group shadow-sm">
+                        <span class="input-group-text bg-white"><i class="fas fa-box text-muted"></i></span>
+                        <input type="text" id="search-item-aprovacao" class="form-control"
+                            placeholder="Buscar por Item ou Criador...">
+                    </div>
+                </div>
+                <div class="col-md-4 d-flex align-items-center">
+                    <input type="date" id="date-aprovacao" class="form-control shadow-sm me-2"
+                        title="Filtrar por data de abertura">
+                    <div class="form-check form-switch mb-0 ms-1" style="white-space: nowrap;">
+                        <input class="form-check-input" type="checkbox" id="filter-reg-aprovacao">
+                        <label class="form-check-label fw-bold small" for="filter-reg-aprovacao"
+                            style="color: #1e293b;">Só Regulatório</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-responsive bg-white rounded shadow-sm">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>CR</th>
+                            <th>Item em Falta</th>
+                            <th>Criador</th>
+                            <th>Data</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-aprovacao">
+                        {% for plano in planos_em_aprovacao %}
+                        <tr data-date="{{ plano.data_criacao|date:'Y-m-d' }}">
+                            <td class="fw-bold">
+                                {{ plano.cr_colaborador }}
+                                <span class="badge bg-light text-dark border ms-1" title="Número do Chamado">#{% if plano.numero_chamado %}{{ plano.numero_chamado }}{% else %}{{ plano.id|stringformat:"s"|slice:":8"|upper }}{% endif %}</span>
+                                <br><small class="text-muted">{{ plano.item_em_falta }}</small>
+                                {% if plano.is_regulatory %}
+                                <br><span class="badge mt-1" style="background-color: #1e293b; color: #f8f9fa;"><i
+                                        class="fas fa-balance-scale"></i> Regulatório</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ plano.item_em_falta }}</td>
+                            <td>{% if plano.criador_plano %}{{ plano.criador_plano.name|default:plano.criador_plano.username }}{% else %}Desconhecido{% endif %}</td>
+                            <td>{{ plano.data_criacao|date:"d/m/Y H:i" }}</td>
+                            <td>
+                                <div class="mb-1">
+                                    <button class="btn btn-sm btn-secondary text-white me-1"
+                                        title="Ver Detalhes da Ocorrência"
+                                        onclick="abrirModalDetalhes('{{ plano.cr_colaborador|escapejs }}', '{{ plano.item_em_falta|escapejs }}', 'all')">
+                                        <i class="fas fa-eye"></i> Detalhes
+                                    </button>
+                                    <button class="btn btn-sm btn-info text-white me-1" title="Histórico do Item"
+                                        onclick="abrirHistoricoItem('{{ plano.cr_colaborador|escapejs }}', '{{ plano.item_em_falta|escapejs }}')">
+                                        <i class="fas fa-history"></i> Histórico
+                                    </button>
+                                </div>
+                                {% if user.role == 'administrador' or plano.is_regulatory == user.is_regulatory %}
+                                {% if user.role in 'gerente,coordenador,administrador' %}
+                                <button class="btn btn-sm btn-success"
+                                    onclick="acaoAprovarPlano('{{ plano.id }}', 'aprovar')">Aceitar</button>
+                                <button class="btn btn-sm btn-danger"
+                                    onclick="acaoAprovarPlano('{{ plano.id }}', 'rejeitar')">Negar</button>
+                                {% else %}
+                                <span class="badge bg-secondary">Apenas Gerente/Coord</span>
+                                {% endif %}
+                                <button class="btn btn-sm btn-outline-danger ms-1" title="Excluir Plano"
+                                    onclick="excluirPlano('{{ plano.id }}')"><i class="fas fa-trash"></i></button>
+                                {% else %}
+                                <span class="badge bg-secondary" style="font-size: 0.8rem;">
+                                    <i class="fas fa-lock text-white-50"></i> Acesso Restrito
+                                </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr class="empty-row">
+                            <td colspan="5" class="text-center py-4">Nenhum plano aguardando aprovação.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="text-center mt-3">
+                <button id="btnMore-aprovacao" class="btn btn-outline-primary fw-bold px-4" style="display: none;"><i
+                        class="fas fa-chevron-down"></i> Carregar Mais 10</button>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="compra" role="tabpanel">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="text-info fw-bold m-0"><i class="fas fa-shopping-cart"></i> Fluxo de Compras</h4>
+            </div>
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card text-white bg-secondary mb-3">
+                        <div class="card-body">
+                            <h5 class="card-title">Solicitar Compras</h5>
+                            <p class="card-text fs-2 fw-bold">{{ planos_compra_cadastrar|length }}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card text-white bg-info mb-3">
+                        <div class="card-body">
+                            <h5 class="card-title">Pedidos Realizados</h5>
+                            <p class="card-text fs-2 fw-bold">{{ planos_compra_pedido|length }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mb-3 g-2">
+                <div class="col-md-4">
+                    <div class="input-group shadow-sm">
+                        <span class="input-group-text bg-white"><i class="fas fa-hashtag text-muted"></i></span>
+                        <input type="text" id="search-cr-compra" class="form-control" placeholder="Buscar por CR...">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="input-group shadow-sm">
+                        <span class="input-group-text bg-white"><i class="fas fa-box text-muted"></i></span>
+                        <input type="text" id="search-item-compra" class="form-control"
+                            placeholder="Buscar por Item ou Status...">
+                    </div>
+                </div>
+                <div class="col-md-4 d-flex align-items-center">
+                    <input type="date" id="date-compra" class="form-control shadow-sm me-2"
+                        title="Filtrar por data base">
+                    <div class="form-check form-switch mb-0 ms-1" style="white-space: nowrap;">
+                        <input class="form-check-input" type="checkbox" id="filter-reg-compra">
+                        <label class="form-check-label fw-bold small" for="filter-reg-compra" style="color: #1e293b;">Só
+                            Regulatório</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-responsive bg-white rounded shadow-sm">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>CR</th>
+                            <th>Item Solicitado</th>
+                            <th>Status / Previsão</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-compra">
+                        {% for plano in planos_compra_cadastrar %}
+                        <tr data-date="{{ plano.data_criacao|date:'Y-m-d' }}">
+                            <td class="fw-bold">
+                                {{ plano.cr_colaborador }}
+                                <br><small class="text-muted">{{ plano.item_em_falta }}</small>
+                                {% if plano.is_regulatory %}
+                                <br><span class="badge mt-1" style="background-color: #1e293b; color: #f8f9fa;"><i
+                                        class="fas fa-balance-scale"></i> Regulatório</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {{ plano.item_em_falta }}
+                                <br><small class="text-primary"><i class="fas fa-user-check"></i> Aprovado por: {% if plano.aprovador %}{{ plano.aprovador.name|default:plano.aprovador.username }}{% else %}Sistema (Estoque){% endif %}</small>
+                            </td>
+                            <td><span class="badge bg-secondary">A Cadastrar</span></td>
+                            <td>
+                                {% if user.role == 'administrador' or plano.is_regulatory == user.is_regulatory %}
+                                <button class="btn btn-sm btn-primary"
+                                    onclick="abrirModalCompra('{{ plano.id }}', '{{ plano.item_em_falta|escapejs }}', {% if plano.is_regulatory %}true{% else %}false{% endif %})">Cadastrar
+                                    Compra</button>
+                                <button class="btn btn-sm btn-outline-danger ms-1" title="Excluir Plano"
+                                    onclick="excluirPlano('{{ plano.id }}')"><i class="fas fa-trash"></i></button>
+                                {% else %}
+                                <span class="badge bg-secondary" style="font-size: 0.8rem;"><i
+                                        class="fas fa-lock text-white-50"></i> Acesso Restrito</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+
+                        {% for plano in planos_compra_pedido %}
+                        <tr data-date="{{ plano.data_compra|date:'Y-m-d' }}">
+                            <td class="fw-bold">
+                                {{ plano.cr_colaborador }}
+                                <br><small class="text-muted">{{ plano.item_em_falta }}</small>
+                                {% if plano.is_regulatory %}
+                                <br><span class="badge mt-1" style="background-color: #1e293b; color: #f8f9fa;"><i
+                                        class="fas fa-balance-scale"></i> Regulatório</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {{ plano.item_em_falta }}
+                                <br><small class="text-primary"><i class="fas fa-user-check"></i> Aprovado por: {% if plano.aprovador %}{{ plano.aprovador.name|default:plano.aprovador.username }}{% else %}Sistema (Estoque){% endif %}</small>
+                            </td>
+                            <td>
+                                <span class="badge text-white d-block mb-1"
+                                    style="background: linear-gradient(135deg, #1e293b, #334155);">Pedido
+                                    Realizado</span>
+                                <small class="text-muted d-block"><i class="fas fa-shopping-bag"></i> Comprado: {{
+                                    plano.data_compra|date:"d/m/Y"|default:"-" }}</small>
+                                <small
+                                    class="{% if plano.esta_atrasado %}text-danger{% else %}text-warning{% endif %} fw-bold d-block">
+                                    <i class="fas fa-truck-fast"></i> Previsão: {{
+                                    plano.previsao_entrega|date:"d/m/Y"|default:"Não informada" }}
+                                </small>
+                            </td>
+                            <td>
+                                {% if user.role == 'administrador' or plano.is_regulatory == user.is_regulatory %}
+                                <button class="btn btn-sm btn-success"
+                                    onclick="marcarCompraEntregue('{{ plano.id }}', '{{ plano.data_compra|date:'Y-m-d' }}')"><i
+                                        class="fas fa-check-circle"></i> Marcar Chegada</button>
+                                <button class="btn btn-sm btn-outline-danger ms-1" title="Excluir Plano"
+                                    onclick="excluirPlano('{{ plano.id }}')"><i class="fas fa-trash"></i></button>
+                                {% else %}
+                                <span class="badge bg-secondary" style="font-size: 0.8rem;"><i
+                                        class="fas fa-lock text-white-50"></i> Acesso Restrito</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+
+                        {% if not planos_compra_cadastrar and not planos_compra_pedido %}
+                        <tr class="empty-row">
+                            <td colspan="4" class="text-center py-4">Nenhuma compra pendente.</td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="text-center mt-3">
+                <button id="btnMore-compra" class="btn btn-outline-primary fw-bold px-4" style="display: none;"><i
+                        class="fas fa-chevron-down"></i> Carregar Mais 10</button>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="retirada" role="tabpanel">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="text-success fw-bold m-0"><i class="fas fa-box-open"></i> Itens Aguardando Retirada</h4>
+            </div>
+
+            <div class="row mb-3 g-2">
+                <div class="col-md-4">
+                    <div class="input-group shadow-sm">
+                        <span class="input-group-text bg-white"><i class="fas fa-hashtag text-muted"></i></span>
+                        <input type="text" id="search-cr-retirada" class="form-control" placeholder="Buscar por CR...">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="input-group shadow-sm">
+                        <span class="input-group-text bg-white"><i class="fas fa-box text-muted"></i></span>
+                        <input type="text" id="search-item-retirada" class="form-control"
+                            placeholder="Buscar por Item...">
+                    </div>
+                </div>
+                <div class="col-md-4 d-flex align-items-center">
+                    <input type="date" id="date-retirada" class="form-control shadow-sm me-2"
+                        title="Filtrar por data de chegada">
+                    <div class="form-check form-switch mb-0 ms-1" style="white-space: nowrap;">
+                        <input class="form-check-input" type="checkbox" id="filter-reg-retirada">
+                        <label class="form-check-label fw-bold small" for="filter-reg-retirada"
+                            style="color: #1e293b;">Só Regulatório</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-responsive bg-white rounded shadow-sm">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>CR</th>
+                            <th>Item para Retirar</th>
+                            <th>Data Chegada (Base)</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-retirada">
+                        {% for plano in planos_compra_entregue %}
+                        <tr data-date="{{ plano.data_compra|date:'Y-m-d' }}">
+                            <td class="fw-bold">
+                                {{ plano.cr_colaborador }}
+                                <br><small class="text-muted">{{ plano.item_em_falta }}</small>
+                                {% if plano.is_regulatory %}
+                                <br><span class="badge mt-1" style="background-color: #1e293b; color: #f8f9fa;"><i
+                                        class="fas fa-balance-scale"></i> Regulatório</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ plano.item_em_falta }}</td>
+                            <td>{{ plano.data_compra|date:"d/m/Y"|default:"N/A" }}</td>
+                            <td>
+                                {% if user.role == 'administrador' or plano.is_regulatory == user.is_regulatory %}
+                                <button class="btn btn-sm btn-success"
+                                    onclick="abrirModalRetirada('{{ plano.id }}', '{{ plano.item_em_falta|escapejs }}')">Finalizar
+                                    Retirada</button>
+                                <button class="btn btn-sm btn-outline-danger ms-1" title="Excluir Plano"
+                                    onclick="excluirPlano('{{ plano.id }}')"><i class="fas fa-trash"></i></button>
+                                {% else %}
+                                <span class="badge bg-secondary" style="font-size: 0.8rem;"><i
+                                        class="fas fa-lock text-white-50"></i> Acesso Restrito</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr class="empty-row">
+                            <td colspan="4" class="text-center py-4">Nenhum item aguardando retirada.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="text-center mt-3">
+                <button id="btnMore-retirada" class="btn btn-outline-primary fw-bold px-4" style="display: none;"><i
+                        class="fas fa-chevron-down"></i> Carregar Mais 10</button>
+            </div>
+        </div>
+
+        <!-- ABA RETROSPECTIVA -->
+        <div class="tab-pane fade" id="retrospectiva" role="tabpanel">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="text-primary fw-bold m-0"><i class="fas fa-chart-line"></i> Métricas e Movimentações</h4>
+            </div>
+
+            <div id="retro-loading" class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Carregando...</span>
+                </div>
+                <p class="mt-2 text-muted fw-bold">Processando histórico de movimentações...</p>
+            </div>
+
+            <div id="retro-content" style="display: none;">
+                <!-- KPIs -->
+                <div class="row g-4 mb-4">
+                    <div class="col-md-3">
+                        <div class="card kpi-card bg-success border-0 shadow-sm" style="background: linear-gradient(135deg, #059669, #047857) !important;">
+                            <div class="card-body p-4 text-white text-center">
+                                <h2 class="fw-bold mb-1" id="retro-kpi-concluidas">0</h2>
+                                <span class="text-uppercase small fw-bold opacity-75">Ocorrências Tratadas</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card kpi-card bg-danger border-0 shadow-sm" style="background: linear-gradient(135deg, #dc2626, #b91c1c) !important;">
+                            <div class="card-body p-4 text-white text-center">
+                                <h2 class="fw-bold mb-1" id="retro-kpi-auditoria">0</h2>
+                                <span class="text-uppercase small fw-bold opacity-75">Enviadas p/ Auditoria</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card kpi-card bg-warning border-0 shadow-sm" style="background: linear-gradient(135deg, #d97706, #b45309) !important;">
+                            <div class="card-body p-4 text-white text-center">
+                                <h2 class="fw-bold mb-1" id="retro-kpi-paradas">0</h2>
+                                <span class="text-uppercase small fw-bold opacity-75">Tarefas Paradas</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card kpi-card border-0 shadow-sm" style="background: linear-gradient(135deg, #1e293b, #0f172a) !important;">
+                            <div class="card-body p-4 text-white text-center">
+                                <h2 class="fw-bold mb-1"><span id="retro-kpi-tempo">0</span> <small class="fs-6">dias</small></h2>
+                                <span class="text-uppercase small fw-bold opacity-75">Tempo Méd. de Fila</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-4 mb-4">
+                    <!-- Alertas de Atraso -->
+                    <div class="col-md-4">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
+                                <h6 class="fw-bold text-uppercase mb-0 text-danger"><i class="fas fa-exclamation-triangle"></i> Tarefas Gargaladas</h6>
+                                <small class="text-muted">Paradas no setor além do prazo limite</small>
+                            </div>
+                            <div class="card-body p-0" style="max-height: 350px; overflow-y: auto;">
+                                <ul class="list-group list-group-flush" id="retro-alertas-list">
+                                    <!-- Preenchido via JS -->
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Gráfico 1: Setores -->
+                    <div class="col-md-4">
+                        <div class="card border-0 shadow-sm h-100 p-3">
+                            <h6 class="fw-bold text-uppercase text-secondary mb-3">Tarefas Paradas por Setor</h6>
+                            <canvas id="chartRetroSetores" style="max-height: 250px;"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Gráfico 2: Dias Permanência -->
+                    <div class="col-md-4">
+                        <div class="card border-0 shadow-sm h-100 p-3">
+                            <h6 class="fw-bold text-uppercase text-secondary mb-1">Dias p/ Movimentar (Últ. 7 dias)</h6>
+                            <small class="text-muted d-block mb-3">Quantos dias o item ficou parado antes de mudar de status</small>
+                            <canvas id="chartRetroPermanencia" style="max-height: 250px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-4 mb-4">
+                    <div class="col-md-4">
+                        <div class="card border-0 shadow-sm p-3">
+                            <h6 class="fw-bold text-uppercase text-secondary mb-3"><i class="fas fa-medal text-warning"></i> Quem Mais Cria Planos</h6>
+                            <ul class="list-group list-group-flush" id="retro-top-criadores"></ul>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border-0 shadow-sm p-3">
+                            <h6 class="fw-bold text-uppercase text-secondary mb-3"><i class="fas fa-ban text-danger"></i> Quem Mais Rejeita</h6>
+                            <ul class="list-group list-group-flush" id="retro-top-rejeitadores"></ul>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border-0 shadow-sm p-3">
+                            <h6 class="fw-bold text-uppercase text-secondary mb-3"><i class="fas fa-user-times text-danger"></i> Mais Planos Rejeitados</h6>
+                            <ul class="list-group list-group-flush" id="retro-top-rejeitados"></ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Feed de Movimentações -->
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white pt-4 pb-3 border-bottom-0">
+                        <h6 class="fw-bold text-uppercase mb-0" style="color: #0f172a;"><i class="fas fa-stream"></i> Últimas Movimentações</h6>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="ps-4">Data</th>
+                                        <th>Colaborador</th>
+                                        <th>Ação / Movimentação</th>
+                                        <th>CR</th>
+                                        <th>Item</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="retro-feed-body">
+                                    <!-- Preenchido via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botões de Exportação -->
+                <div class="row mt-4 mb-2">
+                    <div class="col-12 text-end">
+                        <a href="{% url 'gestao_a_vista:exportar_retrospectiva_excel' %}" class="btn btn-outline-success me-2 shadow-sm fw-bold">
+                            <i class="fas fa-file-excel"></i> Exportar para Excel
+                        </a>
+                        <a href="{% url 'gestao_a_vista:exportar_retrospectiva_pdf' %}" target="_blank" class="btn btn-danger shadow-sm fw-bold">
+                            <i class="fas fa-file-pdf"></i> Exportar para PDF
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+        <!-- FIM DA ABA RETROSPECTIVA -->
+
+    </div>
+</div>
+{% endblock %}
+
+{% block modals %}
+<div class="modal fade" id="modalHistoricoItem" tabindex="-1" aria-hidden="true" style="z-index: 1060;">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title fw-bold" id="historicoItemTitle">Histórico do Item</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body bg-light">
+                <div id="historicoItemContent"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalKanbanGeral" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-fullscreen">
+        <div class="modal-content bg-light">
+            <div class="modal-header bg-header-dark">
+                <h5 class="modal-title fw-bold">QUADRO KANBAN GERAL DO FLUXO</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-5"><input type="text" class="form-control" id="filtroKanbanItem"
+                            onkeyup="renderizarKanban()" placeholder="Filtrar por Item..."></div>
+                    <div class="col-md-4"><input type="text" class="form-control" id="filtroKanbanCR"
+                            onkeyup="renderizarKanban()" placeholder="Filtrar por CR..."></div>
+                </div>
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <div class="kanban-col-container">
+                            <div class="kanban-col-header text-white"
+                                style="background: linear-gradient(135deg, #ef4444, #b91c1c);">NCs Encontradas (<span
+                                    id="count-nc">0</span>)</div>
+                            <div class="kanban-items-scroll" id="kanban-col-nc"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="kanban-col-container">
+                            <div class="kanban-col-header text-white"
+                                style="background: linear-gradient(135deg, #f59e0b, #b45309);">Em Aprovação (<span
+                                    id="count-aprovacao">0</span>)</div>
+                            <div class="kanban-items-scroll" id="kanban-col-aprovacao"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="kanban-col-container">
+                            <div class="kanban-col-header text-white"
+                                style="background: linear-gradient(135deg, #1e293b, #334155);">Ações de Compra (<span
+                                    id="count-compras">0</span>)</div>
+                            <div class="kanban-items-scroll" id="kanban-col-compras"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="kanban-col-container">
+                            <div class="kanban-col-header text-white"
+                                style="background: linear-gradient(135deg, #22c55e, #15803d);">Para Retirada (<span
+                                    id="count-retirada">0</span>)</div>
+                            <div class="kanban-items-scroll" id="kanban-col-retirada"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalDetalhes" tabindex="-1" aria-hidden="true" style="z-index: 1060;">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header modal-header-custom" id="modalHeaderColor">
+                <h5 class="modal-title">Detalhes da Ocorrência</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div id="modalConteudoLoading" class="text-center p-5">
+                    <div class="spinner-border text-primary"></div>
+                    <p>Carregando...</p>
+                </div>
+                <iframe id="iframeDetalhes" style="width: 100%; height: 600px; border: none; display: none;"></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalCriarPlano" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header text-white"
+                style="background: linear-gradient(135deg, #1e293b, #334155); border: none;">
+                <h5 class="modal-title">Criar Plano de Ação</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-2"><label class="form-label">Item em Falta</label><input type="text" id="planoItemFalta"
+                        class="form-control" readonly></div>
+                <div class="mb-2"><label class="form-label">Colaborador NC</label><input type="text"
+                        id="planoColaborador" class="form-control" readonly></div>
+                <div class="mb-2"><label class="form-label">CR</label><input type="text" id="planoCR"
+                        class="form-control" readonly></div>
+
+                <div class="mb-2">
+                    <label class="form-label">Responsável pela Solicitação</label>
+                    <input type="text" class="form-control bg-light" value="{% if request.user and request.user.is_authenticated %}{{ request.user.name|default:request.user.username }}{% else %}Desconhecido{% endif %}" readonly>
+                    <input type="hidden" id="planoCriador" value="{{ request.user.id }}">
+                </div>
+                <div class="form-check mt-3 mb-2">
+                    <input class="form-check-input" type="checkbox" id="planoTemEstoque">
+                    <label class="form-check-label text-danger fw-bold">Tem no Estoque?</label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" id="btnSalvarPlano" class="btn text-white"
+                    style="background: linear-gradient(135deg, #1e293b, #334155); border: none;"
+                    onclick="salvarPlanoAcao()">
+                    <i class="fas fa-paper-plane me-1"></i> Enviar p/ Aprovação
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalEnviarAuditoria" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title"><i class="fas fa-paper-plane"></i> Enviar para Auditoria</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Você está enviando este item para verificação da auditoria.</p>
+                <div class="mb-2"><label class="form-label">CR</label><input type="text" id="auditoriaCR"
+                        class="form-control" readonly></div>
+                <div class="mb-2"><label class="form-label">Item</label><input type="text" id="auditoriaItem"
+                        class="form-control" readonly></div>
+                <div class="mb-2">
+                    <label class="form-label">Observação / Motivo <span class="text-danger">*</span></label>
+                    <textarea id="auditoriaObservacao" class="form-control" rows="3"
+                        placeholder="Explique por que este item está sendo enviado para a auditoria..."
+                        required></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" id="btnSalvarAuditoria" class="btn btn-warning fw-bold"
+                    onclick="enviarParaAuditoria()">
+                    <i class="fas fa-paper-plane me-1"></i> Enviar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalCadastrarCompra" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header text-white"
+                style="background: linear-gradient(135deg, #1e293b, #334155); border: none;">
+                <h5 class="modal-title">Cadastrar Detalhes da Compra</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="compraPlanoId">
+                <div class="mb-3">
+                    <label class="form-label">Efetuando a Compra (Comprador)</label>
+                    <input type="text" class="form-control bg-light" value="{% if request.user and request.user.is_authenticated %}{{ request.user.name|default:request.user.username }}{% else %}Desconhecido{% endif %}" readonly>
+                    <input type="hidden" id="compraComprador" value="{{ request.user.id }}">
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Data da Compra / Pedido</label>
+                        <input type="date" id="compraData" class="form-control">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label text-warning fw-bold">Previsão de Entrega</label>
+                        <input type="date" id="compraPrevisao" class="form-control border-warning">
+                    </div>
+                </div>
+
+                <hr>
+                <h6 class="fw-bold">Item Autorizado</h6>
+                <div class="row g-2 align-items-end mb-3">
+                    <div class="col-8">
+                        <label class="form-label">Nome do Item</label>
+                        <input type="text" id="compraItemNome" class="form-control bg-light" readonly>
+                    </div>
+                    <div class="col-4">
+                        <label class="form-label">Quantidade</label>
+                        <input type="number" id="compraItemQtd" class="form-control" value="1" min="1">
+                    </div>
+                </div>
+                <hr>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Nota Fiscal / Comprovante <span
+                            class="text-danger">*</span></label>
+                    <input type="file" id="compraNF" class="form-control" accept="image/*,.pdf">
+                </div>
+                <div class="mb-3" id="containerGuiaTrafego" style="display: none;">
+                    <label class="form-label fw-bold">Guia de Tráfego <span class="text-muted">(Opcional)</span></label>
+                    <input type="file" id="compraGuiaTrafego" class="form-control">
+                    <small class="text-muted">Anexe qualquer tipo de arquivo, se houver.</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" id="btnSalvarCompra" class="btn text-white"
+                    style="background: linear-gradient(135deg, #1e293b, #334155); border: none;"
+                    onclick="salvarCadastroCompra()"><i class="fas fa-save me-1"></i> Salvar Compra</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalRetirada" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">Registrar Entrega / Retirada</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="retiradaPlanoId">
+
+                <div class="mb-3">
+                    <label class="form-label">Responsável pela Entrega</label>
+                    <input type="text" class="form-control bg-light" value="{% if request.user and request.user.is_authenticated %}{{ request.user.name|default:request.user.username }}{% else %}Desconhecido{% endif %}" readonly>
+                    <input type="hidden" id="retiradaUsuario" value="{{ request.user.id }}">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Nome de quem está RECEBENDO (Livre) <span
+                            class="text-danger">*</span></label>
+                    <input type="text" id="retiradaRecebedor" class="form-control" placeholder="Ex: João da Silva">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Item sendo retirado</label>
+                    <input type="text" id="retiradaItem" class="form-control bg-light" readonly>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Foto do Recebedor / Evidência <span class="text-danger">*</span></label>
+                    <input type="file" id="retiradaFoto" class="form-control border-danger" accept="image/*"
+                        capture="environment">
+                    <small class="text-muted">A captura da foto de quem recebe o item é obrigatória.</small>
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" id="btnSalvarRetirada" class="btn btn-success" onclick="salvarRetirada()"><i
+                        class="fas fa-check"></i> Confirmar Entrega</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% include 'livro_ocorrencias_historico.html' %}
+{% endblock %}
+
+{% block extra_js %}
+<form style="display: none;">{% csrf_token %}</form>
+
+<script id="charts-data-json" type="application/json">
+    {{ charts|default:"{}"|safe }}
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    Chart.register(ChartDataLabels);
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    function getHeaders(isFormData = false) {
+        let headers = { 'X-CSRFToken': csrfToken };
+        if (!isFormData) headers['Content-Type'] = 'application/json';
+        return headers;
+    }
+
+    function mudarAba(tabId) {
+        const triggerEl = document.querySelector('#' + tabId);
+        if (triggerEl) {
+            const tab = new bootstrap.Tab(triggerEl);
+            tab.show();
+        }
+    }
+
+    // ==========================================
+    // SISTEMA DE FILTRO E "CARREGAR MAIS 10" DAS TABELAS
+    // ==========================================
+    function setupTableManager(tbodyId, searchCrId, searchItemId, dateId, btnMoreId, regFilterId = null) {
+        const tbody = document.getElementById(tbodyId);
+        if (!tbody) return;
+
+        const searchCrInput = document.getElementById(searchCrId);
+        const searchItemInput = document.getElementById(searchItemId);
+        const dateInput = document.getElementById(dateId);
+        const btnMore = document.getElementById(btnMoreId);
+        const regFilterInput = regFilterId ? document.getElementById(regFilterId) : null;
+
+        let visibleCount = 10;
+
+        function filterTable() {
+            const termCr = searchCrInput.value.toLowerCase();
+            const termItem = searchItemInput.value.toLowerCase();
+            const dateVal = dateInput.value;
+            const regOnly = regFilterInput ? regFilterInput.checked : false;
+
+            const rows = Array.from(tbody.querySelectorAll('tr:not(.empty-row)'));
+            const emptyRow = tbody.querySelector('.empty-row');
+
+            let matchCount = 0;
+            let currentlyVisible = 0;
+
+            rows.forEach(tr => {
+                const textContent = tr.textContent.toLowerCase();
+                const trDate = tr.getAttribute('data-date') || '';
+
+                const matchCr = termCr === '' || textContent.includes(termCr);
+                const matchItem = termItem === '' || textContent.includes(termItem);
+                const matchDate = dateVal === '' || trDate === dateVal;
+                const matchReg = !regOnly || textContent.includes('regulatório');
+
+                if (matchCr && matchItem && matchDate && matchReg) {
+                    matchCount++;
+                    if (currentlyVisible < visibleCount) {
+                        tr.style.display = '';
+                        currentlyVisible++;
+                    } else {
+                        tr.style.display = 'none';
+                    }
+                } else {
+                    tr.style.display = 'none';
+                }
+            });
+
+            if (emptyRow) { emptyRow.style.display = matchCount === 0 ? '' : 'none'; }
+            if (btnMore) { btnMore.style.display = matchCount > visibleCount ? 'inline-block' : 'none'; }
+        }
+
+        searchCrInput.addEventListener('input', () => { visibleCount = 10; filterTable(); });
+        searchItemInput.addEventListener('input', () => { visibleCount = 10; filterTable(); });
+        dateInput.addEventListener('change', () => { visibleCount = 10; filterTable(); });
+        if (regFilterInput) regFilterInput.addEventListener('change', () => { visibleCount = 10; filterTable(); });
+        if (btnMore) btnMore.addEventListener('click', () => { visibleCount += 10; filterTable(); });
+
+        filterTable();
+    }
+
+    let modalDetalhesInstance = null;
+    function abrirModalDetalhes(id, item, status) {
+        const mh = document.getElementById('modalHeaderColor');
+        const fr = document.getElementById('iframeDetalhes');
+        const ld = document.getElementById('modalConteudoLoading');
+        const el = document.getElementById('modalDetalhes');
+
+        mh.className = 'modal-header modal-header-custom ' + (status === 'nao_conforme' ? 'bg-header-nc' : (status === 'em_andamento' ? 'bg-header-warn' : 'bg-header-ok'));
+        fr.style.display = 'none'; ld.style.display = 'block';
+        fr.src = `/torre-controle/detalhe/${id}/?item=${encodeURIComponent(item)}`;
+        fr.onload = () => { ld.style.display = 'none'; fr.style.display = 'block'; };
+
+        if (!modalDetalhesInstance) { modalDetalhesInstance = new bootstrap.Modal(el); }
+        modalDetalhesInstance.show();
+    }
+
+    let modalHistoricoItemInstance;
+    function abrirHistoricoItem(cr, item) {
+        document.getElementById('historicoItemTitle').innerHTML = `<i class="fas fa-history"></i> Histórico: <strong>${item}</strong> no CR <strong>${cr}</strong>`;
+        document.getElementById('historicoItemContent').innerHTML = '<div class="text-center p-5"><div class="spinner-border text-info"></div><p class="mt-2 text-muted">Buscando vida útil da ocorrência...</p></div>';
+
+        if (!modalHistoricoItemInstance) {
+            modalHistoricoItemInstance = new bootstrap.Modal(document.getElementById('modalHistoricoItem'));
+        }
+        modalHistoricoItemInstance.show();
+
+        fetch(`/api/ocorrencias/historico_item/?cr=${encodeURIComponent(cr)}&item=${encodeURIComponent(item)}`)
+            .then(res => {
+                if (res.redirected && res.url.includes('/login')) {
+                    alert('Sua sessão expirou. A página será recarregada.');
+                    window.location.reload();
+                    throw new Error('Sessão expirada');
+                }
+                return res.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    let html = '';
+                    if (data.historicos.length === 0) {
+                        html = `<div class="alert alert-secondary text-center">
+                                    <i class="fas fa-info-circle fa-2x mb-2 text-muted"></i><br>
+                                    Nenhum plano de ação anterior (tratativa) encontrado para este item neste CR.
+                                </div>`;
+                    } else {
+                        html = '<div class="timeline-container">';
+                        data.historicos.forEach(h => {
+                            let statusBadge = '';
+                            if (h.status === 'concluido') statusBadge = '<span class="badge bg-success">Concluído</span>';
+                            else if (h.status === 'rejeitado' || h.status === 'excluido') statusBadge = '<span class="badge bg-danger">Inativo / Cancelado</span>';
+                            else statusBadge = `<span class="badge bg-warning text-dark">Em Andamento</span>`;
+
+                            let regBadge = h.is_regulatory ? '<span class="badge ms-2" style="background-color: #1e293b; color: #f8f9fa; font-size: 0.75rem;"><i class="fas fa-balance-scale"></i> Regulatório</span>' : '';
+
+                            html += `
+                            <div class="card mb-3 shadow-sm border-0 border-start border-4 border-info">
+                                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                                    <span class="fw-bold text-secondary">
+                                        <i class="fas fa-calendar-alt"></i> Aberto em: ${h.data_criacao}
+                                        ${regBadge}
+                                    </span>
+                                    ${statusBadge}
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6 mb-2">
+                                            <small class="text-muted d-block">Solicitado por</small>
+                                            <span class="fw-bold"><i class="fas fa-user"></i> ${h.criador}</span>
+                                        </div>
+                                        <div class="col-md-6 mb-2">
+                                            <small class="text-muted d-block">${h.status === 'rejeitado' ? 'Rejeitado por' : 'Aprovado por'}</small>
+                                            ${h.aprovador ? `<span class="fw-bold ${h.status === 'rejeitado' ? 'text-danger' : 'text-success'}"><i class="fas ${h.status === 'rejeitado' ? 'fa-user-times' : 'fa-user-check'}"></i> ${h.aprovador}</span>` : '<span class="fw-bold text-muted">N/A</span>'}
+                                        </div>
+                                        ${h.justificativa ? `<div class="col-12 mb-3 mt-1"><small class="text-muted d-block">Justificativa da ${h.status === 'rejeitado' ? 'Rejeição' : 'Aprovação'}</small><div class="p-2 bg-light border rounded small mt-1" style="border-left: 3px solid ${h.status === 'rejeitado' ? '#dc3545' : '#28a745'} !important;"><i>"${h.justificativa}"</i></div></div>` : ''}
+                                        <div class="col-md-6 mb-2">
+                                            <small class="text-muted d-block">Comprado por</small>
+                                            <span class="fw-bold"><i class="fas fa-shopping-cart"></i> ${h.comprador || 'N/A'}</span>
+                                            ${h.data_compra ? `<br><small class="text-muted">Data: ${h.data_compra}</small>` : ''}
+                                        </div>
+                                        <div class="col-md-6 mb-2">
+                                            <small class="text-muted d-block">Recebido por</small>
+                                            <span class="fw-bold text-success"><i class="fas fa-box-open"></i> ${h.recebedor || 'N/A'}</span>
+                                            ${h.data_retirada ? `<br><small class="text-muted">Data: ${h.data_retirada}</small>` : ''}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>`;
+                        });
+                        html += '</div>';
+                    }
+                    document.getElementById('historicoItemContent').innerHTML = html;
+                } else {
+                    document.getElementById('historicoItemContent').innerHTML = `<div class="alert alert-danger"><i class="fas fa-exclamation-triangle"></i> Erro: ${data.message}</div>`;
+                }
+            })
+            .catch(err => {
+                document.getElementById('historicoItemContent').innerHTML = '<div class="alert alert-danger"><i class="fas fa-wifi"></i> Erro de conexão ao buscar histórico.</div>';
+            });
+    }
+
+    const dadosNC = [];
+    /* {% for item in kanban.nao_conforme %} */
+    dadosNC.push({
+        "cr": "{{ item.cr|escapejs }}",
+        "item": "{{ item.item|escapejs }}",
+        "qtd": "{{ item.quantidade_nc }}",
+        "status": "nc",
+        "tem_historico": ("{{ item.tem_historico|yesno:'true,false' }}" === "true"),
+        "is_regulatory": ("{{ item.is_regulatory|yesno:'true,false' }}" === "true")
+    });
+    /* {% endfor %} */
+
+    const dadosAprovacao = [];
+    /* {% for plano in planos_em_aprovacao %} */
+    dadosAprovacao.push({
+        "cr": "{{ plano.cr_colaborador|escapejs }}",
+        "item": "{{ plano.item_em_falta|escapejs }}",
+        "qtd": "1",
+        "status": "aprovacao",
+        "tem_historico": true,
+        "is_regulatory": ("{{ plano.is_regulatory|yesno:'true,false' }}" === "true")
+    });
+    /* {% endfor %} */
+
+    const dadosCompras = [];
+    /* {% for plano in planos_compra_cadastrar %} */
+    dadosCompras.push({
+        "cr": "{{ plano.cr_colaborador|escapejs }}",
+        "item": "{{ plano.item_em_falta|escapejs }}",
+        "qtd": "1",
+        "status": "compras",
+        "tem_historico": true,
+        "is_regulatory": ("{{ plano.is_regulatory|yesno:'true,false' }}" === "true")
+    });
+    /* {% endfor %} */
+
+    /* {% for plano in planos_compra_pedido %} */
+    dadosCompras.push({
+        "cr": "{{ plano.cr_colaborador|escapejs }}",
+        "item": "{{ plano.item_em_falta|escapejs }}",
+        "qtd": "1",
+        "status": "compras",
+        "tem_historico": true,
+        "is_regulatory": ("{{ plano.is_regulatory|yesno:'true,false' }}" === "true")
+    });
+    /* {% endfor %} */
+
+    const dadosRetirada = [];
+    /* {% for plano in planos_compra_entregue %} */
+    dadosRetirada.push({
+        "cr": "{{ plano.cr_colaborador|escapejs }}",
+        "item": "{{ plano.item_em_falta|escapejs }}",
+        "qtd": "1",
+        "status": "retirada",
+        "tem_historico": true,
+        "is_regulatory": ("{{ plano.is_regulatory|yesno:'true,false' }}" === "true")
+    });
+    /* {% endfor %} */
+
+    let modalKanbanInstance = null;
+    function abrirKanbanGeral(itemFilter = '', crFilter = '') {
+        const el = document.getElementById('modalKanbanGeral');
+        if (!modalKanbanInstance) { modalKanbanInstance = new bootstrap.Modal(el); }
+        document.getElementById('filtroKanbanItem').value = itemFilter || '';
+        document.getElementById('filtroKanbanCR').value = crFilter || '';
+        modalKanbanInstance.show();
+        renderizarKanban();
+    }
+
+    function renderizarKanban() {
+        const tItem = document.getElementById('filtroKanbanItem').value.toLowerCase();
+        const tCR = document.getElementById('filtroKanbanCR').value.toLowerCase();
+
+        const filtrar = (l) => l.filter(d => d.item.toLowerCase().includes(tItem) && String(d.cr).toLowerCase().includes(tCR));
+
+        const nc = filtrar(dadosNC);
+        const aprovacao = filtrar(dadosAprovacao);
+        const compras = filtrar(dadosCompras);
+        const retirada = filtrar(dadosRetirada);
+
+        document.getElementById('count-nc').innerText = nc.length;
+        document.getElementById('count-aprovacao').innerText = aprovacao.length;
+        document.getElementById('count-compras').innerText = compras.length;
+        document.getElementById('count-retirada').innerText = retirada.length;
+
+        const criarCard = (d) => {
+            let borda = '';
+            if (d.status === 'nc') borda = 'border-nc';
+            else if (d.status === 'aprovacao') borda = 'border-warn';
+            else if (d.status === 'compras') borda = 'border-dark';
+            else borda = 'border-ok';
+
+            const crSafe = d.cr.replace(/'/g, "\\'");
+            const itemSafe = d.item.replace(/'/g, "\\'");
+
+            let clickAction = '';
+            if (d.tem_historico) {
+                clickAction = `onclick="abrirHistoricoItem('${crSafe}', '${itemSafe}')" style="cursor:pointer;" title="Ver Histórico do Item"`;
+            } else {
+                clickAction = `style="cursor:default;" title="Nenhum histórico anterior"`;
+            }
+
+            return `<div class="kanban-mini-card ${borda}" ${clickAction}>
+                <div class="d-flex justify-content-between">
+                    <strong>${d.cr}</strong>
+                    <div>
+                        ${d.is_regulatory ? '<span class="badge" title="Regulatório" style="background-color:#1e293b; color:#f8f9fa; margin-right:4px;"><i class="fas fa-balance-scale"></i></span>' : ''}
+                        <span class="badge bg-light text-dark border">${d.qtd}</span>
+                    </div>
+                </div>
+                <div class="small text-muted mt-1 text-truncate">${d.item}</div>
+            </div>`;
+        };
+
+        document.getElementById('kanban-col-nc').innerHTML = nc.map(criarCard).join('');
+        document.getElementById('kanban-col-aprovacao').innerHTML = aprovacao.map(criarCard).join('');
+        document.getElementById('kanban-col-compras').innerHTML = compras.map(criarCard).join('');
+        document.getElementById('kanban-col-retirada').innerHTML = retirada.map(criarCard).join('');
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+
+        document.querySelectorAll('.js-dynamic-chart').forEach(el => {
+            const multi = parseInt(el.getAttribute('data-multiplier')) || 15;
+            el.style.height = (multi * 10) + 'px';
+        });
+
+        setupTableManager('tbody-nc', 'search-cr-nc', 'search-item-nc', 'date-nc', 'btnMore-nc', 'filter-reg-nc');
+        setupTableManager('tbody-aprovacao', 'search-cr-aprovacao', 'search-item-aprovacao', 'date-aprovacao', 'btnMore-aprovacao', 'filter-reg-aprovacao');
+        setupTableManager('tbody-compra', 'search-cr-compra', 'search-item-compra', 'date-compra', 'btnMore-compra', 'filter-reg-compra');
+        setupTableManager('tbody-retirada', 'search-cr-retirada', 'search-item-retirada', 'date-retirada', 'btnMore-retirada', 'filter-reg-retirada');
+
+        let chartsData = {};
+        const chartsDataEl = document.getElementById('charts-data-json');
+        if (chartsDataEl && chartsDataEl.textContent.trim()) {
+            try { chartsData = JSON.parse(chartsDataEl.textContent); } catch (e) { }
+        }
+
+        if (chartsData && Object.keys(chartsData).length > 0) {
+            const barOptionsBase = {
+                indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false }, datalabels: { anchor: 'end', align: 'end', color: '#333', font: { weight: 'bold' } } },
+                scales: { x: { display: false }, y: { grid: { display: false } } }, elements: { bar: { borderRadius: 6 } }
+            };
+
+            new Chart(document.getElementById('chartPizza'), { type: 'doughnut', data: { labels: chartsData.status_labels, datasets: [{ data: chartsData.status_values, backgroundColor: ['#ef4444', '#f59e0b', '#22c55e'] }] }, options: { responsive: true, maintainAspectRatio: false, onClick: () => mudarAba('nc-tab'), plugins: { legend: { position: 'bottom' }, datalabels: { color: '#fff', font: { weight: 'bold' } } } } });
+
+            new Chart(document.getElementById('chartItens'), { type: 'bar', data: { labels: chartsData.itens_labels, datasets: [{ data: chartsData.itens_values, backgroundColor: '#ef4444', barThickness: 20 }] }, options: { ...barOptionsBase, onClick: (e, active) => { if (active.length > 0) abrirKanbanGeral(chartsData.itens_labels[active[0].index], ''); else abrirKanbanGeral(); } } });
+
+            const ctxCR = document.getElementById('chartCRs').getContext('2d');
+            const grad = ctxCR.createLinearGradient(0, 0, 0, 400); grad.addColorStop(0, '#3b82f6'); grad.addColorStop(1, '#0f172a');
+            new Chart(ctxCR, { type: 'bar', data: { labels: chartsData.crs_labels, datasets: [{ data: chartsData.crs_values, backgroundColor: grad, barThickness: 20 }] }, options: { ...barOptionsBase, onClick: (e, active) => { if (active.length > 0) abrirKanbanGeral('', chartsData.crs_labels[active[0].index]); else abrirKanbanGeral(); } } });
+        }
+
+        let activeTab = sessionStorage.getItem('livroOcorrenciasTab');
+        if (activeTab) { let triggerEl = document.querySelector('#' + activeTab); if (triggerEl) { new bootstrap.Tab(triggerEl).show(); } }
+        document.querySelectorAll('button[data-bs-toggle="tab"]').forEach(function (el) { el.addEventListener('shown.bs.tab', function (event) { sessionStorage.setItem('livroOcorrenciasTab', event.target.id); }); });
+
+        let toastMsg = sessionStorage.getItem('toastMsg'); let toastTipo = sessionStorage.getItem('toastTipo');
+        if (toastMsg) { Swal.fire({ title: toastTipo === 'success' ? 'Sucesso!' : (toastTipo === 'error' ? 'Erro!' : 'Aviso'), text: toastMsg, icon: toastTipo, timer: 3000, showConfirmButton: false }); sessionStorage.removeItem('toastMsg'); sessionStorage.removeItem('toastTipo'); }
+    });
+
+    function reloadComNotificacao(msg, tipo = 'success') { sessionStorage.setItem('toastMsg', msg); sessionStorage.setItem('toastTipo', tipo); window.location.reload(); }
+
+    function excluirPlano(id) {
+        Swal.fire({
+            title: 'Tem certeza?', text: "Deseja excluir permanentemente este plano de ação?", icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', cancelButtonColor: '#3085d6', confirmButtonText: 'Sim, excluir!', cancelButtonText: 'Cancelar'
+        }).then((result) => { if (result.isConfirmed) { fetch(`/api/ocorrencias/plano/${id}/excluir/`, { method: 'POST', headers: getHeaders(), body: JSON.stringify({}) }).then(r => r.json()).then(d => { if (d.success) reloadComNotificacao("Plano excluído com sucesso!", "success"); else Swal.fire('Erro', d.message, 'error'); }); } });
+    }
+
+    let modalPlanoInstance;
+    function abrirModalCriarPlano(item, colab, cr) {
+        document.getElementById('planoItemFalta').value = item;
+        document.getElementById('planoColaborador').value = colab;
+        document.getElementById('planoCR').value = cr;
+        document.getElementById('planoTemEstoque').checked = false;
+
+        modalPlanoInstance = new bootstrap.Modal(document.getElementById('modalCriarPlano'));
+        modalPlanoInstance.show();
+    }
+
+    function salvarPlanoAcao() {
+        const btn = document.getElementById('btnSalvarPlano');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
+
+        const createUrl = "{% url 'gestao_a_vista:criar_plano_ocorrencia' %}";
+        let isReg = false;
+        let itemNome = document.getElementById('planoItemFalta').value;
+        let itemUpper = itemNome ? itemNome.toUpperCase() : "";
+        let regItems = [
+            "PLACAS BALÍSTICAS", "PLACAS BALISTICAS", "CAIXA DE ARMA",
+            "ARMAS", "ARMA", "MUNIÇÕES", "MUNICOES", "MUNIÇÃO", "MUNICAO",
+            "COLETE BALÍSTICO", "COLETE BALISTICO"
+        ];
+        for (let ri of regItems) {
+            if (itemUpper.includes(ri)) { isReg = true; break; }
+        }
+
+        fetch(createUrl, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify({
+                item_em_falta: document.getElementById('planoItemFalta').value,
+                colaborador_nc: document.getElementById('planoColaborador').value,
+                cr_colaborador: document.getElementById('planoCR').value,
+                criador_plano_id: document.getElementById('planoCriador').value,
+                tem_estoque: document.getElementById('planoTemEstoque').checked,
+                is_regulatory: isReg
+            })
+        }).then(r => r.json()).then(d => {
+            if (d.success) reloadComNotificacao("Plano de Ação criado com sucesso!", "success");
+            else { Swal.fire('Erro', d.message, 'error'); btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane me-1"></i> Enviar p/ Aprovação'; }
+        }).catch(e => {
+            Swal.fire('Erro', 'Ocorreu um erro na requisição.', 'error');
+            btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane me-1"></i> Enviar p/ Aprovação';
+        });
+    }
+
+    let modalAuditoriaInstance;
+    function abrirModalAuditoria(item, cr) {
+        document.getElementById('auditoriaItem').value = item;
+        document.getElementById('auditoriaCR').value = cr;
+        document.getElementById('auditoriaObservacao').value = '';
+        modalAuditoriaInstance = new bootstrap.Modal(document.getElementById('modalEnviarAuditoria'));
+        modalAuditoriaInstance.show();
+    }
+
+    function enviarParaAuditoria() {
+        const obs = document.getElementById('auditoriaObservacao').value;
+        if (!obs.trim()) {
+            Swal.fire('Atenção', 'A observação é obrigatória.', 'warning');
+            return;
+        }
+
+        const btn = document.getElementById('btnSalvarAuditoria');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
+
+        fetch('/api/ocorrencias/enviar-auditoria/', {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify({
+                cr_colaborador: document.getElementById('auditoriaCR').value,
+                item_em_falta: document.getElementById('auditoriaItem').value,
+                observacao: obs
+            })
+        }).then(r => r.json()).then(d => {
+            if (d.success) reloadComNotificacao("Item enviado para auditoria com sucesso!", "success");
+            else { Swal.fire('Erro', d.message, 'error'); btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane me-1"></i> Enviar'; }
+        }).catch(e => {
+            Swal.fire('Erro', 'Ocorreu um erro na requisição.', 'error');
+            btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane me-1"></i> Enviar';
+        });
+    }
+
+    function acaoAprovarPlano(id, acao) {
+        let textoAcao = acao === 'aprovar' ? 'aprovar' : 'rejeitar';
+        let corAcao = acao === 'aprovar' ? '#28a745' : '#dc3545';
+
+        Swal.fire({
+            title: `Justificativa para ${textoAcao}`,
+            text: `Por favor, insira o motivo para ${textoAcao} este pedido:`,
+            input: 'textarea',
+            inputPlaceholder: 'Digite a justificativa aqui...',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: corAcao,
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: `Confirmar e ${textoAcao.charAt(0).toUpperCase() + textoAcao.slice(1)}`,
+            cancelButtonText: 'Cancelar',
+            inputValidator: (value) => {
+                if (acao === 'rejeitar' && !value.trim()) {
+                    return 'A justificativa é obrigatória para rejeições!';
+                }
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                fetch(`/api/ocorrencias/plano/${id}/aprovar/`, {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify({ acao: acao, justificativa: result.value })
+                }).then(r => r.json()).then(d => {
+                    if (d.success) reloadComNotificacao(`Pedido ${textoAcao} com sucesso!`, "success");
+                    else Swal.fire('Erro', d.message, 'error');
+                });
+            }
+        });
+    }
+
+    let modalCompraInstance;
+    function abrirModalCompra(plano_id, item_nome, is_regulatory) {
+        document.getElementById('compraPlanoId').value = plano_id;
+        document.getElementById('compraItemNome').value = item_nome;
+        document.getElementById('compraItemQtd').value = "1";
+        document.getElementById('compraData').value = new Date().toISOString().split('T')[0];
+
+        if (is_regulatory) {
+            document.getElementById('containerGuiaTrafego').style.display = 'block';
+        } else {
+            document.getElementById('containerGuiaTrafego').style.display = 'none';
+        }
+
+        modalCompraInstance = new bootstrap.Modal(document.getElementById('modalCadastrarCompra'));
+        modalCompraInstance.show();
+    }
+
+    function salvarCadastroCompra() {
+        let fileInput = document.getElementById('compraNF');
+        let guiaInput = document.getElementById('compraGuiaTrafego');
+
+        if (!fileInput.files[0]) {
+            Swal.fire('Atenção', 'Você deve anexar a Nota Fiscal ou o Comprovante da compra!', 'warning');
+            return;
+        }
+
+        const btn = document.getElementById('btnSalvarCompra');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+
+        let formData = new FormData();
+        formData.append('data_compra', document.getElementById('compraData').value);
+        formData.append('previsao_entrega', document.getElementById('compraPrevisao').value);
+        formData.append('comprador_id', document.getElementById('compraComprador').value);
+
+        let arrayUnico = [{
+            nome: document.getElementById('compraItemNome').value,
+            quantidade: document.getElementById('compraItemQtd').value
+        }];
+        formData.append('itens_compra', JSON.stringify(arrayUnico));
+        formData.append('nota_fiscal', fileInput.files[0]);
+        if (guiaInput.files[0]) {
+            formData.append('guia_de_trafego', guiaInput.files[0]);
+        }
+
+        fetch(`/api/ocorrencias/plano/${document.getElementById('compraPlanoId').value}/compra/`, {
+            method: 'POST',
+            headers: getHeaders(true),
+            body: formData
+        }).then(r => r.json()).then(d => {
+            if (d.success) reloadComNotificacao("Compra cadastrada com sucesso!", "success");
+            else { Swal.fire('Erro', d.message, 'error'); btn.disabled = false; btn.innerHTML = '<i class="fas fa-save me-1"></i> Salvar Compra'; }
+        }).catch(e => {
+            Swal.fire('Erro', 'Ocorreu um erro na requisição.', 'error');
+            btn.disabled = false; btn.innerHTML = '<i class="fas fa-save me-1"></i> Salvar Compra';
+        });
+    }
+
+    function marcarCompraEntregue(id, dataAtual) {
+        Swal.fire({
+            title: 'Registrar Entrega na Base',
+            html: `
+                <div class="mb-3 text-start">
+                    <label class="form-label fw-bold">Selecione o dia real da entrega:</label>
+                    <input type="date" id="swal-input-date" class="form-control form-control-lg" value="${dataAtual || new Date().toISOString().split('T')[0]}">
+                </div>
+            `,
+            icon: 'info',
+            showCancelButton: true,
+            confirmButtonColor: '#17a2b8',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Confirmar Chegada',
+            cancelButtonText: 'Cancelar',
+            preConfirm: () => {
+                const dateVal = document.getElementById('swal-input-date').value;
+                if (!dateVal) {
+                    Swal.showValidationMessage('Você precisa informar uma data!');
+                }
+                return dateVal;
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                fetch(`/api/ocorrencias/plano/${id}/status_compra/`, {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify({ status: 'compra_entregue', data: result.value })
+                }).then(r => r.json()).then(d => {
+                    if (d.success) reloadComNotificacao("Data atualizada e movida para Retiradas!", "success");
+                    else Swal.fire('Erro', d.message, 'error');
+                });
+            }
+        });
+    }
+
+    let modalRetiradaInstance;
+    function abrirModalRetirada(id, item_nome) {
+        document.getElementById('retiradaPlanoId').value = id;
+        document.getElementById('retiradaItem').value = item_nome;
+        document.getElementById('retiradaRecebedor').value = '';
+        document.getElementById('retiradaFoto').value = '';
+
+        modalRetiradaInstance = new bootstrap.Modal(document.getElementById('modalRetirada'));
+        modalRetiradaInstance.show();
+    }
+
+    function salvarRetirada() {
+        let pid = document.getElementById('retiradaPlanoId').value;
+        let recebedor = document.getElementById('retiradaRecebedor').value;
+        let fotoInput = document.getElementById('retiradaFoto');
+
+        if (!recebedor.trim()) {
+            Swal.fire('Atenção', 'Informe o nome de quem está recebendo o material.', 'warning');
+            return;
+        }
+
+        if (!fotoInput.files[0]) {
+            Swal.fire('Atenção', 'A foto de quem está retirando o item é OBRIGATÓRIA.', 'error');
+            return;
+        }
+
+        let formData = new FormData();
+        formData.append('plano_id', pid);
+        formData.append('retirante_id', document.getElementById('retiradaUsuario').value);
+        formData.append('recebedor', recebedor);
+        formData.append('item_retirado', document.getElementById('retiradaItem').value);
+        formData.append('foto_retirada', fotoInput.files[0]);
+
+        const btn = document.getElementById('btnSalvarRetirada');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Confirmando...';
+
+        const retiradaUrl = "{% url 'gestao_a_vista:registrar_retirada_ocorrencia' %}";
+        fetch(retiradaUrl, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken },
+            body: formData
+        }).then(r => r.json()).then(d => {
+            if (d.success) reloadComNotificacao("Entrega concluída e Ocorrência finalizada!", "success");
+            else { Swal.fire('Erro', d.message, 'error'); btn.disabled = false; btn.innerHTML = '<i class="fas fa-check"></i> Confirmar Entrega'; }
+        }).catch(e => {
+            Swal.fire('Erro', 'Ocorreu um erro na requisição.', 'error');
+            btn.disabled = false; btn.innerHTML = '<i class="fas fa-check"></i> Confirmar Entrega';
+        });
+    }
+
+    // =========================================================
+    // LÓGICA DO DASHBOARD DE RETROSPECTIVA
+    // =========================================================
+    let retroCarregada = false;
+    let retroChartSetores = null;
+    let retroChartPermanencia = null;
+
+    function carregarRetrospectiva() {
+        if (retroCarregada) return; // Carrega apenas uma vez
+        
+        document.getElementById('retro-loading').style.display = 'block';
+        document.getElementById('retro-content').style.display = 'none';
+
+        fetch('/api/ocorrencias/retrospectiva/')
+            .then(res => res.json())
+            .then(data => {
+                // KPIs
+                document.getElementById('retro-kpi-concluidas').innerText = data.kpis.total_concluidas;
+                document.getElementById('retro-kpi-auditoria').innerText = data.kpis.total_auditoria;
+                document.getElementById('retro-kpi-paradas').innerText = data.kpis.total_paradas;
+                document.getElementById('retro-kpi-tempo').innerText = data.kpis.tempo_medio_parado;
+
+                // Alertas
+                let alertasList = document.getElementById('retro-alertas-list');
+                alertasList.innerHTML = '';
+                if (data.alertas && data.alertas.length > 0) {
+                    data.alertas.forEach(a => {
+                        let isReg = a.is_reg ? '<span class="badge bg-dark ms-1">Regulatório</span>' : '';
+                        alertasList.innerHTML += `
+                            <li class="list-group-item px-3 py-2 border-0 border-bottom">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <div class="fw-bold text-danger"><i class="fas fa-exclamation-circle"></i> ${a.dias} dias parados</div>
+                                        <small class="text-muted d-block">${a.item} (${a.cr}) ${isReg}</small>
+                                        <small class="fw-bold text-secondary">Setor: ${a.setor}</small>
+                                    </div>
+                                </div>
+                            </li>`;
+                    });
+                } else {
+                    alertasList.innerHTML = '<li class="list-group-item text-center text-muted">Nenhuma tarefa atrasada.</li>';
+                }
+
+                // Gráfico Setores
+                if (retroChartSetores) retroChartSetores.destroy();
+                let ctxSetores = document.getElementById('chartRetroSetores').getContext('2d');
+                retroChartSetores = new Chart(ctxSetores, {
+                    type: 'doughnut',
+                    data: {
+                        labels: data.graficos.paradas_por_setor.labels,
+                        datasets: [{
+                            data: data.graficos.paradas_por_setor.values,
+                            backgroundColor: ['#f59e0b', '#dc2626', '#3b82f6', '#10b981'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+                });
+
+                // Gráfico Permanência
+                if (retroChartPermanencia) retroChartPermanencia.destroy();
+                let ctxPerm = document.getElementById('chartRetroPermanencia').getContext('2d');
+                retroChartPermanencia = new Chart(ctxPerm, {
+                    type: 'bar',
+                    data: {
+                        labels: data.graficos.frequencia_permanencia.labels,
+                        datasets: [{
+                            label: 'Qtd. Planos',
+                            data: data.graficos.frequencia_permanencia.values,
+                            backgroundColor: '#1e40af',
+                            borderRadius: 4
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+                });
+
+                // Top Listas
+                const renderTopList = (id, list, icon, color) => {
+                    let html = '';
+                    if (list.length === 0) html = '<li class="list-group-item text-muted text-center border-0">Nenhum dado</li>';
+                    list.forEach(i => {
+                        html += `<li class="list-group-item d-flex justify-content-between align-items-center border-0 border-bottom px-0">
+                            <span><i class="${icon} text-${color} me-2"></i>${i.nome}</span>
+                            <span class="badge bg-${color} rounded-pill">${i.total}</span>
+                        </li>`;
+                    });
+                    document.getElementById(id).innerHTML = html;
+                };
+
+                renderTopList('retro-top-criadores', data.graficos.top_criadores, 'fas fa-user-check', 'success');
+                renderTopList('retro-top-rejeitadores', data.graficos.top_rejeitadores, 'fas fa-ban', 'danger');
+                renderTopList('retro-top-rejeitados', data.graficos.top_rejeitados, 'fas fa-times-circle', 'warning');
+
+                // Feed
+                let feedHtml = '';
+                if (data.feed.length === 0) feedHtml = '<tr><td colspan="5" class="text-center text-muted">Nenhuma movimentação recente</td></tr>';
+                data.feed.forEach(f => {
+                    let actionColor = 'secondary';
+                    if (f.acao.includes('Criado') || f.acao.includes('Aprovado')) actionColor = 'success';
+                    if (f.acao.includes('Rejeitado') || f.acao.includes('Excluído')) actionColor = 'danger';
+                    if (f.acao.includes('Compra')) actionColor = 'info';
+
+                    feedHtml += `<tr>
+                        <td class="text-muted ps-4" style="white-space: nowrap;"><small>${f.data}</small></td>
+                        <td class="fw-bold">${f.usuario}</td>
+                        <td><span class="badge bg-${actionColor}">${f.acao}</span></td>
+                        <td class="text-secondary">${f.cr}</td>
+                        <td>${f.item}</td>
+                    </tr>`;
+                });
+                document.getElementById('retro-feed-body').innerHTML = feedHtml;
+
+                document.getElementById('retro-loading').style.display = 'none';
+                document.getElementById('retro-content').style.display = 'block';
+                retroCarregada = true;
+            })
+            .catch(err => {
+                console.error("Erro ao carregar retrospectiva:", err);
+                document.getElementById('retro-loading').innerHTML = '<p class="text-danger"><i class="fas fa-exclamation-triangle"></i> Erro ao carregar os dados.</p>';
+            });
+    }
+</script>
+{% endblock %}

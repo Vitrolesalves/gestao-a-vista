@@ -1,0 +1,1101 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Avaliação Psicossocial - Gestão à Vista{% endblock %}
+
+{% block extra_css %}
+<style>
+    .livro-title {
+        background: linear-gradient(to right, #0F172A, #1e40af);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-size: 26px;
+        font-weight: bold;
+        margin: 0;
+        text-transform: uppercase;
+    }
+
+    .livro-icon {
+        width: 32px;
+        height: 32px;
+        background: #0F172A;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 16px;
+    }
+
+    /* Custom Corporate Theme Colors */
+    :root {
+        --psico-primary: #1E3A8A;
+        /* Navy Blue */
+        --psico-secondary: #3B82F6;
+        /* Accent Blue */
+        --psico-success: #10B981;
+        --psico-warning: #F59E0B;
+        --psico-danger: #EF4444;
+        --psico-bg: #F8FAFC;
+    }
+
+    /* Stats Cards Grid */
+    .psico-stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .psico-stat-card {
+        background: white;
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        border-left: 4px solid var(--psico-primary);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        transition: all 0.3s ease;
+    }
+
+    .psico-stat-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .psico-stat-card.success {
+        border-left-color: var(--psico-success);
+    }
+
+    .psico-stat-card.info {
+        border-left-color: var(--psico-secondary);
+    }
+
+    .psico-stat-info h3 {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #64748b;
+        text-transform: uppercase;
+        margin: 0 0 0.5rem 0;
+        letter-spacing: 0.05em;
+    }
+
+    .psico-stat-number {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin: 0;
+    }
+
+    .psico-stat-icon {
+        width: 3.5rem;
+        height: 3.5rem;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.75rem;
+    }
+
+    .psico-stat-card.success .psico-stat-icon {
+        background: rgba(16, 185, 129, 0.1);
+        color: var(--psico-success);
+    }
+
+    .psico-stat-card.info .psico-stat-icon {
+        background: rgba(59, 130, 246, 0.1);
+        color: var(--psico-secondary);
+    }
+
+    /* Split Dashboard Grid */
+    .psico-dashboard-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    /* Card Panels */
+    .psico-card {
+        background: white;
+        border-radius: 0.6rem;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+        border: 1px solid #E2E8F0;
+        overflow: hidden;
+    }
+
+    .psico-card-header {
+        background: #F8FAFC;
+        border-bottom: 1px solid #E2E8F0;
+        padding: 1.25rem 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .psico-card-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #1E293B;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .psico-card-body {
+        padding: 1.5rem;
+    }
+
+    /* Forms */
+    .psico-form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.25rem;
+        margin-bottom: 1.25rem;
+    }
+
+    @media (max-width: 640px) {
+        .psico-form-row {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .psico-form-group {
+        margin-bottom: 1.25rem;
+    }
+
+    .psico-form-label {
+        display: block;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #334155;
+        margin-bottom: 0.5rem;
+    }
+
+    .psico-form-label.required::after {
+        content: "*";
+        color: var(--psico-danger);
+        margin-left: 0.25rem;
+    }
+
+    .psico-input,
+    .psico-select {
+        width: 100%;
+        padding: 0.65rem 0.85rem;
+        border: 1px solid #CBD5E1;
+        border-radius: 0.375rem;
+        font-size: 0.875rem;
+        color: #334155;
+        background: white;
+        transition: all 0.2s;
+    }
+
+    .psico-input:focus,
+    .psico-select:focus {
+        outline: none;
+        border-color: var(--psico-secondary);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .psico-help-text {
+        font-size: 0.75rem;
+        color: #64748b;
+        margin-top: 0.35rem;
+    }
+
+    /* Buttons */
+    .psico-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 0.65rem 1.5rem;
+        border-radius: 0.375rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: none;
+    }
+
+    .psico-btn-primary {
+        background: var(--psico-primary);
+        color: white;
+    }
+
+    .psico-btn-primary:hover {
+        background: #1e3a8aeb;
+        transform: translateY(-1px);
+    }
+
+    .psico-btn-secondary {
+        background: #E2E8F0;
+        color: #475569;
+    }
+
+    .psico-btn-secondary:hover {
+        background: #CBD5E1;
+    }
+
+    .psico-btn-danger {
+        background: var(--psico-danger);
+        color: white;
+    }
+
+    .psico-btn-danger:hover {
+        background: #dc2626;
+    }
+
+    /* Table styles */
+    .psico-table-wrapper {
+        overflow-x: auto;
+    }
+
+    .psico-table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+    }
+
+    .psico-table th {
+        background: #F8FAFC;
+        padding: 1rem;
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #64748B;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        border-bottom: 2px solid #E2E8F0;
+    }
+
+    .psico-table td {
+        padding: 1.25rem 1rem;
+        font-size: 0.875rem;
+        color: #334155;
+        border-bottom: 1px solid #E2E8F0;
+        vertical-align: middle;
+    }
+
+    .psico-table tr:hover {
+        background: #F8FAFC;
+    }
+
+    .badge-user {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        background: #F1F5F9;
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: #475569;
+    }
+
+    /* File upload design */
+    .file-input-wrapper {
+        position: relative;
+        overflow: hidden;
+        display: inline-block;
+        width: 100%;
+    }
+
+    .file-input-wrapper input[type=file] {
+        font-size: 100px;
+        position: absolute;
+        left: 0;
+        top: 0;
+        opacity: 0;
+        cursor: pointer;
+    }
+
+    .file-input-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        border: 2px dashed #CBD5E1;
+        background: #F8FAFC;
+        padding: 1.25rem;
+        border-radius: 0.5rem;
+        color: #64748B;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-align: center;
+    }
+
+    .file-input-wrapper:hover .file-input-btn {
+        border-color: var(--psico-secondary);
+        color: var(--psico-secondary);
+        background: rgba(59, 130, 246, 0.03);
+    }
+
+    /* Autocomplete items container */
+    .autocomplete-items {
+        position: absolute;
+        border: 1px solid #CBD5E1;
+        border-top: none;
+        z-index: 999;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background-color: white;
+        border-radius: 0 0 0.375rem 0.375rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        max-height: 200px;
+        overflow-y: auto;
+    }
+
+    /* Individual item */
+    .autocomplete-items div {
+        padding: 0.5rem 0.75rem;
+        cursor: pointer;
+        font-size: 0.825rem;
+        color: #334155;
+        border-bottom: 1px solid #F1F5F9;
+    }
+
+    /* Highlight matching item on hover/active */
+    .autocomplete-items div:hover {
+        background-color: #F1F5F9;
+    }
+
+    .autocomplete-active {
+        background-color: #E2E8F0 !important;
+        color: #0F172A !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<div class="container-fluid py-4">
+
+    <!-- Page Header Title and Icon -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex align-items-center gap-3">
+            <div class="livro-icon"><i class="fas fa-brain"></i></div>
+            <h1 class="livro-title">Avaliação Psicossocial</h1>
+        </div>
+    </div>
+
+    <!-- Django Message Banners -->
+    {% if messages %}
+    <div class="messages-container mb-4">
+        {% for message in messages %}
+        <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-{{ message.tags }}{% endif %} alert-dismissible fade show"
+            role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Stats Section -->
+    <div class="psico-stats-grid">
+        <div class="psico-stat-card info">
+            <div class="psico-stat-info">
+                <h3>Projetos Processados</h3>
+                <p class="psico-stat-number">{{ projects.count }}</p>
+            </div>
+            <div class="psico-stat-icon">
+                <i class="fas fa-project-diagram"></i>
+            </div>
+        </div>
+        <div class="psico-stat-card success">
+            <div class="psico-stat-info">
+                <h3>Trabalhadores na Base Layout 1 Global</h3>
+                <p class="psico-stat-number mb-2">{{ sra_count }}</p>
+                <a href="{% url 'gestao_a_vista:psicossocial_sra' %}" class="psico-btn psico-btn-secondary py-1 px-2"
+                    style="font-size: 0.75rem; text-decoration: none;">
+                    <i class="fas fa-database text-success"></i> Gerenciar Base Layout 1 Global
+                </a>
+            </div>
+            <div class="psico-stat-icon">
+                <i class="fas fa-users"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Workspace -->
+    <div class="psico-dashboard-grid">
+
+        <!-- Left: Create Project Card -->
+        <div class="psico-card">
+            <div class="psico-card-header">
+                <h2 class="psico-card-title">
+                    <i class="fas fa-file-signature text-primary"></i>
+                    Processar Nova Avaliação Psicossocial
+                </h2>
+            </div>
+            <div class="psico-card-body">
+                <form action="{% url 'gestao_a_vista:psicossocial_create' %}" method="post"
+                    enctype="multipart/form-data">
+                    {% csrf_token %}
+
+                    <div class="psico-form-row">
+                        <div class="psico-form-group">
+                            <label class="psico-form-label required" for="nome">Nome do Contrato / Unidade</label>
+                            <input class="psico-input" type="text" id="nome" name="nome"
+                                placeholder="Ex: CONTRATO EXEMPLO - UNIDADE (SETOR)" autocomplete="off" required>
+                        </div>
+                        <div class="psico-form-group">
+                            <label class="psico-form-label" for="empresa">Empresa Contratada</label>
+                            <input class="psico-input" type="text" id="empresa" name="empresa"
+                                placeholder="Ex: Empresa de Serviços Gerais Ltda">
+                            <small class="text-muted" style="font-size: 0.75rem;">(Será preenchida automaticamente se
+                                usar os códigos abaixo)</small>
+                        </div>
+                    </div>
+
+                    <div class="psico-form-row">
+                        <div class="psico-form-group">
+                            <label class="psico-form-label" for="empresa_codigo">Código da Empresa (Coluna B)</label>
+                            <input class="psico-input" type="text" id="empresa_codigo" name="empresa_codigo"
+                                placeholder="Ex: 26" autocomplete="off">
+                        </div>
+                        <div class="psico-form-group">
+                            <label class="psico-form-label" for="filial_codigo">Código da Filial (Coluna C)</label>
+                            <input class="psico-input" type="text" id="filial_codigo" name="filial_codigo"
+                                placeholder="Ex: 4c" autocomplete="off">
+                        </div>
+                    </div>
+
+                    <div class="psico-form-row">
+                        <div class="psico-form-group">
+                            <label class="psico-form-label" for="cnpj">CNPJ da Empresa</label>
+                            <input class="psico-input" type="text" id="cnpj" name="cnpj"
+                                placeholder="Ex: 00.000.000/0000-00">
+                        </div>
+                        <div class="psico-form-group">
+                            <label class="psico-form-label" for="localidade">Cidade - UF</label>
+                            <input class="psico-input" type="text" id="localidade" name="localidade"
+                                placeholder="Ex: Belo Horizonte - MG">
+                        </div>
+                    </div>
+
+                    <div class="psico-form-row">
+                        <div class="psico-form-group">
+                            <label class="psico-form-label" for="periodo_inicio">Início do Período de Apuração</label>
+                            <input class="psico-input" type="date" id="periodo_inicio" name="periodo_inicio">
+                        </div>
+                        <div class="psico-form-group">
+                            <label class="psico-form-label" for="periodo_fim">Fim do Período de Apuração</label>
+                            <input class="psico-input" type="date" id="periodo_fim" name="periodo_fim">
+                        </div>
+                    </div>
+
+                    <div class="psico-form-row">
+                        <div class="psico-form-group">
+                            <label class="psico-form-label" for="responsavel_tecnico">Responsável Técnico SSMA</label>
+                            <input class="psico-input" type="text" id="responsavel_tecnico" name="responsavel_tecnico"
+                                placeholder="Ex: Dr. Carlos Silva - CRP/MG 1234">
+                        </div>
+                        <div class="psico-form-group">
+                            <label class="psico-form-label" for="data_aplicacao">Data de Aplicação</label>
+                            <input class="psico-input" type="date" id="data_aplicacao" name="data_aplicacao">
+                        </div>
+                    </div>
+
+                    <div class="psico-form-row">
+                        <div class="psico-form-group">
+                            <label class="psico-form-label" for="data_emissao">Data de Emissão do Relatório</label>
+                            <input class="psico-input" type="date" id="data_emissao" name="data_emissao">
+                        </div>
+                    </div>
+
+                    <div class="psico-form-group mt-4">
+                        <label class="psico-form-label required">Planilha de Respostas (Google Forms / Excel)</label>
+                        <div class="file-input-wrapper">
+                            <div class="file-input-btn" id="label-respostas">
+                                <i class="fas fa-file-excel fa-2x mb-2 text-success"></i>
+                                <span>Clique para selecionar a planilha de respostas</span>
+                            </div>
+                            <input type="file" name="planilha_respostas" accept=".xlsx,.xls"
+                                onchange="updateFileLabel(this, 'label-respostas'); handleFileSelect(event);" required>
+                        </div>
+                        <span class="psico-help-text">A planilha de respostas do formulário COPSOQ II.</span>
+                    </div>
+
+                    <!-- GHE Headcount Table -->
+                    <div id="ghe-headcount-container" class="psico-card p-3 mb-4 mt-2"
+                        style="background-color: #F8FAFC; border: 1px solid #E2E8F0; display: block;">
+                        <h4 style="font-size: 0.9rem; font-weight: 700; color: #1E293B; margin-bottom: 0.5rem;">
+                            <i class="fas fa-calculator text-primary"></i> Total de Colaboradores por GHE / Setor (Cálculo GHE)
+                        </h4>
+                        <p class="text-muted" style="font-size: 0.75rem; margin-bottom: 0.75rem;">
+                            Informe a quantidade total de colaboradores em cada combinação de GHE/Setor (Q1) e Tipo de atividade (Q6) para calcular a taxa de adesão no relatório.
+                        </p>
+                        <div class="psico-form-group mb-3" style="max-width: 320px;">
+                            <label class="psico-form-label required" for="total_colaboradores">Total de Pessoas do
+                                Contrato</label>
+                            <input class="psico-input" type="number" id="total_colaboradores"
+                                name="total_colaboradores" min="0" value="0" oninput="reconcileGheHeadcount()">
+                            <span class="psico-help-text">Total de colaboradores ativos neste contrato, mesmo os que
+                                não responderam à pesquisa. A diferença para a soma das áreas abaixo é adicionada
+                                automaticamente como "Não identificado".</span>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered bg-white" style="font-size: 0.8rem; vertical-align: middle;">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>GHE / Setor (Q1)</th>
+                                        <th>Tipo de atividade (Q6)</th>
+                                        <th style="width: 150px;">Total (Colaboradores)</th>
+                                        <th style="width: 120px; text-align: center;">Respondentes</th>
+                                        <th style="width: 80px; text-align: center;">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="ghe-headcount-rows">
+                                    <!-- Rows will be added dynamically -->
+                                    <tr id="no-ghe-message">
+                                        <td colspan="5" class="text-center text-muted py-3">
+                                            Nenhuma combinação carregada. Faça upload da planilha de respostas ou adicione manualmente.
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="d-flex justify-content-end mt-2">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="addManualGheRow()"
+                                style="font-size: 0.75rem; border-color: #CBD5E1; color: #475569;">
+                                <i class="fas fa-plus"></i> Adicionar Combinação Manualmente
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="psico-form-group mt-2">
+                        <label class="psico-form-label" for="detalhamento_fatores_protetivos">Detalhamento dos
+                            Fatores Protetivos (Opcional)</label>
+                        <textarea class="psico-input" id="detalhamento_fatores_protetivos"
+                            name="detalhamento_fatores_protetivos" rows="3"
+                            placeholder="Descreva aqui as ações ou justificativas tomadas para os escores de proteção/baixos riscos estarem favoráveis..."></textarea>
+                        <span class="psico-help-text">Insira informações livres/ações corporativas para detalhamento
+                            na seção 6.3 do relatório de fatores protetivos.</span>
+                    </div>
+
+                    <div class="text-end mt-4">
+                        <button type="submit" class="psico-btn psico-btn-primary">
+                            <i class="fas fa-cogs"></i> Criar e Processar Relatório
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom: Table of Processed Projects -->
+    <div class="psico-card mt-4">
+        <div class="psico-card-header">
+            <h2 class="psico-card-title">
+                <i class="fas fa-list-alt text-primary"></i>
+                Projetos e Relatórios Processados
+            </h2>
+        </div>
+        <div class="psico-card-body p-0">
+            <div class="psico-table-wrapper">
+                <table class="psico-table">
+                    <thead>
+                        <tr>
+                            <th>Contrato / Unidade</th>
+                            <th>Empresa / CNPJ</th>
+                            <th>Localidade</th>
+                            <th>Período</th>
+                            <th>Criado em (por)</th>
+                            <th>Downloads</th>
+                            <th class="text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for project in projects %}
+                        <tr>
+                            <td>
+                                <strong>{{ project.nome }}</strong>
+                            </td>
+                            <td>
+                                {{ project.empresa }}
+                                {% if project.cnpj %}
+                                <br><small class="text-muted">{{ project.cnpj }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {{ project.localidade|default:"-" }}
+                            </td>
+                            <td>
+                                {% if project.periodo_inicio %}
+                                {{ project.periodo_inicio|date:"d/m/Y" }} a {{ project.periodo_fim|date:"d/m/Y" }}
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                            <td>
+                                {{ project.created_at|date:"d/m/Y H:i" }}
+                                {% if project.created_by %}
+                                <br><span class="badge-user"><i class="fas fa-user"></i> {{ project.created_by.username }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="d-flex gap-2">
+                                    {% if project.planilha_resultado %}
+                                    <a href="{{ project.planilha_resultado.url }}"
+                                        class="psico-btn psico-btn-secondary py-1 px-2" style="font-size: 0.75rem;"
+                                        download>
+                                        <i class="fas fa-file-excel text-success"></i> Excel
+                                    </a>
+                                    {% endif %}
+                                    {% if project.relatorio_word %}
+                                    <a href="{{ project.relatorio_word.url }}"
+                                        class="psico-btn psico-btn-secondary py-1 px-2" style="font-size: 0.75rem;"
+                                        download>
+                                        <i class="fas fa-file-word text-primary"></i> Relatório Word
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                <a href="{% url 'gestao_a_vista:psicossocial_delete' project.id %}"
+                                    class="psico-btn psico-btn-danger py-1 px-2" style="font-size: 0.75rem;"
+                                    onclick="return confirm('Tem certeza que deseja excluir permanentemente este projeto e todos os seus arquivos?');">
+                                    <i class="fas fa-trash-alt"></i> Excluir
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-5 text-muted">
+                                <i class="fas fa-folder-open fa-3x mb-3 text-secondary"></i>
+                                <p class="mb-0">Nenhum projeto processado até o momento.</p>
+                                <small>Preencha o formulário acima para processar sua primeira avaliação
+                                    psicossocial.</small>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function updateFileLabel(input, labelId) {
+        const label = document.getElementById(labelId);
+        if (input.files && input.files[0]) {
+            const fileName = input.files[0].name;
+            label.style.borderColor = 'var(--psico-success)';
+            label.style.color = 'var(--psico-success)';
+            label.querySelector('span').textContent = fileName;
+        } else {
+            label.style.borderColor = '#CBD5E1';
+            label.style.color = '#64748B';
+            label.querySelector('span').textContent = 'Selecionar arquivo';
+        }
+    }
+
+    function initAutocomplete(inputEl, fieldName) {
+        if (!inputEl) return;
+        let currentFocus = -1;
+        let listEl = document.createElement("div");
+        listEl.setAttribute("class", "autocomplete-items");
+
+        // Wrap/Position
+        inputEl.parentNode.style.position = "relative";
+        inputEl.parentNode.appendChild(listEl);
+
+        inputEl.addEventListener("input", function (e) {
+            let val = this.value;
+            closeAllLists();
+            if (!val || val.trim().length < 2) { return false; }
+            currentFocus = -1;
+
+            fetch(`/psicossocial/api/autocomplete/?field=${fieldName}&q=${encodeURIComponent(val)}`)
+                .then(res => res.json())
+                .then(data => {
+                    closeAllLists();
+                    if (!data || data.length === 0) return;
+
+                    data.forEach(item => {
+                        let div = document.createElement("div");
+                        let lowerVal = val.toLowerCase();
+                        let lowerItem = item.toLowerCase();
+                        let index = lowerItem.indexOf(lowerVal);
+
+                        if (index >= 0) {
+                            div.innerHTML = item.substr(0, index) +
+                                "<strong>" + item.substr(index, val.length) + "</strong>" +
+                                item.substr(index + val.length);
+                        } else {
+                            div.innerText = item;
+                        }
+
+                        div.addEventListener("click", function (e) {
+                            inputEl.value = item;
+                            inputEl.dispatchEvent(new Event('change'));
+                            closeAllLists();
+                        });
+                        listEl.appendChild(div);
+                    });
+                })
+                .catch(err => console.error("Autocomplete fetch error:", err));
+        });
+
+        inputEl.addEventListener("keydown", function (e) {
+            let x = listEl.getElementsByTagName("div");
+            if (e.keyCode == 40) { // Arrow Down
+                currentFocus++;
+                addActive(x);
+            } else if (e.keyCode == 38) { // Arrow Up
+                currentFocus--;
+                addActive(x);
+            } else if (e.keyCode == 13) { // Enter
+                if (currentFocus > -1) {
+                    e.preventDefault();
+                    if (x[currentFocus]) {
+                        x[currentFocus].click();
+                    }
+                }
+            } else if (e.keyCode == 27) { // Escape
+                closeAllLists();
+            }
+        });
+
+        function addActive(x) {
+            if (!x) return false;
+            removeActive(x);
+            if (currentFocus >= x.length) currentFocus = 0;
+            if (currentFocus < 0) currentFocus = (x.length - 1);
+            x[currentFocus].classList.add("autocomplete-active");
+        }
+
+        function removeActive(x) {
+            for (let i = 0; i < x.length; i++) {
+                x[i].classList.remove("autocomplete-active");
+            }
+        }
+
+        function closeAllLists() {
+            while (listEl.firstChild) {
+                listEl.removeChild(listEl.firstChild);
+            }
+        }
+
+        document.addEventListener("click", function (e) {
+            if (e.target !== inputEl) {
+                closeAllLists();
+            }
+        });
+    }
+
+    function addManualGheRow(ghe = '', activity = '', count = 0, headcount = 0) {
+        const noGheMsg = document.getElementById('no-ghe-message');
+        if (noGheMsg) {
+            noGheMsg.remove();
+        }
+
+        const tbody = document.getElementById('ghe-headcount-rows');
+        const tr = document.createElement('tr');
+        tr.dataset.gheRow = 'manual';
+
+        // GHE / Setor Column
+        const tdGhe = document.createElement('td');
+        const inputGhe = document.createElement('input');
+        inputGhe.type = 'text';
+        inputGhe.className = 'form-control form-control-sm';
+        inputGhe.name = 'ghe_setor[]';
+        inputGhe.value = ghe;
+        inputGhe.placeholder = 'Ex: SEGURANCA HUMANA';
+        inputGhe.required = true;
+        tdGhe.appendChild(inputGhe);
+        
+        // Tipo de atividade Column
+        const tdAct = document.createElement('td');
+        const selectAct = document.createElement('select');
+        selectAct.className = 'form-select form-select-sm';
+        selectAct.name = 'tipo_atividade[]';
+        selectAct.required = true;
+        
+        const standardOptions = [
+            "Ambiente administrativo (escritório)",
+            "Ambiente industrial (produção / fábrica)",
+            "Ambiente logístico (estoque / almoxarifado)",
+            "Ambiente hospitalar / assistencial",
+            "Ambiente externo (rua, campo, deslocamento)",
+            "Ambiente com atendimento direto ao público"
+        ];
+        
+        const optPlaceholder = document.createElement('option');
+        optPlaceholder.value = "";
+        optPlaceholder.textContent = "-- Selecione a atividade --";
+        optPlaceholder.disabled = true;
+        optPlaceholder.selected = !activity;
+        selectAct.appendChild(optPlaceholder);
+        
+        let found = false;
+        standardOptions.forEach(optVal => {
+            const opt = document.createElement('option');
+            opt.value = optVal;
+            opt.textContent = optVal;
+            if (activity && activity.toLowerCase().trim() === optVal.toLowerCase().trim()) {
+                opt.selected = true;
+                found = true;
+            }
+            selectAct.appendChild(opt);
+        });
+        
+        if (activity && !found) {
+            const opt = document.createElement('option');
+            opt.value = activity;
+            opt.textContent = activity;
+            opt.selected = true;
+            selectAct.appendChild(opt);
+        }
+        
+        tdAct.appendChild(selectAct);
+        
+        // Total (Colaboradores) Column
+        const tdTotal = document.createElement('td');
+        const inputTotal = document.createElement('input');
+        inputTotal.type = 'number';
+        inputTotal.className = 'form-control form-control-sm';
+        inputTotal.name = 'headcount_total[]';
+        inputTotal.value = headcount;
+        inputTotal.min = '0';
+        inputTotal.required = true;
+        inputTotal.addEventListener('input', reconcileGheHeadcount);
+        tdTotal.appendChild(inputTotal);
+        
+        // Respondentes Column
+        const tdCount = document.createElement('td');
+        tdCount.className = 'text-center fw-bold text-secondary';
+        tdCount.innerText = count;
+        
+        // Ações Column
+        const tdActions = document.createElement('td');
+        tdActions.className = 'text-center';
+        const btnDelete = document.createElement('button');
+        btnDelete.type = 'button';
+        btnDelete.className = 'btn btn-xs btn-link text-danger p-0';
+        btnDelete.innerHTML = '<i class="fas fa-trash-alt"></i>';
+        btnDelete.onclick = function() {
+            tr.remove();
+            if (tbody.children.length === 0) {
+                tbody.appendChild(createNoGheMessageRow());
+            }
+            reconcileGheHeadcount();
+        };
+        tdActions.appendChild(btnDelete);
+        
+        tr.appendChild(tdGhe);
+        tr.appendChild(tdAct);
+        tr.appendChild(tdTotal);
+        tr.appendChild(tdCount);
+        tr.appendChild(tdActions);
+        tbody.appendChild(tr);
+    }
+    
+    function createNoGheMessageRow() {
+        const tr = document.createElement('tr');
+        tr.id = 'no-ghe-message';
+        tr.innerHTML = '<td colspan="5" class="text-center text-muted py-3">Nenhuma combinação carregada. Faça upload da planilha de respostas ou adicione manualmente.</td>';
+        return tr;
+    }
+
+    function reconcileGheHeadcount() {
+        const totalInput = document.getElementById('total_colaboradores');
+        if (!totalInput) return;
+        const totalPessoas = parseInt(totalInput.value, 10) || 0;
+
+        const tbody = document.getElementById('ghe-headcount-rows');
+        let somaAreas = 0;
+        tbody.querySelectorAll('tr[data-ghe-row="manual"] input[name="headcount_total[]"]').forEach(input => {
+            somaAreas += parseInt(input.value, 10) || 0;
+        });
+
+        const diff = totalPessoas - somaAreas;
+        let unidentifiedRow = document.getElementById('ghe-row-nao-identificado');
+
+        if (diff > 0) {
+            if (!unidentifiedRow) {
+                const noGheMsg = document.getElementById('no-ghe-message');
+                if (noGheMsg) {
+                    noGheMsg.remove();
+                }
+                unidentifiedRow = document.createElement('tr');
+                unidentifiedRow.id = 'ghe-row-nao-identificado';
+                unidentifiedRow.dataset.gheRow = 'auto';
+                unidentifiedRow.innerHTML = `
+                    <td><input type="text" class="form-control form-control-sm" name="ghe_setor[]" value="Não identificado / Outras áreas" readonly></td>
+                    <td><input type="text" class="form-control form-control-sm" name="tipo_atividade[]" value="Não identificado" readonly></td>
+                    <td><input type="number" class="form-control form-control-sm" name="headcount_total[]" value="${diff}" readonly></td>
+                    <td class="text-center fw-bold text-secondary">0</td>
+                    <td class="text-center text-muted" title="Calculado automaticamente a partir do Total de Pessoas do Contrato"><i class="fas fa-lock"></i></td>
+                `;
+                tbody.appendChild(unidentifiedRow);
+            } else {
+                unidentifiedRow.querySelector('input[name="headcount_total[]"]').value = diff;
+            }
+        } else if (unidentifiedRow) {
+            unidentifiedRow.remove();
+            if (tbody.children.length === 0) {
+                tbody.appendChild(createNoGheMessageRow());
+            }
+        }
+    }
+
+    function handleFileSelect(evt) {
+        const file = evt.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+
+                // Get raw rows
+                const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+                if (rows.length < 2) return;
+
+                const headers = rows[0];
+
+                // Find Q1 (Qual negócio e atividade você se enquadra?) column
+                let colQ1Idx = -1;
+                // Find Q6 (Em qual tipo de ambiente você realiza a maior parte das suas atividades?) column
+                let colQ6Idx = -1;
+                
+                for (let i = 0; i < headers.length; i++) {
+                    const h = String(headers[i] || '').toLowerCase().trim();
+                    if (h.includes("qual negocio e atividade") || h.includes("qual negócio e atividade")) {
+                        colQ1Idx = i;
+                    }
+                    if (h.includes("em qual tipo de ambiente voce realiza") || h.includes("em qual tipo de ambiente você realiza")) {
+                        colQ6Idx = i;
+                    }
+                }
+                
+                // Fallbacks
+                if (colQ1Idx === -1) {
+                    for (let i = 0; i < headers.length; i++) {
+                        const h = String(headers[i] || '').toLowerCase();
+                        if (h.includes("negocio") || h.includes("negócio") || h.includes("ghe") || h.includes("grupo ocupacional")) {
+                            colQ1Idx = i;
+                            break;
+                        }
+                    }
+                }
+                if (colQ6Idx === -1) {
+                    for (let i = 0; i < headers.length; i++) {
+                        const h = String(headers[i] || '').toLowerCase();
+                        if (h.includes("ambiente") || h.includes("tipo de ambiente")) {
+                            colQ6Idx = i;
+                            break;
+                        }
+                    }
+                }
+                
+                // Defaults if still not found
+                if (colQ1Idx === -1) colQ1Idx = 9; // Col J
+                if (colQ6Idx === -1) colQ6Idx = 10; // Col K
+
+                // Extract unique combinations of (Q1, Q6)
+                const combinations = new Map();
+                for (let r = 1; r < rows.length; r++) {
+                    const q1Val = String(rows[r][colQ1Idx] || '').trim();
+                    const q6Val = String(rows[r][colQ6Idx] || '').trim();
+                    if (q1Val && q1Val.toLowerCase() !== 'undefined' && q1Val.toLowerCase() !== 'null' &&
+                        q6Val && q6Val.toLowerCase() !== 'undefined' && q6Val.toLowerCase() !== 'null') {
+                        const key = `${q1Val} | ${q6Val}`;
+                        if (!combinations.has(key)) {
+                            combinations.set(key, { q1: q1Val, q6: q6Val, count: 0 });
+                        }
+                        combinations.get(key).count += 1;
+                    }
+                }
+
+                // Render inputs
+                const tbody = document.getElementById('ghe-headcount-rows');
+                tbody.innerHTML = '';
+
+                if (combinations.size > 0) {
+                    combinations.forEach((value, key) => {
+                        addManualGheRow(value.q1, value.q6, value.count, 0);
+                    });
+                } else {
+                    tbody.appendChild(createNoGheMessageRow());
+                }
+                reconcileGheHeadcount();
+            } catch (err) {
+                console.error("Erro ao ler planilha:", err);
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    const companyMappings = {{ company_mappings_json| safe }};
+
+    function normalizeCode(val) {
+        if (!val) return "";
+        let s = String(val).trim().toLowerCase();
+        let sClean = s.replace(/^0+/, '');
+        if (sClean === "" && s !== "") {
+            return "0";
+        }
+        return sClean;
+    }
+
+    function autoFillCompanyInfo() {
+        const empCod = normalizeCode(document.getElementById('empresa_codigo').value);
+        const filCod = normalizeCode(document.getElementById('filial_codigo').value);
+        const key = `${empCod}|${filCod}`.toLowerCase();
+
+        if (companyMappings[key]) {
+            const info = companyMappings[key];
+            if (info.empresa_nome) {
+                document.getElementById('empresa').value = info.empresa_nome;
+            }
+            if (info.cnpj) {
+                document.getElementById('cnpj').value = info.cnpj;
+            }
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        initAutocomplete(document.getElementById("nome"), "projeto_nome");
+        initAutocomplete(document.getElementById("empresa"), "empresa");
+        initAutocomplete(document.getElementById("empresa_codigo"), "empresa_codigo");
+        initAutocomplete(document.getElementById("filial_codigo"), "filial_codigo");
+        initAutocomplete(document.getElementById("cnpj"), "cnpj");
+        initAutocomplete(document.getElementById("localidade"), "localidade");
+        initAutocomplete(document.getElementById("responsavel_tecnico"), "responsavel_tecnico");
+
+        // Register auto-fill listeners
+        const empCodEl = document.getElementById("empresa_codigo");
+        const filCodEl = document.getElementById("filial_codigo");
+        if (empCodEl && filCodEl) {
+            empCodEl.addEventListener("input", autoFillCompanyInfo);
+            empCodEl.addEventListener("change", autoFillCompanyInfo);
+            filCodEl.addEventListener("input", autoFillCompanyInfo);
+            filCodEl.addEventListener("change", autoFillCompanyInfo);
+        }
+
+        // Pre-populate with default environment rows
+        const defaultRows = [
+            "Ambiente administrativo (escritório)",
+            "Ambiente industrial (produção / fábrica)",
+            "Ambiente logístico (estoque / almoxarifado)",
+            "Ambiente hospitalar / assistencial",
+            "Ambiente externo (rua, campo, deslocamento)",
+            "Ambiente com atendimento direto ao público"
+        ];
+        defaultRows.forEach(row => {
+            addManualGheRow(row, row, 0, 0);
+        });
+    });
+</script>
+{% endblock %}

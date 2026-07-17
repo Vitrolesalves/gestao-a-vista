@@ -1,0 +1,1420 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<style>
+    /* --- Estilos Gerais --- */
+    .implantacoes-container {
+        padding: 1.5rem;
+        background-color: #FFFFFF; /* Pure White Background */
+        min-height: calc(100vh - 60px);
+        display: flex;
+        flex-direction: column;
+        color: #1E293B; /* Dark slate text for outstanding legibility */
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+
+    .header-section {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+
+    .title-gradient {
+        color: #1A2A45; /* Dark Navy Blue */
+        font-size: 28px;
+        font-weight: 800;
+        margin: 0;
+        text-transform: uppercase;
+        letter-spacing: -0.5px;
+    }
+
+    .subtitle-text {
+        color: #475569;
+        font-size: 0.9rem;
+        margin-top: 4px;
+    }
+
+    .btn-premium {
+        background: #1A2A45; /* Dark Navy Blue */
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 4px 14px rgba(26, 42, 69, 0.2);
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .btn-premium:hover {
+        transform: translateY(-2px);
+        background: #111C30;
+        box-shadow: 0 6px 20px rgba(26, 42, 69, 0.35);
+        color: white;
+    }
+
+    /* --- Stats Grid --- */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 1.25rem;
+        margin-bottom: 2.5rem;
+    }
+
+    .stat-card {
+        background: #FFFFFF;
+        border: 1px solid #E2E8F0;
+        border-radius: 16px;
+        padding: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1.25rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    .stat-card:hover {
+        transform: translateY(-4px);
+        border-color: #1A2A45;
+        box-shadow: 0 10px 20px rgba(26, 42, 69, 0.06);
+    }
+
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+    }
+
+    .stat-icon.total { background: rgba(26, 42, 69, 0.1); color: #1A2A45; }
+    .stat-icon.andamento { background: rgba(59, 130, 246, 0.12); color: #1D4ED8; }
+    .stat-icon.pausada { background: rgba(245, 158, 11, 0.12); color: #D97706; }
+    .stat-icon.atraso { background: rgba(239, 68, 68, 0.12); color: #DC2626; }
+
+    .stat-number {
+        font-size: 2rem;
+        font-weight: 800;
+        line-height: 1;
+        margin-bottom: 2px;
+        color: #0F172A;
+    }
+
+    .stat-label {
+        font-size: 0.8rem;
+        color: #64748B;
+        font-weight: 500;
+    }
+
+    /* --- Kanban Board --- */
+    .kanban-board {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.5rem;
+        align-items: start;
+        flex-grow: 1;
+    }
+
+    @media (max-width: 1024px) {
+        .kanban-board {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .kanban-col {
+        background: #F8FAFC; /* Light gray-blue column backgrounds */
+        border: 1px solid #E2E8F0;
+        border-radius: 20px;
+        padding: 1.25rem;
+        min-height: 500px;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .col-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-bottom: 0.75rem;
+        border-bottom: 2px solid #E2E8F0;
+    }
+
+    .col-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .col-badge {
+        background: #E2E8F0;
+        color: #475569;
+        padding: 0.2rem 0.6rem;
+        border-radius: 99px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .col-header.andamento .col-title { color: #1D4ED8; }
+    .col-header.pausada .col-title { color: #D97706; }
+    .col-header.concluida .col-title { color: #059669; }
+
+    .cards-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        min-height: 400px;
+    }
+
+    /* --- Kanban Card --- */
+    .kanban-card {
+        background: #FFFFFF; /* Pure White Card background */
+        border: 1px solid #E2E8F0;
+        border-radius: 14px;
+        padding: 1.25rem;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+
+    .kanban-card:hover {
+        transform: translateY(-4px) scale(1.01);
+        border-color: #1A2A45;
+        box-shadow: 0 8px 16px rgba(26, 42, 69, 0.08);
+    }
+
+    .card-title {
+        font-size: 1.05rem;
+        font-weight: 700;
+        margin-bottom: 0.75rem;
+        color: #0F172A;
+    }
+
+    .card-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        font-size: 0.8rem;
+        color: #64748B;
+        border-top: 1px solid #F1F5F9;
+        padding-top: 0.75rem;
+        margin-top: 0.75rem;
+    }
+
+    .meta-row {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .badge-role {
+        padding: 0.25rem 0.5rem;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 0.75rem;
+    }
+
+    .badge-role.coord { background: rgba(26, 42, 69, 0.08); color: #1A2A45; }
+    .badge-role.superv { background: rgba(124, 58, 237, 0.08); color: #6D28D9; }
+    .badge-role.proj { background: rgba(217, 119, 6, 0.08); color: #B45309; }
+    .badge-role.bi { background: rgba(219, 39, 119, 0.08); color: #BE185D; }
+    .badge-role.concl { background: rgba(5, 150, 105, 0.08); color: #047857; }
+
+    .badge-service {
+        padding: 0.25rem 0.5rem;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 0.75rem;
+        background: #F1F5F9;
+        color: #475569;
+    }
+
+    .badge-deadline {
+        padding: 0.25rem 0.5rem;
+        border-radius: 6px;
+        font-weight: 700;
+        font-size: 0.75rem;
+    }
+    .badge-deadline.ok { background: rgba(16, 185, 129, 0.1); color: #047857; }
+    .badge-deadline.alert { background: rgba(239, 68, 68, 0.1); color: #B91C1C; animation: pulse 2s infinite; }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.6; }
+    }
+
+    .card-actions {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 1rem;
+    }
+
+    .btn-card-action {
+        flex: 1;
+        padding: 0.4rem;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-align: center;
+        border: 1px solid #CBD5E1;
+        background: #FFFFFF;
+        color: #475569;
+        transition: all 0.2s ease;
+    }
+
+    .btn-card-action:hover {
+        background: #F8FAFC;
+        border-color: #94A3B8;
+        color: #1E293B;
+    }
+
+    .btn-card-action.primary {
+        background: #1A2A45; /* Dark Navy Blue */
+        border-color: #1A2A45;
+        color: #FFFFFF;
+    }
+
+    .btn-card-action.primary:hover {
+        background: #111C30;
+        border-color: #111C30;
+        color: #FFFFFF;
+    }
+
+    /* --- Premium Wizard Modal --- */
+    .modal-content-premium {
+        background: #FFFFFF !important;
+        border: 1px solid #E2E8F0 !important;
+        border-radius: 24px !important;
+        color: #1E293B !important;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1) !important;
+    }
+
+    .modal-header-premium {
+        border-bottom: 1px solid #E2E8F0 !important;
+        padding: 1.5rem 2rem !important;
+    }
+
+    .modal-body-premium {
+        padding: 2rem !important;
+        max-height: 75vh;
+        overflow-y: auto;
+    }
+
+    /* --- Timeline --- */
+    .timeline-steps {
+        display: flex;
+        justify-content: space-between;
+        position: relative;
+        margin-bottom: 2.5rem;
+        padding: 0 1rem;
+    }
+
+    .timeline-steps::before {
+        content: '';
+        position: absolute;
+        top: 15px;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: #E2E8F0;
+        z-index: 1;
+    }
+
+    .timeline-progress-bar {
+        position: absolute;
+        top: 15px;
+        left: 0;
+        height: 3px;
+        background: linear-gradient(90deg, #1A2A45, #3B82F6);
+        z-index: 2;
+        transition: width 0.4s ease;
+    }
+
+    .timeline-step-item {
+        position: relative;
+        z-index: 3;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        cursor: pointer;
+    }
+
+    .step-circle {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: #F8FAFC;
+        border: 3px solid #E2E8F0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.85rem;
+        transition: all 0.3s ease;
+        color: #64748B;
+    }
+
+    .timeline-step-item.active .step-circle {
+        border-color: #1A2A45;
+        background: #1A2A45;
+        color: white;
+        box-shadow: 0 0 10px rgba(26, 42, 69, 0.3);
+    }
+
+    .timeline-step-item.completed .step-circle {
+        border-color: #10B981;
+        background: #10B981;
+        color: white;
+    }
+
+    .step-title-popover {
+        position: absolute;
+        bottom: -24px;
+        white-space: nowrap;
+        font-size: 0.65rem;
+        font-weight: 600;
+        color: #64748B;
+        opacity: 0.8;
+        transition: all 0.3s ease;
+    }
+
+    .timeline-step-item.active .step-title-popover {
+        color: #1A2A45;
+        opacity: 1;
+        font-weight: 700;
+    }
+
+    /* --- History Block --- */
+    .history-card {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .history-title {
+        font-size: 1rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+        color: #1A2A45;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .history-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1rem;
+    }
+
+    .history-item {
+        background: #FFFFFF;
+        border: 1px solid #E2E8F0;
+        padding: 1rem;
+        border-radius: 10px;
+    }
+
+    .history-item-label {
+        font-size: 0.75rem;
+        color: #64748B;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+        text-transform: uppercase;
+    }
+
+    .history-item-val {
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: #1E293B;
+    }
+
+    /* --- Anexos Download --- */
+    .btn-download-premium {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: rgba(26, 42, 69, 0.06);
+        border: 1px solid rgba(26, 42, 69, 0.15);
+        color: #1A2A45;
+        padding: 0.35rem 0.75rem;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        margin-top: 0.25rem;
+    }
+
+    .btn-download-premium:hover {
+        background: #1A2A45;
+        color: white;
+    }
+
+    /* --- Form Premium --- */
+    .form-label-premium {
+        font-weight: 600;
+        color: #1E293B;
+        font-size: 0.9rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .form-control-premium {
+        background: #FFFFFF !important;
+        border: 1px solid #CBD5E1 !important;
+        color: #1E293B !important;
+        border-radius: 8px !important;
+        padding: 0.75rem !important;
+    }
+
+    .form-control-premium:focus {
+        border-color: #1A2A45 !important;
+        box-shadow: 0 0 0 2px rgba(26, 42, 69, 0.15) !important;
+    }
+
+    .form-select-premium {
+        background: #FFFFFF !important;
+        border: 1px solid #CBD5E1 !important;
+        color: #1E293B !important;
+        border-radius: 8px !important;
+        padding: 0.75rem !important;
+    }
+
+    .form-select-premium:focus {
+        border-color: #1A2A45 !important;
+        box-shadow: 0 0 0 2px rgba(26, 42, 69, 0.15) !important;
+    }
+</style>
+{% endblock %}
+
+{% block page_title %}Fluxo de Implantações{% endblock %}
+
+{% block content %}
+<div class="implantacoes-container">
+    
+    <!-- Header -->
+    <div class="header-section">
+        <div>
+            <h1 class="title-gradient">Fluxo de Implantações</h1>
+            <p class="subtitle-text">Gestão e acompanhamento das etapas sequenciais de implantações OpsVista</p>
+        </div>
+        <button class="btn-premium" data-bs-toggle="modal" data-bs-target="#modalCriarCard">
+            <svg style="width: 20px; height: 20px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            Nova Implantação
+        </button>
+    </div>
+
+    <!-- Stats grid -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon total">
+                <svg style="width:24px; height:24px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/>
+                </svg>
+            </div>
+            <div>
+                <div class="stat-number">{{ total_cards }}</div>
+                <div class="stat-label">Total de Fluxos</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon andamento">
+                <svg style="width:24px; height:24px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                </svg>
+            </div>
+            <div>
+                <div class="stat-number">{{ em_andamento_count }}</div>
+                <div class="stat-label">Em Andamento</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon pausada">
+                <svg style="width:24px; height:24px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <div>
+                <div class="stat-number">{{ pausada_count }}</div>
+                <div class="stat-label">Pausadas</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon {{ atrasados_bi_count|yesno:'atraso,total' }}">
+                <svg style="width:24px; height:24px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+            </div>
+            <div>
+                <div class="stat-number">{{ atrasados_bi_count }}</div>
+                <div class="stat-label">Atrasados no BI (>20d)</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Kanban Board -->
+    <div class="kanban-board">
+        
+        <!-- Raias: Em Andamento -->
+        <div class="kanban-col">
+            <div class="col-header andamento">
+                <span class="col-title">
+                    <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#38BDF8;"></span>
+                    Em Andamento
+                </span>
+                <span class="col-badge">{{ cards_andamento|length }}</span>
+            </div>
+            <div class="cards-list" id="col-andamento" data-status="em_andamento">
+                {% for card in cards_andamento %}
+                <div class="kanban-card" data-id="{{ card.id }}" onclick="abrirModalWizard('{{ card.id }}')">
+                    <h3 class="card-title">{{ card.nome }}</h3>
+                    <div style="font-size:0.75rem; color:#64748B; margin-bottom:0.75rem;">
+                        Aberto por <strong>{{ card.created_by_name }}</strong> em {{ card.created_at|date:"d/m/Y H:i" }}
+                    </div>
+                    
+                    <div style="font-size:0.8rem; margin-bottom:0.5rem;">
+                        <span style="color:#94A3B8; font-weight:500;">Etapa Atual:</span><br>
+                        <span style="color:#38BDF8; font-weight:700;">{{ card.label_etapa }}</span>
+                    </div>
+
+                    <div class="card-meta">
+                        <div class="meta-row">
+                            <span class="badge-role {% if card.etapa_atual <= 2 %}coord{% elif card.etapa_atual == 3 %}superv{% elif card.etapa_atual <= 8 %}proj{% else %}bi{% endif %}">
+                                Aguardando: {{ card.esperando_texto }}
+                            </span>
+                        </div>
+                        {% if card.tipo_implantacao %}
+                        <div class="meta-row">
+                            <span class="badge-service">{{ card.tipo_implantacao|upper }}</span>
+                        </div>
+                        {% endif %}
+                        
+                        {% if card.etapa_atual == 9 %}
+                        <div class="meta-row">
+                            {% if card.atrasado_bi %}
+                            <span class="badge-deadline alert">Atrasado! {{ card.dias_restantes_bi|stringformat:"+d"|slice:"1:" }} dias</span>
+                            {% else %}
+                            <span class="badge-deadline ok">{{ card.dias_restantes_bi }} dias restantes</span>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="card-actions">
+                        <button class="btn-card-action primary">Avançar Etapa</button>
+                        <button class="btn-card-action" onclick="event.stopPropagation(); pausarCard('{{ card.id }}', 'pausada')">Pausar</button>
+                    </div>
+                </div>
+                {% empty %}
+                <div style="text-align:center; color:#64748B; padding:2rem 0; font-size:0.85rem;">Nenhum fluxo em andamento.</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Raias: Pausada -->
+        <div class="kanban-col">
+            <div class="col-header pausada">
+                <span class="col-title">
+                    <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#F59E0B;"></span>
+                    Pausadas
+                </span>
+                <span class="col-badge">{{ cards_pausada|length }}</span>
+            </div>
+            <div class="cards-list" id="col-pausada" data-status="pausada">
+                {% for card in cards_pausada %}
+                <div class="kanban-card" data-id="{{ card.id }}" onclick="abrirModalWizard('{{ card.id }}')">
+                    <h3 class="card-title">{{ card.nome }}</h3>
+                    <div style="font-size:0.75rem; color:#64748B; margin-bottom:0.75rem;">
+                        Aberto por <strong>{{ card.created_by_name }}</strong> em {{ card.created_at|date:"d/m/Y H:i" }}
+                    </div>
+                    
+                    <div style="font-size:0.8rem; margin-bottom:0.5rem;">
+                        <span style="color:#94A3B8; font-weight:500;">Etapa Parada:</span><br>
+                        <span style="color:#F59E0B; font-weight:700;">{{ card.label_etapa }}</span>
+                    </div>
+
+                    <div class="card-meta">
+                        <div class="meta-row">
+                            <span class="badge-role {% if card.etapa_atual <= 2 %}coord{% elif card.etapa_atual == 3 %}superv{% elif card.etapa_atual <= 8 %}proj{% else %}bi{% endif %}">
+                                Aguardando: {{ card.esperando_texto }}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="card-actions">
+                        <button class="btn-card-action primary" onclick="event.stopPropagation(); pausarCard('{{ card.id }}', 'em_andamento')">Retomar</button>
+                    </div>
+                </div>
+                {% empty %}
+                <div style="text-align:center; color:#64748B; padding:2rem 0; font-size:0.85rem;">Nenhuma implantação pausada.</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Raias: Concluída -->
+        <div class="kanban-col">
+            <div class="col-header concluida">
+                <span class="col-title">
+                    <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#10B981;"></span>
+                    Concluídas
+                </span>
+                <span class="col-badge">{{ cards_concluida|length }}</span>
+            </div>
+            <div class="cards-list" id="col-concluida" data-status="concluida">
+                {% for card in cards_concluida %}
+                <div class="kanban-card" data-id="{{ card.id }}" onclick="abrirModalWizard('{{ card.id }}')">
+                    <h3 class="card-title">{{ card.nome }}</h3>
+                    <div style="font-size:0.75rem; color:#64748B; margin-bottom:0.75rem;">
+                        Aberto por <strong>{{ card.created_by_name }}</strong> em {{ card.created_at|date:"d/m/Y H:i" }}
+                    </div>
+                    
+                    <div style="font-size:0.8rem; margin-bottom:0.5rem;">
+                        <span style="color:#10B981; font-weight:700;">Fluxo Concluído!</span>
+                    </div>
+
+                    <div class="card-meta">
+                        <div class="meta-row">
+                            <span class="badge-role concl">Sucesso</span>
+                        </div>
+                        {% if card.tipo_implantacao %}
+                        <div class="meta-row">
+                            <span class="badge-service">{{ card.tipo_implantacao|upper }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="card-actions">
+                        <button class="btn-card-action">Visualizar Histórico</button>
+                    </div>
+                </div>
+                {% empty %}
+                <div style="text-align:center; color:#64748B; padding:2rem 0; font-size:0.85rem;">Nenhum fluxo concluído ainda.</div>
+                {% endfor %}
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block modals %}
+<!-- Modal Criar Novo Card -->
+<div class="modal fade" id="modalCriarCard" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-content-premium">
+            <div class="modal-header modal-header-premium">
+                <h5 class="modal-title font-bold text-lg" style="color:#1A2A45;">Abertura do Fluxo de Implantação</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="formCriarCard" onsubmit="criarCard(event)">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="create">
+                <div class="modal-body modal-body-premium">
+                    <div class="mb-4">
+                        <label class="form-label-premium">Nome do Fluxo de Implantação Atual</label>
+                        <input type="text" class="form-control form-control-premium" name="nome" placeholder="Ex: Implantação Posto Alpha Vista" required>
+                    </div>
+                </div>
+                <div class="modal-footer" style="border-top: 1px solid #E2E8F0; padding: 1rem 2rem;">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius:8px;">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" style="background:#1A2A45; border:none; border-radius:8px;">Criar Fluxo</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Principal Wizard (Avançar e Histórico) -->
+<div class="modal fade" id="modalWizard" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content modal-content-premium">
+            <div class="modal-header modal-header-premium">
+                <div>
+                    <h5 class="modal-title font-bold text-xl" id="wizardCardNome" style="color:#1A2A45; margin-bottom:4px;">Nome da Implantação</h5>
+                    <p style="margin:0; font-size:0.8rem; color:#64748B;">Progresso da implantação sequencial passo a passo</p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body modal-body-premium">
+                
+                <!-- Timeline/Progresso -->
+                <div class="timeline-steps" id="wizardTimeline">
+                    <div class="timeline-progress-bar" id="wizardProgressBar"></div>
+                    <!-- Passos serão renderizados via JS -->
+                </div>
+
+                <!-- Histórico de Etapas Concluídas (Somente Leitura) -->
+                <div class="history-card" id="wizardHistoryBlock" style="display:none;">
+                    <div class="history-title">
+                        <svg style="width:20px; height:20px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        Dados das Etapas Concluídas
+                    </div>
+                    <div class="history-grid" id="wizardHistoryGrid">
+                        <!-- Itens do histórico serão populados via JS -->
+                    </div>
+                </div>
+
+                <!-- Formulário Interativo da Etapa Ativa -->
+                <form id="formWizardStep" onsubmit="salvarEtapa(event)" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="update_step">
+                    <input type="hidden" name="id" id="wizardCardId">
+
+                    <!-- Bloco de inputs específicos por etapa -->
+                    <div id="wizardActiveStepFields">
+                        <!-- Inputs dinâmicos serão inseridos aqui via JS -->
+                    </div>
+
+                    <div style="display:flex; justify-content:space-between; margin-top:2.5rem; border-top:1px solid rgba(255,255,255,0.08); padding-top:1.5rem;">
+                        <div style="display:flex; gap:0.5rem;">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius:8px;">Fechar</button>
+                            {% if request.user.role == 'administrador' %}
+                            <button type="button" class="btn btn-danger" onclick="excluirCardImplantacao()" style="background:#EF4444; border:none; border-radius:8px; display:inline-flex; align-items:center; gap:0.5rem;">
+                                <svg style="width:16px; height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                </svg>
+                                Excluir
+                            </button>
+                            {% endif %}
+                        </div>
+                        <button type="submit" class="btn btn-primary" id="btnAvancarEtapa" style="background:linear-gradient(135deg, #10B981, #059669); border:none; border-radius:8px; display:inline-flex; align-items:center; gap:0.5rem;">
+                            Concluir e Avançar Etapa
+                            <svg style="width:16px; height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                            </svg>
+                        </button>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // --- Trava de Segurança Contra Cliques Duplos e Backdrops Órfãos ---
+    document.addEventListener('click', function(e) {
+        const target = e.target.closest('[data-bs-toggle="modal"], .kanban-card, .btn-premium, .btn-card-action');
+        if (target) {
+            if (target.dataset.clicked === 'true') {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            }
+            target.dataset.clicked = 'true';
+            setTimeout(() => {
+                delete target.dataset.clicked;
+            }, 800);
+        }
+    }, true);
+
+    document.addEventListener('hidden.bs.modal', function () {
+        const backdrops = document.querySelectorAll('.modal-backdrop');
+        backdrops.forEach(el => el.remove());
+        document.body.classList.remove('modal-open');
+        document.body.style.overflow = '';
+        document.body.style.paddingRight = '';
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        // CORREÇÃO GLOBAL: Mover modais para o body para evitar que o backdrop fique por cima
+        document.querySelectorAll('.modal').forEach(function (modalEl) {
+            document.body.appendChild(modalEl);
+        });
+
+        // CORREÇÃO GLOBAL: Bootstrap + Alpine.js conflito de foco
+        document.querySelectorAll('.modal').forEach(function (modalEl) {
+            modalEl.addEventListener('shown.bs.modal', function () {
+                document.body.removeAttribute('inert');
+                document.body.removeAttribute('aria-hidden');
+                modalEl.removeAttribute('inert');
+                modalEl.removeAttribute('aria-hidden');
+                modalEl.style.pointerEvents = 'auto';
+                const dialog = modalEl.querySelector('.modal-dialog');
+                if (dialog) dialog.style.pointerEvents = 'auto';
+            });
+        });
+    });
+
+    // Definição estática das informações das etapas
+    const etapasInfo = {
+        1: { label: "Solicitação IMPLANTAÇÃO", cargo: "Coordenador" },
+        2: { label: "Tipo de implantação", cargo: "Coordenador" },
+        3: { label: "Mapeamento dos locais", cargo: "Supervisor" },
+        4: { label: "Criação do Checklist", cargo: "Projetos" },
+        5: { label: "Criação das rotinas (RONDA, LIVRO)", cargo: "Projetos" },
+        6: { label: "Criação dos QR codes", cargo: "Projetos" },
+        7: { label: "Treinamento", cargo: "Projetos" },
+        8: { label: "Entrega do projeto", cargo: "Projetos" },
+        9: { label: "Link e painel do BI", cargo: "BI" },
+        10: { label: "Finalizado", cargo: "Concluído" }
+    };
+
+    // Criar um novo card (Abertura do Fluxo)
+    function criarCard(e) {
+        e.preventDefault();
+        const form = document.getElementById('formCriarCard');
+        const formData = new FormData(form);
+
+        fetch("{% url 'gestao_a_vista:implantacoes_fluxo' %}", {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Sucesso!',
+                    text: data.message,
+                    timer: 1500,
+                    showConfirmButton: false
+                }).then(() => {
+                    location.reload();
+                });
+            } else {
+                Swal.fire('Erro', data.message || 'Erro ao criar fluxo', 'error');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            Swal.fire('Erro', 'Ocorreu um erro na requisição', 'error');
+        });
+    }
+
+    // Pausar/Retomar fluxo (mover raia)
+    function pausarCard(cardId, novoStatus) {
+        const formData = new FormData();
+        formData.append('action', 'update_status');
+        formData.append('id', cardId);
+        formData.append('status', novoStatus);
+        
+        fetch("{% url 'gestao_a_vista:implantacoes_fluxo' %}", {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Atualizado!',
+                    text: data.message,
+                    timer: 1000,
+                    showConfirmButton: false
+                }).then(() => {
+                    location.reload();
+                });
+            } else {
+                Swal.fire('Erro', data.message, 'error');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            Swal.fire('Erro', 'Erro ao alterar status', 'error');
+        });
+    }
+
+    let isModalOpening = false;
+
+    // Abrir o Modal Wizard e carregar dados do Card
+    function abrirModalWizard(cardId) {
+        if (isModalOpening) return;
+        isModalOpening = true;
+
+        fetch(`{% url 'gestao_a_vista:implantacoes_fluxo' %}?id=${cardId}`)
+        .then(res => res.json())
+        .then(data => {
+            isModalOpening = false;
+            if (data.success) {
+                document.getElementById('wizardCardId').value = data.id;
+                document.getElementById('wizardCardNome').textContent = data.nome;
+                
+                // 1. Renderizar a Linha de Tempo (Etapas 1 a 9)
+                renderTimeline(data.etapa_atual);
+                
+                // 2. Renderizar Histórico de Etapas Anteriores
+                renderHistory(data);
+                
+                // 3. Renderizar Formulário de Entrada da Etapa Ativa
+                renderActiveStepFields(data.etapa_atual, data);
+
+                const modalEl = document.getElementById('modalWizard');
+                let modalInstance = bootstrap.Modal.getInstance(modalEl);
+                if (!modalInstance) {
+                    modalInstance = new bootstrap.Modal(modalEl);
+                }
+                modalInstance.show();
+            } else {
+                Swal.fire('Erro', data.message, 'error');
+            }
+        })
+        .catch(err => {
+            isModalOpening = false;
+            console.error(err);
+            Swal.fire('Erro', 'Erro ao carregar dados do fluxo', 'error');
+        });
+    }
+
+    // Renderizar a linha do tempo sequencial
+    function renderTimeline(etapaAtiva) {
+        const container = document.getElementById('wizardTimeline');
+        // Remover círculos antigos mantendo a barra de progresso
+        const oldCircles = container.querySelectorAll('.timeline-step-item');
+        oldCircles.forEach(el => el.remove());
+
+        // Calcular percentual da barra de progresso
+        const maxSteps = 9;
+        const progressPercentage = ((Math.min(etapaAtiva, maxSteps) - 1) / (maxSteps - 1)) * 100;
+        document.getElementById('wizardProgressBar').style.width = `${progressPercentage}%`;
+
+        // Gerar itens de 1 a 9
+        for (let i = 1; i <= 9; i++) {
+            const stepItem = document.createElement('div');
+            stepItem.className = 'timeline-step-item';
+            if (i < etapaAtiva) stepItem.classList.add('completed');
+            if (i === etapaAtiva) stepItem.classList.add('active');
+
+            stepItem.innerHTML = `
+                <div class="step-circle">${i}</div>
+                <div class="step-title-popover">${etapasInfo[i].cargo}</div>
+            `;
+            
+            container.appendChild(stepItem);
+        }
+    }
+
+    // Renderizar bloco de histórico
+    function renderHistory(data) {
+        const historyBlock = document.getElementById('wizardHistoryBlock');
+        const grid = document.getElementById('wizardHistoryGrid');
+        grid.innerHTML = '';
+        
+        const etapa = data.etapa_atual;
+        let temHistorico = false;
+
+        // Etapa 1 sempre tem (Nome do fluxo)
+        grid.appendChild(createHistoryItem(
+            "Abertura", 
+            `Nome do Fluxo: ${data.nome}<br><small class="text-muted" style="font-size:0.75rem; color:#64748B; display:block; margin-top:2px;">Aberto por: <strong>${data.created_by_name}</strong> em ${data.created_at}</small>`
+        ));
+        temHistorico = true;
+
+        if (etapa > 2 && data.tipo_implantacao) {
+            const servicos = { 'seguranca': 'Segurança', 'limpeza': 'Limpeza', 'engenharia': 'Engenharia' };
+            const servicoText = servicos[data.tipo_implantacao] || data.tipo_implantacao;
+            const conclusaoText = data.step2_concluido_em ? `<br><small class="text-muted" style="font-size:0.75rem; color:#64748B; display:block; margin-top:2px;">Concluído em: ${data.step2_concluido_em}</small>` : '';
+            grid.appendChild(createHistoryItem("Tipo de Implantação (Coordenador)", servicoText + conclusaoText));
+        }
+
+        if (etapa > 3) {
+            const conclusaoText = data.step3_concluido_em ? `<br><small class="text-muted" style="font-size:0.75rem; color:#64748B; display:block; margin-top:2px;">Concluído em: ${data.step3_concluido_em}</small>` : '';
+            grid.appendChild(createHistoryItem(
+                "Mapeamento dos Locais (Supervisor)", 
+                data.mapeamento_locais + conclusaoText,
+                data.anexo_mapeamento_url,
+                data.anexo_mapeamento_nome
+            ));
+        }
+
+        if (etapa > 4) {
+            const conclusaoText = data.step4_concluido_em ? `<br><small class="text-muted" style="font-size:0.75rem; color:#64748B; display:block; margin-top:2px;">Concluído em: ${data.step4_concluido_em}</small>` : '';
+            grid.appendChild(createHistoryItem(
+                "Checklist Criado (Projetos)", 
+                "Checklist criado com sucesso" + conclusaoText,
+                data.anexo_checklist_url,
+                data.anexo_checklist_nome
+            ));
+        }
+
+        if (etapa > 5) {
+            const conclusaoText = data.step5_concluido_em ? `<br><small class="text-muted" style="font-size:0.75rem; color:#64748B; display:block; margin-top:2px;">Concluído em: ${data.step5_concluido_em}</small>` : '';
+            grid.appendChild(createHistoryItem(
+                "Rotinas Criadas (Projetos)", 
+                (data.rotinas_criadas ? "Rotinas e rondas criadas" : "Pendente") + conclusaoText,
+                data.anexo_rotinas_url,
+                data.anexo_rotinas_nome
+            ));
+        }
+
+        if (etapa > 6) {
+            const conclusaoText = data.step6_concluido_em ? `<br><small class="text-muted" style="font-size:0.75rem; color:#64748B; display:block; margin-top:2px;">Concluído em: ${data.step6_concluido_em}</small>` : '';
+            grid.appendChild(createHistoryItem(
+                "QR Codes Gerados (Projetos)", 
+                "QR Codes PDFs gerados" + conclusaoText,
+                data.anexo_qrcodes_url,
+                data.anexo_qrcodes_nome
+            ));
+        }
+
+        if (etapa > 7) {
+            const conclusaoText = data.step7_concluido_em ? `<br><small class="text-muted" style="font-size:0.75rem; color:#64748B; display:block; margin-top:2px;">Concluído em: ${data.step7_concluido_em}</small>` : '';
+            grid.appendChild(createHistoryItem(
+                "Treinamento Realizado (Projetos)", 
+                "Equipe treinada com sucesso" + conclusaoText,
+                data.anexo_treinamento_url,
+                data.anexo_treinamento_nome
+            ));
+        }
+
+        if (etapa > 8) {
+            const conclusaoText = data.step8_concluido_em ? `<br><small class="text-muted" style="font-size:0.75rem; color:#64748B; display:block; margin-top:2px;">Concluído em: ${data.step8_concluido_em}</small>` : '';
+            grid.appendChild(createHistoryItem(
+                "Entrega do Projeto (Projetos)", 
+                "Projeto entregue com evidências" + conclusaoText,
+                data.anexo_entrega_url,
+                data.anexo_entrega_nome
+            ));
+        }
+
+        if (etapa > 9) {
+            const conclusaoText = data.step9_concluido_em ? `<br><small class="text-muted" style="font-size:0.75rem; color:#64748B; display:block; margin-top:2px;">Concluído em: ${data.step9_concluido_em}</small>` : '';
+            grid.appendChild(createHistoryItem(
+                "Power BI Publicado (BI)", 
+                `<a href="${data.link_bi}" target="_blank" class="text-blue-400 hover:underline">Acessar Power BI</a>` + conclusaoText,
+                data.anexo_bi_url,
+                data.anexo_bi_nome
+            ));
+        }
+
+        historyBlock.style.display = temHistorico ? 'block' : 'none';
+    }
+
+    // Utilitário para criar item de histórico
+    function createHistoryItem(label, valText, fileUrl = null, fileName = null) {
+        const item = document.createElement('div');
+        item.className = 'history-item';
+        
+        let fileBlock = '';
+        if (fileUrl) {
+            fileBlock = `
+                <div style="margin-top:0.5rem;">
+                    <a href="${fileUrl}" target="_blank" class="btn-download-premium">
+                        <svg style="width:14px; height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                        </svg>
+                        Baixar: ${fileName || 'Anexo'}
+                    </a>
+                </div>
+            `;
+        }
+
+        item.innerHTML = `
+            <div class="history-item-label">${label}</div>
+            <div class="history-item-val">${valText}</div>
+            ${fileBlock}
+        `;
+        return item;
+    }
+
+    // Renderizar inputs específicos da etapa atual
+    function renderActiveStepFields(etapa, data) {
+        const container = document.getElementById('wizardActiveStepFields');
+        const btn = document.getElementById('btnAvancarEtapa');
+        btn.style.display = 'inline-flex'; // mostrar por padrão
+        
+        container.innerHTML = `
+            <h4 class="font-bold text-lg mb-3" style="color:#1A2A45; border-bottom:1px solid #E2E8F0; padding-bottom:0.5rem;">
+                Etapa ${etapa}: ${etapasInfo[etapa].label} (${etapasInfo[etapa].cargo})
+            </h4>
+        `;
+
+        if (etapa === 1) {
+            // Etapa 1 é concluída na abertura, avança para 2 direto ao clicar
+            container.innerHTML += `
+                <div class="alert alert-info" style="background:rgba(59, 130, 246, 0.08); border-color:rgba(59, 130, 246, 0.15); color:#1E3A8A;">
+                    O fluxo de implantação foi aberto com sucesso. Clique em avançar para que o coordenador configure o tipo de serviço.
+                </div>
+            `;
+        }
+        else if (etapa === 2) {
+            // Escolha de Serviço (Coordenador)
+            container.innerHTML += `
+                <div class="mb-3">
+                    <label class="form-label-premium">Escolha o Tipo de Implantação</label>
+                    <select class="form-select form-select-premium" name="tipo_implantacao" required>
+                        <option value="" disabled selected>Selecione o serviço...</option>
+                        <option value="seguranca" ${data.tipo_implantacao === 'seguranca' ? 'selected' : ''}>Segurança</option>
+                        <option value="limpeza" ${data.tipo_implantacao === 'limpeza' ? 'selected' : ''}>Limpeza</option>
+                        <option value="engenharia" ${data.tipo_implantacao === 'engenharia' ? 'selected' : ''}>Engenharia</option>
+                    </select>
+                    <small class="text-gray-500 mt-1 block">Esta definição guiará o fluxo operacional da implantação.</small>
+                </div>
+            `;
+        }
+        else if (etapa === 3) {
+            // Mapeamento dos locais (Supervisor)
+            container.innerHTML += `
+                <div class="mb-3">
+                    <label class="form-label-premium">Descrição do Mapeamento dos Locais</label>
+                    <textarea class="form-control form-control-premium" name="mapeamento_locais" rows="4" placeholder="Descreva os locais, rotas, áreas de cobertura e necessidades mapeadas..." required>${data.mapeamento_locais || ''}</textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label-premium">Anexo do Mapeamento (Planilhas, Imagens ou Documentos)</label>
+                    <input type="file" class="form-control form-control-premium" name="anexo_mapeamento" ${data.anexo_mapeamento_url ? '' : 'required'}>
+                    ${data.anexo_mapeamento_url ? `<small class="text-green-600 mt-1 block">Já existe um arquivo anexado. Envie um novo se desejar substituir.</small>` : ''}
+                </div>
+            `;
+        }
+        else if (etapa === 4) {
+            // Criação do Checklist (Projetos)
+            container.innerHTML += `
+                <div class="alert alert-warning mb-4" style="background:rgba(245, 158, 11, 0.08); border-color:rgba(245, 158, 11, 0.15); color:#92400E;">
+                    <strong>Atenção Projetos:</strong> Crie o checklist operacional correspondente e anexe o print de comprovação abaixo.
+                </div>
+                <div class="mb-3">
+                    <label class="form-label-premium">Print/Comprovação da Criação do Checklist</label>
+                    <input type="file" class="form-control form-control-premium" name="anexo_checklist" accept="image/*,application/pdf" ${data.anexo_checklist_url ? '' : 'required'}>
+                    ${data.anexo_checklist_url ? `<small class="text-green-600 mt-1 block">Checklist anexado. Envie um novo se quiser substituir.</small>` : ''}
+                </div>
+            `;
+        }
+        else if (etapa === 5) {
+            // Criação das Rotinas (Projetos)
+            container.innerHTML += `
+                <div class="mb-4">
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="rotinasCriadasCheck" name="rotinas_criadas_check" value="true" required ${data.rotinas_criadas ? 'checked' : ''}>
+                        <label class="form-check-label form-label-premium" for="rotinasCriadasCheck" style="margin-left: 10px;">
+                            Criou as rondas e rotina no sistema (RONDA, LIVRO)?
+                        </label>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label-premium">Print/Comprovação da Criação das Rotinas</label>
+                    <input type="file" class="form-control form-control-premium" name="anexo_rotinas" accept="image/*,application/pdf" ${data.anexo_rotinas_url ? '' : 'required'}>
+                    ${data.anexo_rotinas_url ? `<small class="text-green-600 mt-1 block">Rotina anexada. Envie um novo se quiser substituir.</small>` : ''}
+                </div>
+            `;
+        }
+        else if (etapa === 6) {
+            // Criação dos QR codes (Projetos)
+            container.innerHTML += `
+                <div class="mb-3">
+                    <label class="form-label-premium">PDF dos QR Codes Gerados</label>
+                    <input type="file" class="form-control form-control-premium" name="anexo_qrcodes" accept="application/pdf" ${data.anexo_qrcodes_url ? '' : 'required'}>
+                    <small class="text-gray-500 mt-1 block">Envie o documento compilado contendo todos os QR Codes da implantação.</small>
+                    ${data.anexo_qrcodes_url ? `<small class="text-green-600 mt-1 block">PDF anexado. Envie um novo se quiser substituir.</small>` : ''}
+                </div>
+            `;
+        }
+        else if (etapa === 7) {
+            // Treinamento (Projetos)
+            container.innerHTML += `
+                <div class="mb-3">
+                    <label class="form-label-premium">Foto/Print de Comprovação do Treinamento Operacional</label>
+                    <input type="file" class="form-control form-control-premium" name="anexo_treinamento" accept="image/*,application/pdf" ${data.anexo_treinamento_url ? '' : 'required'}>
+                    <small class="text-gray-500 mt-1 block">Envie foto da lista de presença, foto da equipe em treinamento ou similar.</small>
+                    ${data.anexo_treinamento_url ? `<small class="text-green-600 mt-1 block">Treinamento anexado. Envie um novo se quiser substituir.</small>` : ''}
+                </div>
+            `;
+        }
+        else if (etapa === 8) {
+            // Entrega do projeto (Projetos)
+            container.innerHTML += `
+                <div class="mb-3">
+                    <label class="form-label-premium">Relatório Geral/Evidências de Entrega do Projeto</label>
+                    <input type="file" class="form-control form-control-premium" name="anexo_entrega" ${data.anexo_entrega_url ? '' : 'required'}>
+                    <small class="text-gray-500 mt-1 block">Envie o relatório de conclusão e entrega formal da implantação.</small>
+                    ${data.anexo_entrega_url ? `<small class="text-green-600 mt-1 block">Relatório anexado. Envie um novo se quiser substituir.</small>` : ''}
+                </div>
+            `;
+        }
+        else if (etapa === 9) {
+            // BI (BI)
+            let alertBlock = '';
+            if (data.bi_inicio_data) {
+                if (data.dias_restantes < 0) {
+                    alertBlock = `
+                        <div class="alert alert-danger mb-4" style="background:rgba(239, 68, 68, 0.08); border-color:rgba(239, 68, 68, 0.15); color:#B91C1C;">
+                            <strong>ALERTA DE ATRASO:</strong> Este fluxo está nesta etapa há mais de 20 dias (Prazo estourado por ${Math.abs(data.dias_restantes)} dias!).
+                        </div>
+                    `;
+                } else {
+                    alertBlock = `
+                        <div class="alert alert-info mb-4" style="background:rgba(59, 130, 246, 0.08); border-color:rgba(59, 130, 246, 0.15); color:#1E3A8A;">
+                            <strong>PRAZO DO BI:</strong> Restam <strong>${data.dias_restantes} dias</strong> para incluir o Power BI antes do prazo limite de 20 dias.
+                        </div>
+                    `;
+                }
+            }
+
+            container.innerHTML += `
+                ${alertBlock}
+                <div class="mb-3">
+                    <label class="form-label-premium">URL do Power BI (Dashboard do Cliente)</label>
+                    <input type="url" class="form-control form-control-premium" name="link_bi" placeholder="https://app.powerbi.com/view..." value="${data.link_bi || ''}" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label-premium">Print/Comprovação da tela do BI</label>
+                    <input type="file" class="form-control form-control-premium" name="anexo_bi" accept="image/*,application/pdf" ${data.anexo_bi_url ? '' : 'required'}>
+                    ${data.anexo_bi_url ? `<small class="text-green-600 mt-1 block">Print do BI anexado. Envie um novo se quiser substituir.</small>` : ''}
+                </div>
+            `;
+        }
+        else {
+            // Finalizado / Etapa 10
+            container.innerHTML += `
+                <div class="alert alert-success text-center py-4" style="background:rgba(16, 185, 129, 0.08); border-color:rgba(16, 185, 129, 0.15); color:#065F46; border-radius:12px;">
+                    <svg style="width:48px; height:48px; margin: 0 auto 0.75rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <h5 class="font-bold text-lg mb-1">Implantação Concluída com Sucesso!</h5>
+                    <p class="text-sm text-gray-600">Todas as 9 etapas sequenciais foram concluídas de forma auditada.</p>
+                </div>
+            `;
+            btn.style.display = 'none'; // ocultar botão avançar
+        }
+    }
+
+    // Salvar e avançar etapa do Wizard (AJAX)
+    function salvarEtapa(e) {
+        e.preventDefault();
+        
+        // Se estiver na etapa 5, garantir que o checkbox está ativo
+        const checkRotinas = document.getElementById('rotinasCriadasCheck');
+        if (checkRotinas && !checkRotinas.checked) {
+            Swal.fire('Atenção', 'Você precisa confirmar que as rotinas foram criadas para poder avançar!', 'warning');
+            return;
+        }
+
+        const form = document.getElementById('formWizardStep');
+        const formData = new FormData(form);
+
+        // Se o checkbox de rotinas estiver marcado, enviar como texto explícito "true"
+        if (checkRotinas) {
+            formData.set('rotinas_criadas', 'true');
+        }
+
+        Swal.fire({
+            title: 'Salvando etapa...',
+            text: 'Processando informações e anexos',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        fetch("{% url 'gestao_a_vista:implantacoes_fluxo' %}", {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            Swal.close();
+            if (data.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Etapa Concluída!',
+                    text: data.message,
+                    timer: 1500,
+                    showConfirmButton: false
+                }).then(() => {
+                    location.reload();
+                });
+            } else {
+                Swal.fire('Erro', data.message, 'error');
+            }
+        })
+        .catch(err => {
+            Swal.close();
+            console.error(err);
+            Swal.fire('Erro', 'Ocorreu um erro ao salvar a etapa.', 'error');
+        });
+    }
+
+    function excluirCardImplantacao() {
+        const cardId = document.getElementById('wizardCardId').value;
+        if (!cardId) return;
+
+        Swal.fire({
+            title: 'Tem certeza?',
+            text: "Esta ação é irreversível e excluirá todo o progresso e anexos deste fluxo de implantação!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#EF4444',
+            cancelButtonColor: '#64748B',
+            confirmButtonText: 'Sim, excluir!',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({
+                    title: 'Excluindo fluxo...',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                const formData = new FormData();
+                formData.append('action', 'delete');
+                formData.append('id', cardId);
+
+                fetch("{% url 'gestao_a_vista:implantacoes_fluxo' %}", {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    Swal.close();
+                    if (data.success) {
+                        // Close modal
+                        const modalEl = document.getElementById('modalWizard');
+                        const modalInstance = bootstrap.Modal.getInstance(modalEl);
+                        if (modalInstance) {
+                            modalInstance.hide();
+                        }
+                        
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Excluído!',
+                            text: data.message,
+                            timer: 1500,
+                            showConfirmButton: false
+                        }).then(() => {
+                            location.reload();
+                        });
+                    } else {
+                        Swal.fire('Erro', data.message || 'Erro ao excluir card', 'error');
+                    }
+                })
+                .catch(err => {
+                    Swal.close();
+                    console.error(err);
+                    Swal.fire('Erro', 'Ocorreu um erro na requisição', 'error');
+                });
+            }
+        });
+    }
+</script>
+{% endblock %}

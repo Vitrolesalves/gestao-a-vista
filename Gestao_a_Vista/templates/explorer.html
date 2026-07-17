@@ -1,0 +1,777 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<!-- Tailwind for rapid premium layout -->
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+    /* --- Estilos Adicionais de Ajuste Fino --- */
+    .explorer-container {
+        min-height: calc(100vh - 70px);
+        background: #f8fafc;
+    }
+
+    /* Monospace Editor VS Code Mock */
+    .code-editor-mock {
+        background-color: #1e1e1e;
+        color: #d4d4d4;
+        font-family: 'Fira Code', 'Consolas', 'Courier New', monospace;
+    }
+
+    .line-numbers {
+        color: #858585;
+        text-align: right;
+        padding-right: 12px;
+        user-select: none;
+        border-right: 1px solid #3c3c3c;
+    }
+
+    .editor-textarea {
+        background: transparent;
+        color: #d4d4d4;
+        font-family: 'Fira Code', 'Consolas', 'Courier New', monospace;
+        resize: none;
+        outline: none;
+        line-height: 1.5;
+    }
+
+    /* Tree View Hover Buttons */
+    .tree-node-actions {
+        opacity: 0;
+        transition: opacity 0.2s ease-in-out;
+    }
+
+    .tree-node-row:hover .tree-node-actions {
+        opacity: 1;
+    }
+
+    /* Custom Scrollbar for Tree */
+    .custom-scroll::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 4px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="explorer-container p-6 flex flex-col gap-6" x-data="explorerApp()">
+    
+    <!-- Top Navigation Header -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-4">
+        <div>
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-slate-900 text-white rounded-lg flex items-center justify-center shadow-md">
+                    <i class="fas fa-folder-open text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-slate-800 tracking-tight">Projetos</h1>
+                    <p class="text-sm text-slate-500">Repositório de Arquivos & Documentação</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Abas de Navegação -->
+        <div class="flex bg-slate-100 p-1 rounded-lg self-start md:self-auto shadow-inner">
+            <button @click="currentTab = 'explorer'" 
+                    :class="currentTab === 'explorer' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-600 hover:text-slate-900'"
+                    class="px-4 py-2 text-sm font-semibold rounded-md transition-all duration-200 flex items-center gap-2">
+                <i class="fas fa-folder-tree"></i> Explorador
+            </button>
+            
+            {% if request.user.role == 'administrador' or request.user.is_superuser %}
+            <button @click="currentTab = 'audit'; loadAuditLogs()" 
+                    :class="currentTab === 'audit' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-600 hover:text-slate-900'"
+                    class="px-4 py-2 text-sm font-semibold rounded-md transition-all duration-200 flex items-center gap-2">
+                <i class="fas fa-shield-alt"></i> Auditoria <span class="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">Privado</span>
+            </button>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- MAIN INTERACTIVE WRAPPER -->
+    
+    <!-- 1. TAB EXPLORADOR -->
+    <div x-show="currentTab === 'explorer'" class="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-grow">
+        
+        <!-- Left Pane: Tree Navigator (Col 3) -->
+        <div class="lg:col-span-4 bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col h-[650px] overflow-hidden">
+            <!-- Sidebar Actions Header -->
+            <div class="p-4 border-b border-slate-100 flex items-center justify-between gap-2 bg-slate-50/50">
+                <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Diretórios</span>
+                <div class="flex gap-1.5">
+                    <button @click="promptCreate(true)" class="p-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors" title="Nova Pasta">
+                        <i class="fas fa-folder-plus text-lg"></i>
+                    </button>
+                    <button @click="promptCreate(false)" class="p-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors" title="Novo Arquivo">
+                        <i class="fas fa-file-medical text-lg"></i>
+                    </button>
+                    <button @click="loadNodes()" class="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-colors" title="Atualizar Árvore">
+                        <i class="fas fa-sync-alt text-base"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Directory Tree Container -->
+            <div class="p-4 overflow-y-auto flex-grow custom-scroll bg-white">
+                <!-- Empty State Tree -->
+                <div x-show="nodes.length === 0" class="flex flex-col items-center justify-center py-10 text-center">
+                    <div class="w-12 h-12 bg-slate-50 text-slate-400 rounded-full flex items-center justify-center mb-2">
+                        <i class="fas fa-folder-open text-xl"></i>
+                    </div>
+                    <span class="text-sm font-semibold text-slate-600">Nenhum item criado</span>
+                    <span class="text-xs text-slate-400 max-w-[200px] mt-1">Crie sua primeira pasta ou arquivo acima.</span>
+                </div>
+
+                <!-- Interactive Folder Tree -->
+                <div id="explorer-tree-root" class="text-slate-700 text-sm">
+                    <!-- Dynamic rendering in JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Pane: Code Editor / Plain Text Viewer (Col 8) -->
+        <div class="lg:col-span-8 bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col h-[650px] overflow-hidden">
+            
+            <!-- Empty State Editor -->
+            <div x-show="!selectedFile" class="flex-grow flex flex-col items-center justify-center p-8 text-center bg-slate-50/30">
+                <div class="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center text-slate-400 mb-4 animate-pulse shadow-inner">
+                    <i class="fas fa-file-code text-4xl"></i>
+                </div>
+                <h3 class="text-lg font-bold text-slate-700">Nenhum arquivo selecionado</h3>
+                <p class="text-sm text-slate-500 max-w-md mt-1">Selecione um arquivo da árvore lateral para visualizar, ou crie novos arquivos e pastas para organizar seus projetos.</p>
+                <div class="mt-4 flex gap-2">
+                    <button @click="promptCreate(false)" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-sm font-semibold shadow-sm transition-all flex items-center gap-2">
+                        <i class="fas fa-plus"></i> Criar Arquivo
+                    </button>
+                </div>
+            </div>
+
+            <!-- Active File Editor -->
+            <div x-show="selectedFile" class="flex-grow flex flex-col h-full overflow-hidden" x-cloak>
+                <!-- Editor Top Info Bar -->
+                <div class="p-4 border-b border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3 bg-slate-50/60">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold"
+                             :class="selectedFile?.file_type === 'code' ? 'bg-indigo-600' : 'bg-sky-600'">
+                            <i class="fas" :class="selectedFile?.file_type === 'code' ? 'fa-file-code' : 'fa-file-alt'"></i>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="font-bold text-slate-800 text-base" x-text="selectedFile?.name"></span>
+                                <button @click="renameNode(selectedFile.id, selectedFile.name)" class="text-xs text-slate-400 hover:text-slate-600" title="Renomear">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </div>
+                            <p class="text-xs text-slate-500">
+                                Criado por: <span class="font-semibold text-slate-600" x-text="selectedFile?.created_by"></span> | 
+                                Atualizado em: <span class="font-semibold text-slate-600" x-text="selectedFile?.updated_at"></span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Actions and Mode Toggle -->
+                    <div class="flex items-center gap-3 flex-wrap">
+                        <!-- Mode Selector (Plain vs Monospace Code) -->
+                        <div class="flex bg-slate-200 p-0.5 rounded-lg text-xs font-semibold shadow-inner">
+                            <button @click="selectedFile.file_type = 'text'"
+                                    :class="selectedFile?.file_type === 'text' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500'"
+                                    class="px-2.5 py-1.5 rounded-md transition-all">
+                                <i class="fas fa-align-left mr-1"></i> Texto Normal
+                            </button>
+                            <button @click="selectedFile.file_type = 'code'"
+                                    :class="selectedFile?.file_type === 'code' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500'"
+                                    class="px-2.5 py-1.5 rounded-md transition-all">
+                                <i class="fas fa-code mr-1"></i> Código
+                            </button>
+                        </div>
+
+                        <!-- Language dropdown if code -->
+                        <div x-show="selectedFile?.file_type === 'code'">
+                            <select x-model="selectedFile.language" class="form-select border border-slate-300 rounded-md text-xs py-1.5 px-2 bg-white text-slate-700">
+                                <option value="plain">Texto/Shell</option>
+                                <option value="javascript">Javascript</option>
+                                <option value="python">Python</option>
+                                <option value="html">HTML</option>
+                                <option value="css">CSS</option>
+                            </select>
+                        </div>
+
+                        <!-- Delete Button -->
+                        <button @click="deleteNode(selectedFile.id, selectedFile.name)" class="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors" title="Excluir Arquivo">
+                            <i class="fas fa-trash-alt text-base"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- IDE Frame Wrapper -->
+                <div class="flex-grow overflow-hidden flex flex-col relative">
+                    
+                    <!-- 1. PLAIN TEXT VIEW (Normal Text Editor) -->
+                    <div x-show="selectedFile?.file_type === 'text'" class="flex-grow flex flex-col p-4 h-full">
+                        <textarea x-model="selectedFile.content" 
+                                  placeholder="Digite seu texto livremente aqui..." 
+                                  class="w-full flex-grow p-4 border border-slate-200 rounded-lg text-slate-700 text-sm focus:ring-2 focus:ring-slate-900 focus:border-slate-900 outline-none resize-none"></textarea>
+                    </div>
+
+                    <!-- 2. MONOSPACE CODE VIEW (IDE Mockup Theme) -->
+                    <div x-show="selectedFile?.file_type === 'code'" class="flex-grow flex flex-col h-full bg-[#1e1e1e] overflow-hidden" x-cloak>
+                        <!-- MacOS Windows circles header -->
+                        <div class="bg-[#2d2d2d] px-4 py-2 border-b border-[#252526] flex items-center justify-between">
+                            <div class="flex items-center gap-1.5">
+                                <div class="w-3 h-3 rounded-full bg-[#ff5f56]"></div>
+                                <div class="w-3 h-3 rounded-full bg-[#ffbd2e]"></div>
+                                <div class="w-3 h-3 rounded-full bg-[#27c93f]"></div>
+                                <span class="ml-3 text-xs text-slate-400 font-mono font-medium" x-text="selectedFile?.name"></span>
+                            </div>
+                            <span class="text-[10px] text-slate-500 uppercase tracking-widest font-mono">VS Code Mockup</span>
+                        </div>
+                        
+                        <!-- Main Editor Text Area with dynamic line numbers -->
+                        <div class="flex-grow flex overflow-hidden p-2 text-sm font-mono h-full">
+                            <!-- Line number sidebar -->
+                            <div class="line-numbers text-right select-none font-mono py-2 text-[#858585] text-xs h-full overflow-hidden bg-[#1e1e1e] w-12" id="line-numbers-container">
+                                1
+                            </div>
+                            <!-- Live Code Input -->
+                            <textarea x-model="selectedFile.content"
+                                      @input="syncLineNumbers()"
+                                      @scroll="syncScroll()"
+                                      id="code-editor-textarea"
+                                      placeholder="// Digite seu código aqui..."
+                                      class="flex-grow h-full py-2 px-4 bg-transparent text-[#d4d4d4] font-mono text-xs outline-none border-none resize-none overflow-y-auto custom-scroll"
+                                      style="tab-size: 4;"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Editor Footer with Save Button -->
+                <div class="p-4 border-t border-slate-200 bg-slate-50 flex justify-between items-center">
+                    <span class="text-xs text-slate-400 font-medium">Lembre-se de salvar suas modificações</span>
+                    <button @click="saveFile()" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-semibold shadow flex items-center gap-2 transition-all">
+                        <i class="fas fa-save"></i> Salvar Alterações
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. TAB AUDITORIA (Restrito a Administradores) -->
+    {% if request.user.role == 'administrador' or request.user.is_superuser %}
+    <div x-show="currentTab === 'audit'" class="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col h-[650px] overflow-hidden" x-cloak>
+        <!-- Audit Headers and Filters -->
+        <div class="p-4 border-b border-slate-200 bg-slate-50/50 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div>
+                <h3 class="font-bold text-slate-800">Registro de Auditoria</h3>
+                <p class="text-xs text-slate-500">Histórico de visualização, criação, edição e exclusão de arquivos no sistema</p>
+            </div>
+            
+            <div class="flex items-center gap-3 w-full sm:w-auto">
+                <!-- Real-time search filter -->
+                <div class="relative w-full sm:w-64">
+                    <i class="fas fa-search absolute left-3 top-3 text-slate-400"></i>
+                    <input type="text" x-model="auditSearch" placeholder="Buscar usuário ou item..." 
+                           class="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-slate-900 focus:border-slate-900 outline-none">
+                </div>
+                
+                <button @click="loadAuditLogs()" class="p-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg text-sm shadow-sm transition-all" title="Atualizar Logs">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Audit Table Container -->
+        <div class="flex-grow overflow-auto custom-scroll">
+            <table class="min-w-full divide-y divide-slate-200">
+                <thead class="bg-slate-50/70 sticky top-0 z-10">
+                    <tr>
+                        <th class="px-6 py-3.5 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Usuário</th>
+                        <th class="px-6 py-3.5 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Ação</th>
+                        <th class="px-6 py-3.5 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Item Afetado</th>
+                        <th class="px-6 py-3.5 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Detalhes da Ação</th>
+                        <th class="px-6 py-3.5 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Data / Hora</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-slate-100 text-sm">
+                    <template x-for="log in filteredLogs()" :key="log.id">
+                        <tr class="hover:bg-slate-50/50 transition-colors">
+                            <!-- User column -->
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center font-bold text-xs" x-text="log.user.charAt(0).toUpperCase()"></div>
+                                    <span class="font-bold text-slate-800" x-text="log.user"></span>
+                                </div>
+                            </td>
+                            <!-- Action column with badges -->
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2.5 py-1 rounded-full text-xs font-bold uppercase border"
+                                      :class="{
+                                          'bg-green-50 text-green-700 border-green-200': log.action === 'CREATE',
+                                          'bg-yellow-50 text-yellow-700 border-yellow-200': log.action === 'EDIT',
+                                          'bg-blue-50 text-blue-700 border-blue-200': log.action === 'OPEN',
+                                          'bg-purple-50 text-purple-700 border-purple-200': log.action === 'RENAME',
+                                          'bg-red-50 text-red-700 border-red-200': log.action === 'DELETE'
+                                      }">
+                                    <span x-text="log.action"></span>
+                                </span>
+                            </td>
+                            <!-- Item affected -->
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center gap-1.5 text-slate-700">
+                                    <i class="fas" :class="log.node_type === 'Pasta' ? 'fa-folder text-amber-500' : 'fa-file-alt text-slate-400'"></i>
+                                    <span class="font-semibold" x-text="log.node_name"></span>
+                                </div>
+                            </td>
+                            <!-- Details -->
+                            <td class="px-6 py-4">
+                                <span class="text-slate-600 text-xs sm:text-sm" x-text="log.details"></span>
+                            </td>
+                            <!-- Timestamp -->
+                            <td class="px-6 py-4 whitespace-nowrap text-slate-400 font-mono text-xs" x-text="log.timestamp"></td>
+                        </tr>
+                    </template>
+                    
+                    <!-- Empty logs search -->
+                    <tr x-show="filteredLogs().length === 0">
+                        <td colspan="5" class="px-6 py-12 text-center text-slate-400">
+                            <div class="flex flex-col items-center justify-center">
+                                <i class="fas fa-receipt text-3xl mb-2 text-slate-300"></i>
+                                <span>Nenhum log encontrado para a busca.</span>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+<!-- CSRF Token helper for JS -->
+{% csrf_token %}
+
+<script>
+    function explorerApp() {
+        return {
+            currentTab: 'explorer',
+            nodes: [],
+            selectedFile: null,
+            expandedFolders: new Set(),
+            auditLogs: [],
+            auditSearch: '',
+            
+            init() {
+                this.loadNodes();
+                
+                // Configuração global do SweetAlert2
+                window.Toast = Swal.mixin({
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true
+                });
+            },
+
+            // 1. CARREGAR E RENDERIZAR NÓS DA ÁRVORE
+            loadNodes() {
+                fetch('/explorer/?action=explorer_list')
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            this.nodes = data.nodes;
+                            this.renderTree();
+                        } else {
+                            window.Toast.fire({ icon: 'error', title: data.message });
+                        }
+                    })
+                    .catch(err => console.error("Erro ao carregar árvore:", err));
+            },
+
+            // RENDERIZAR A ÁRVORE RECURSIVAMENTE NO DOM
+            renderTree() {
+                const rootElement = document.getElementById('explorer-tree-root');
+                if (!rootElement) return;
+                rootElement.innerHTML = '';
+
+                // Montar árvore a partir da lista plana
+                const buildTreeDOM = (parentId = null, level = 0) => {
+                    const children = this.nodes.filter(n => n.parent_id === parentId);
+                    if (children.length === 0) return null;
+
+                    const container = document.createElement('div');
+                    container.className = parentId ? 'pl-4 border-l border-slate-100 ml-2 mt-1 flex flex-col gap-1' : 'flex flex-col gap-1';
+
+                    children.forEach(node => {
+                        const row = document.createElement('div');
+                        // Tree node styling
+                        row.className = `tree-node-row group flex items-center justify-between py-1.5 px-2.5 rounded-lg cursor-pointer hover:bg-slate-100 text-slate-700 transition-all duration-150 ${this.selectedFile?.id === node.id ? 'bg-blue-50 text-blue-700 font-semibold' : ''}`;
+                        
+                        // Icone e Texto
+                        const info = document.createElement('div');
+                        info.className = 'flex items-center gap-2 flex-grow overflow-hidden';
+                        
+                        if (node.is_folder) {
+                            const isExpanded = this.expandedFolders.has(node.id);
+                            info.innerHTML = `
+                                <i class="fas fa-chevron-right text-[10px] text-slate-400 transform transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}"></i>
+                                <i class="fas ${isExpanded ? 'fa-folder-open text-amber-500' : 'fa-folder text-amber-500'} text-base"></i>
+                                <span class="truncate">${node.name}</span>
+                            `;
+                            
+                            // Click para expandir pasta
+                            row.addEventListener('click', (e) => {
+                                e.stopPropagation();
+                                if (this.expandedFolders.has(node.id)) {
+                                    this.expandedFolders.delete(node.id);
+                                } else {
+                                    this.expandedFolders.add(node.id);
+                                }
+                                this.renderTree();
+                            });
+                        } else {
+                            // File node
+                            const extension = node.name.split('.').pop().toLowerCase();
+                            let fileIcon = 'fa-file-alt text-sky-500';
+                            if (node.file_type === 'code' || ['js', 'py', 'html', 'css', 'env', 'sh'].includes(extension)) {
+                                fileIcon = 'fa-file-code text-indigo-500';
+                            }
+                            info.innerHTML = `
+                                <i class="w-[10px]"></i>
+                                <i class="fas ${fileIcon} text-base"></i>
+                                <span class="truncate">${node.name}</span>
+                            `;
+                            
+                            // Click para abrir arquivo
+                            row.addEventListener('click', (e) => {
+                                e.stopPropagation();
+                                this.loadFileContent(node.id);
+                            });
+                        }
+                        row.appendChild(info);
+
+                        // Botões de ação no hover (Editar/Deletar)
+                        const actions = document.createElement('div');
+                        actions.className = 'tree-node-actions flex items-center gap-1.5 pr-1';
+                        
+                        // Se for pasta, botão criar dentro dela
+                        if (node.is_folder) {
+                            const addBtn = document.createElement('button');
+                            addBtn.className = 'text-slate-400 hover:text-blue-600 transition-colors p-1 rounded';
+                            addBtn.innerHTML = '<i class="fas fa-plus text-xs"></i>';
+                            addBtn.title = 'Criar dentro';
+                            addBtn.addEventListener('click', (e) => {
+                                e.stopPropagation();
+                                this.promptCreate(false, node.id);
+                            });
+                            actions.appendChild(addBtn);
+                        }
+
+                        const renameBtn = document.createElement('button');
+                        renameBtn.className = 'text-slate-400 hover:text-slate-700 transition-colors p-1 rounded';
+                        renameBtn.innerHTML = '<i class="fas fa-edit text-xs"></i>';
+                        renameBtn.title = 'Renomear';
+                        renameBtn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            this.renameNode(node.id, node.name);
+                        });
+                        actions.appendChild(renameBtn);
+
+                        const deleteBtn = document.createElement('button');
+                        deleteBtn.className = 'text-slate-400 hover:text-red-500 transition-colors p-1 rounded';
+                        deleteBtn.innerHTML = '<i class="fas fa-trash-alt text-xs"></i>';
+                        deleteBtn.title = 'Excluir';
+                        deleteBtn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            this.deleteNode(node.id, node.name);
+                        });
+                        actions.appendChild(deleteBtn);
+
+                        row.appendChild(actions);
+                        container.appendChild(row);
+
+                        // Sub-itens se pasta expandida
+                        if (node.is_folder && this.expandedFolders.has(node.id)) {
+                            const subTree = buildTreeDOM(node.id, level + 1);
+                            if (subTree) container.appendChild(subTree);
+                        }
+                    });
+
+                    return container;
+                };
+
+                const domTree = buildTreeDOM(null, 0);
+                if (domTree) rootElement.appendChild(domTree);
+            },
+
+            // 2. ABRIR ARQUIVO E BUSCAR CONTEÚDO
+            loadFileContent(nodeId) {
+                fetch(`/explorer/?action=explorer_file_content&node_id=${nodeId}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            this.selectedFile = data.node;
+                            this.renderTree(); // Atualiza a seleção visual na árvore
+                            
+                            // Sincroniza números de linhas após um pequeno delay para a renderização do Alpine
+                            setTimeout(() => {
+                                this.syncLineNumbers();
+                            }, 50);
+                        } else {
+                            window.Toast.fire({ icon: 'error', title: data.message });
+                        }
+                    })
+                    .catch(err => console.error("Erro ao carregar arquivo:", err));
+            },
+
+            // 3. CRIAR NOVO ARQUIVO OU PASTA
+            promptCreate(isFolder, parentId = null) {
+                const tipo = isFolder ? 'Pasta' : 'Arquivo';
+                Swal.fire({
+                    title: `Criar Nova ${tipo}`,
+                    input: 'text',
+                    inputLabel: `Digite o nome da ${tipo.toLowerCase()}:`,
+                    inputPlaceholder: isFolder ? 'ex: Documentos Importantes' : 'ex: script.py',
+                    showCancelButton: true,
+                    confirmButtonText: 'Criar',
+                    cancelButtonText: 'Cancelar',
+                    confirmButtonColor: '#0F172A',
+                    inputValidator: (value) => {
+                        if (!value || !value.trim()) {
+                            return 'O nome é obrigatório!';
+                        }
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        const name = result.value.trim();
+                        const formData = new FormData();
+                        formData.append('action', 'explorer_create');
+                        formData.append('name', name);
+                        formData.append('is_folder', isFolder);
+                        if (parentId) formData.append('parent_id', parentId);
+                        
+                        // Define tipo de arquivo automático baseado em extensão
+                        if (!isFolder) {
+                            const ext = name.split('.').pop().toLowerCase();
+                            if (['js', 'py', 'html', 'css', 'env', 'sh'].includes(ext)) {
+                                formData.append('file_type', 'code');
+                            } else {
+                                formData.append('file_type', 'text');
+                            }
+                        }
+
+                        fetch('/explorer/', {
+                            method: 'POST',
+                            headers: { 'X-CSRFToken': this.getCsrfToken() },
+                            body: formData
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.status === 'success') {
+                                window.Toast.fire({ icon: 'success', title: `${tipo} criada com sucesso!` });
+                                
+                                // Auto expande a pasta pai ao criar item dentro
+                                if (parentId) {
+                                    this.expandedFolders.add(parentId);
+                                }
+                                this.loadNodes();
+                            } else {
+                                Swal.fire('Erro', data.message, 'error');
+                            }
+                        })
+                        .catch(err => console.error(err));
+                    }
+                });
+            },
+
+            // 4. RENOMEAR PASTA OU ARQUIVO
+            renameNode(nodeId, currentName) {
+                Swal.fire({
+                    title: 'Renomear Item',
+                    input: 'text',
+                    inputLabel: 'Novo nome do item:',
+                    inputValue: currentName,
+                    showCancelButton: true,
+                    confirmButtonText: 'Salvar',
+                    cancelButtonText: 'Cancelar',
+                    confirmButtonColor: '#0F172A',
+                    inputValidator: (value) => {
+                        if (!value || !value.trim()) {
+                            return 'O nome não pode ser vazio!';
+                        }
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        const newName = result.value.trim();
+                        const formData = new FormData();
+                        formData.append('action', 'explorer_rename');
+                        formData.append('node_id', nodeId);
+                        formData.append('new_name', newName);
+
+                        fetch('/explorer/', {
+                            method: 'POST',
+                            headers: { 'X-CSRFToken': this.getCsrfToken() },
+                            body: formData
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.status === 'success') {
+                                window.Toast.fire({ icon: 'success', title: 'Renomeado com sucesso!' });
+                                
+                                // Atualiza arquivo selecionado na tela se for ele
+                                if (this.selectedFile && this.selectedFile.id === nodeId) {
+                                    this.selectedFile.name = newName;
+                                }
+                                this.loadNodes();
+                            } else {
+                                Swal.fire('Erro', data.message, 'error');
+                            }
+                        })
+                        .catch(err => console.error(err));
+                    }
+                });
+            },
+
+            // 5. EXCLUIR PASTA OU ARQUIVO
+            deleteNode(nodeId, name) {
+                Swal.fire({
+                    title: 'Confirmar Exclusão?',
+                    text: `Tem certeza que deseja excluir '${name}'? Se for uma pasta, TODO o seu conteúdo interno será excluído recursivamente! Esta ação é irreversível.`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Sim, Excluir',
+                    cancelButtonText: 'Cancelar',
+                    confirmButtonColor: '#ef4444',
+                    cancelButtonColor: '#6b7280'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        const formData = new FormData();
+                        formData.append('action', 'explorer_delete');
+                        formData.append('node_id', nodeId);
+
+                        fetch('/explorer/', {
+                            method: 'POST',
+                            headers: { 'X-CSRFToken': this.getCsrfToken() },
+                            body: formData
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.status === 'success') {
+                                window.Toast.fire({ icon: 'success', title: 'Excluído com sucesso!' });
+                                
+                                // Se for o arquivo que estava aberto, fecha-o
+                                if (this.selectedFile && this.selectedFile.id === nodeId) {
+                                    this.selectedFile = null;
+                                }
+                                this.loadNodes();
+                            } else {
+                                Swal.fire('Erro', data.message, 'error');
+                            }
+                        })
+                        .catch(err => console.error(err));
+                    }
+                });
+            },
+
+            // 6. SALVAR CONTEÚDO DO EDITOR
+            saveFile() {
+                if (!this.selectedFile) return;
+
+                const formData = new FormData();
+                formData.append('action', 'explorer_update');
+                formData.append('node_id', this.selectedFile.id);
+                formData.append('content', this.selectedFile.content);
+                formData.append('file_type', this.selectedFile.file_type);
+                formData.append('language', this.selectedFile.language || 'plain');
+
+                fetch('/explorer/', {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': this.getCsrfToken() },
+                    body: formData
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        window.Toast.fire({ icon: 'success', title: 'Arquivo salvo com sucesso!' });
+                        // Atualiza a hora
+                        const now = new Date();
+                        this.selectedFile.updated_at = now.toLocaleDateString('pt-BR') + ' ' + now.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
+                    } else {
+                        Swal.fire('Erro ao Salvar', data.message, 'error');
+                    }
+                })
+                .catch(err => {
+                    console.error("Erro ao salvar:", err);
+                    Swal.fire('Erro', 'Ocorreu um erro ao salvar o arquivo.', 'error');
+                });
+            },
+
+            // 7. CARREGAR E BUSCAR LOGS DE AUDITORIA
+            loadAuditLogs() {
+                fetch('/explorer/?action=explorer_audit_logs')
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            this.auditLogs = data.logs;
+                        } else {
+                            window.Toast.fire({ icon: 'error', title: data.message });
+                        }
+                    })
+                    .catch(err => console.error("Erro ao carregar logs:", err));
+            },
+
+            // FILTRAGEM DOS LOGS EM TEMPO REAL
+            filteredLogs() {
+                if (!this.auditSearch.trim()) return this.auditLogs;
+                
+                const query = this.auditSearch.toLowerCase();
+                return this.auditLogs.filter(log => 
+                    log.user.toLowerCase().includes(query) ||
+                    log.node_name.toLowerCase().includes(query) ||
+                    log.action.toLowerCase().includes(query) ||
+                    log.details.toLowerCase().includes(query)
+                );
+            },
+
+            // --- AUXILIARES E SINCRONIZADORES DE TELA DO MOCK VS CODE ---
+            syncLineNumbers() {
+                const textarea = document.getElementById('code-editor-textarea');
+                const lineContainer = document.getElementById('line-numbers-container');
+                if (!textarea || !lineContainer) return;
+
+                const lines = textarea.value.split('\n');
+                let numberHTML = '';
+                for (let i = 1; i <= lines.length; i++) {
+                    numberHTML += `${i}<br>`;
+                }
+                lineContainer.innerHTML = numberHTML;
+            },
+
+            syncScroll() {
+                const textarea = document.getElementById('code-editor-textarea');
+                const lineContainer = document.getElementById('line-numbers-container');
+                if (!textarea || !lineContainer) return;
+
+                lineContainer.scrollTop = textarea.scrollTop;
+            },
+
+            getCsrfToken() {
+                return document.querySelector('[name=csrfmiddlewaretoken]').value;
+            }
+        };
+    }
+</script>
+{% endblock %}

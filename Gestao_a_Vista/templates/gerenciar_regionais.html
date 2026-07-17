@@ -1,0 +1,236 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Gerenciar Regionais{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header Page info -->
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h2 class="text-2xl font-bold" style="color: #1a2a45;">Gerenciamento de Regionais</h2>
+            <p class="text-sm text-slate-500">Crie novas regionais e gerencie os bancos de dados estaduais correspondentes no PostgreSQL.</p>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Form Criar Regional -->
+        <div class="col-12 col-lg-4">
+            <div class="card border-0 shadow-sm rounded-xl overflow-hidden bg-white">
+                <div class="card-header py-3" style="background: linear-gradient(135deg, #1a2a45 0%, #1e3558 100%);">
+                    <h5 class="text-white font-semibold m-0 text-sm uppercase tracking-wider">Criar Nova Regional</h5>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST" id="form-criar-regional">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="nome" class="form-label text-xs font-semibold text-slate-600 uppercase">Nome da Regional *</label>
+                            <input type="text" class="form-control rounded-md border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500" 
+                                   id="nome" name="nome" placeholder="Ex: São Paulo - Centro" required>
+                            <div class="form-text text-xs">Nome amigável para identificar a regional no sistema.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="estado" class="form-label text-xs font-semibold text-slate-600 uppercase">Estado (UF) *</label>
+                            <select class="form-select rounded-md border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500" 
+                                    id="estado" name="estado" required>
+                                <option value="" disabled selected>Selecione o Estado</option>
+                                <option value="AC">Acre (AC)</option>
+                                <option value="AL">Alagoas (AL)</option>
+                                <option value="AP">Amapá (AP)</option>
+                                <option value="AM">Amazonas (AM)</option>
+                                <option value="BA">Bahia (BA)</option>
+                                <option value="CE">Ceará (CE)</option>
+                                <option value="DF">Distrito Federal (DF)</option>
+                                <option value="ES">Espírito Santo (ES)</option>
+                                <option value="GO">Goiás (GO)</option>
+                                <option value="MA">Maranhão (MA)</option>
+                                <option value="MT">Mato Grosso (MT)</option>
+                                <option value="MS">Mato Grosso do Sul (MS)</option>
+                                <option value="MG">Minas Gerais (MG)</option>
+                                <option value="PA">Pará (PA)</option>
+                                <option value="PB">Paraíba (PB)</option>
+                                <option value="PR">Paraná (PR)</option>
+                                <option value="PE">Pernambuco (PE)</option>
+                                <option value="PI">Piauí (PI)</option>
+                                <option value="RJ">Rio de Janeiro (RJ)</option>
+                                <option value="RN">Rio Grande do Norte (RN)</option>
+                                <option value="RS">Rio Grande do Sul (RS)</option>
+                                <option value="RO">Rondônia (RO)</option>
+                                <option value="RR">Roraima (RR)</option>
+                                <option value="SC">Santa Catarina (SC)</option>
+                                <option value="SP">São Paulo (SP)</option>
+                                <option value="SE">Sergipe (SE)</option>
+                                <option value="TO">Tocantins (TO)</option>
+                            </select>
+                            <div class="form-text text-xs text-info-emphasis mt-1">
+                                <i class="fas fa-database me-1"></i> Provisiona um banco próprio automaticamente (<strong>&lt;uf&gt;_gestao</strong> se for a 1ª regional do estado, ou um nome derivado do nome da regional caso já exista outra no mesmo estado).
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="cidade" class="form-label text-xs font-semibold text-slate-600 uppercase">Cidade / Município</label>
+                            <select class="form-select rounded-md border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500" 
+                                    id="cidade" name="cidade" disabled>
+                                <option value="">Selecione o Estado primeiro</option>
+                            </select>
+                            <div class="form-text text-xs">Filtro de cidade opcional para restrição de visualização.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="diretor_regional" class="form-label text-xs font-semibold text-slate-600 uppercase">Diretor Regional</label>
+                            <input type="text" class="form-control rounded-md border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500" 
+                                   id="diretor_regional" name="diretor_regional" placeholder="Nome do Diretor Regional">
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="diretor_executivo" class="form-label text-xs font-semibold text-slate-600 uppercase">Diretor Executivo</label>
+                            <input type="text" class="form-control rounded-md border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500" 
+                                   id="diretor_executivo" name="diretor_executivo" placeholder="Nome do Diretor Executivo">
+                        </div>
+
+                        <button type="submit" class="btn w-100 py-2 rounded-md font-semibold text-sm d-flex align-items-center justify-content-center gap-2 shadow-sm" style="background-color: #1a2a45; color: white; border: none;">
+                            <i class="fas fa-plus"></i> Criar Regional
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabela Regionais Existentes -->
+        <div class="col-12 col-lg-8">
+            <div class="card border-0 shadow-sm rounded-xl overflow-hidden bg-white">
+                <div class="card-header py-3 d-flex align-items-center justify-content-between" style="background: linear-gradient(135deg, #1a2a45 0%, #1e3558 100%);">
+                    <h5 class="text-white font-semibold m-0 text-sm uppercase tracking-wider">Regionais Cadastradas</h5>
+                    <span class="badge bg-blue bg-opacity-20 text-blue-light font-bold text-xs px-2.5 py-1">{{ regionais|length }} Regionais</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-slate-50 border-bottom border-slate-100">
+                                <tr>
+                                    <th class="ps-4 py-3 text-xs font-bold text-slate-500 uppercase">Nome</th>
+                                    <th class="py-3 text-xs font-bold text-slate-500 uppercase">Estado (UF)</th>
+                                    <th class="py-3 text-xs font-bold text-slate-500 uppercase">Cidade</th>
+                                    <th class="py-3 text-xs font-bold text-slate-500 uppercase">Diretor Regional</th>
+                                    <th class="py-3 text-xs font-bold text-slate-500 uppercase">Diretor Executivo</th>
+                                    <th class="py-3 text-xs font-bold text-slate-500 uppercase">Banco de Dados</th>
+                                    <th class="py-3 text-xs font-bold text-slate-500 uppercase text-center">Usuários</th>
+                                    <th class="pe-4 py-3 text-xs font-bold text-slate-500 uppercase text-end">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                {% for reg in regionais %}
+                                <tr>
+                                    <td class="ps-4 py-3 font-semibold text-slate-800 text-sm">{{ reg.nome }}</td>
+                                    <td class="py-3">
+                                        <span class="badge bg-slate-100 text-slate-700 font-bold px-2 py-1 rounded text-xs">
+                                            {{ reg.estado }}
+                                        </span>
+                                    </td>
+                                    <td class="py-3 text-slate-600 text-sm">{{ reg.cidade|default:"-" }}</td>
+                                    <td class="py-3 text-slate-600 text-sm">{{ reg.diretor_regional|default:"-" }}</td>
+                                    <td class="py-3 text-slate-600 text-sm">{{ reg.diretor_executivo|default:"-" }}</td>
+                                    <td class="py-3 font-mono text-xs text-blue-600 font-semibold">
+                                        {% if reg.db_slug == "go" %}gestao_a_vista{% else %}{{ reg.db_slug }}_gestao{% endif %}
+                                    </td>
+                                    <td class="py-3 text-center">
+                                        <span class="badge bg-blue-faint text-blue font-bold px-2 py-1 rounded-full text-xs">
+                                            {{ reg.user_count }}
+                                        </span>
+                                    </td>
+                                    <td class="pe-4 py-3 text-end">
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-link text-slate-400 p-0 hover:text-slate-600" type="button" data-bs-toggle="dropdown">
+                                                <i class="fas fa-ellipsis-v"></i>
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end shadow-sm border-slate-100">
+                                                <li>
+                                                    <a class="dropdown-item text-xs text-slate-700 font-medium py-2" href="{% url 'gestao_a_vista:alterar_regional_ativa' %}?regional_id={{ reg.id }}">
+                                                        <i class="fas fa-eye me-2 text-slate-400"></i> Visualizar Regional
+                                                    </a>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="8" class="text-center py-5 text-slate-400 text-sm">
+                                        <i class="fas fa-map-marked-alt fa-3x mb-3 text-slate-200"></i>
+                                        <div>Nenhuma regional criada ainda.</div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const selectEstado = document.getElementById('estado');
+    const selectCidade = document.getElementById('cidade');
+
+    selectEstado.addEventListener('change', function() {
+        const uf = this.value;
+        if (!uf) {
+            selectCidade.innerHTML = '<option value="">Selecione o Estado primeiro</option>';
+            selectCidade.disabled = true;
+            return;
+        }
+
+        // Exibe feedback visual
+        selectCidade.innerHTML = '<option value="">Carregando cidades...</option>';
+        selectCidade.disabled = true;
+
+        // Fetch das cidades do IBGE API
+        fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios`)
+            .then(response => {
+                if (!response.ok) throw new Error('Falha ao obter cidades');
+                return response.json();
+            })
+            .then(data => {
+                // Ordenar cidades alfabeticamente
+                data.sort((a, b) => a.nome.localeCompare(b.nome));
+
+                let options = '<option value="">Selecione a Cidade (Opcional)</option>';
+                data.forEach(cidade => {
+                    options += `<option value="${cidade.nome}">${cidade.nome}</option>`;
+                });
+                
+                selectCidade.innerHTML = options;
+                selectCidade.disabled = false;
+            })
+            .catch(error => {
+                console.error('Erro ao buscar cidades:', error);
+                selectCidade.innerHTML = '<option value="">Erro ao carregar cidades. Digite se preferir.</option>';
+                selectCidade.disabled = false;
+            });
+    });
+
+    // Trava anti-clique-duplo: provisionar o banco da regional (CREATE
+    // DATABASE + migrate de ~60 migrations) pode levar alguns segundos --
+    // sem isso, um segundo clique/submit nesse intervalo dispara duas
+    // requisições concorrentes tentando criar/migrar o MESMO banco, o que
+    // pode colidir com erro de "column ... already exists".
+    const formCriarRegional = document.getElementById('form-criar-regional');
+    if (formCriarRegional) {
+        formCriarRegional.addEventListener('submit', function() {
+            const botao = formCriarRegional.querySelector('button[type="submit"]');
+            if (botao) {
+                if (botao.disabled) {
+                    return false;
+                }
+                botao.disabled = true;
+                botao.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Criando regional (pode levar alguns segundos)...';
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,990 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Usuários - Gestão à Vista{% endblock %}
+
+{% block extra_css %}
+<style>
+    .usuarios-title {
+        background: linear-gradient(to right, #0F172A, #1e40af);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-size: 28px;
+        font-weight: bold;
+        margin: 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="usuarios-title">Usuários</h1>
+            <p class="text-gray-600 mt-2">Gerencie usuários e suas permissões no sistema</p>
+        </div>
+        
+        <div class="flex items-center gap-3">
+            <a href="{% url 'gestao_a_vista:solicitacoes_cadastro' %}" 
+               class="px-4 py-2 text-white rounded-md hover:opacity-90 flex items-center gap-2 shadow-sm relative"
+               style="background-color: #000d29;">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+                </svg>
+                Solicitações Pendentes
+                
+                {% if solicitacoes_count > 0 %}
+                <span class="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white ring-2 ring-white">
+                    {{ solicitacoes_count }}
+                </span>
+                {% endif %}
+            </a>
+
+            <button onclick="openCreateUserModal()" 
+                    class="px-4 py-2 text-white rounded-md hover:opacity-90 flex items-center gap-2 shadow-sm"
+                    style="background-color: #0F172A;">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                Novo Usuário
+            </button>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="bg-white rounded-lg border shadow-sm">
+        <div class="p-4 border-b">
+            <h2 class="text-lg font-semibold">Filtros</h2>
+        </div>
+        <div class="p-4">
+            <form method="get" class="flex gap-4 items-end">
+                <div class="flex-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Pesquisar por nome ou usuário
+                    </label>
+                    <div class="relative">
+                        <svg class="absolute left-3 top-3 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                        <input type="text" 
+                               name="search" 
+                               value="{{ filters.search }}"
+                               placeholder="Digite o nome ou usuário..." 
+                               class="pl-10 w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    </div>
+                </div>
+                <div class="w-48">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Filtrar por tipo de visão
+                    </label>
+                    <select name="role" 
+                            class="w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            onchange="this.form.submit()">
+                        <option value="todos" {% if filters.role == 'todos' %}selected{% endif %}>Todos</option>
+                        {% for value, label in role_choices %}
+                            <option value="{{ value }}" {% if filters.role == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Lista de Usuários -->
+    <div class="bg-white rounded-lg border shadow-sm">
+        <div class="p-4 border-b">
+            <h2 class="text-lg font-semibold">Usuários ({{ users|length }})</h2>
+        </div>
+        <div class="p-4">
+            <div class="space-y-4">
+                {% for user in users %}
+                <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                    <div class="flex items-center space-x-4">
+                        <div class="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
+                            <span class="text-gray-600 font-medium">{{ user.name|first|upper }}</span>
+                        </div>
+                        <div>
+                            <h3 class="font-medium text-gray-900">{{ user.name }}</h3>
+                            <p class="text-sm text-gray-500">@{{ user.username }}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center space-x-3">
+                        <!-- Status Badge -->
+                        <span class="px-2 py-1 rounded-full text-sm {% if user.is_online %}bg-emerald-100 text-emerald-800{% else %}bg-slate-100 text-slate-600{% endif %}">
+                            {{ user.is_online|yesno:"Online,Offline" }}
+                        </span>
+                        
+                        <!-- Role Badge -->
+                        <span class="px-2 py-1 rounded-full text-sm bg-gray-50 text-gray-700 border border-gray-200 flex items-center gap-1">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                {% if user.role == 'administrador' %}
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.618 5.984A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016zM12 9v2m0 4h.01"/>
+                                {% elif user.role == 'gerente' %}
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                {% else %}
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                {% endif %}
+                            </svg>
+                            {{ user.get_role_display }}
+                        </span>
+                        
+                        <!-- Action Buttons -->
+                        <div class="flex items-center space-x-2">
+                            <button onclick="openEditUserModal('{{ user.id }}')"
+                                    class="px-3 py-1 text-blue-800 hover:text-blue-900 hover:bg-blue-50 border border-blue-200 rounded-md flex items-center gap-1">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                </svg>
+                                Editar
+                            </button>
+                            
+                            <button onclick="resetPassword('{{ user.id }}', '{{ user.name }}')"
+                                    class="p-1 text-gray-700 hover:text-gray-800 hover:bg-gray-50 border border-gray-300 rounded-md"
+                                    title="Resetar Senha">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                                </svg>
+                            </button>
+                            
+                            <button onclick="deleteUser('{{ user.id }}', '{{ user.name }}')"
+                                    class="px-3 py-1 text-red-600 hover:text-red-700 hover:bg-red-50 border border-red-200 rounded-md flex items-center gap-1">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                </svg>
+                                Excluir
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-8 text-gray-500">
+                    <p>Nenhum usuário encontrado com os filtros aplicados.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} {% block modals %}
+<!-- Modal de Novo Usuário -->
+<div id="createUserModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="p-4 border-b sticky top-0 bg-white">
+            <h2 class="text-lg font-semibold">Novo Usuário</h2>
+        </div>
+        <form id="createUserForm" class="p-4 space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Nome Completo</label>
+                <input type="text" 
+                       name="name" 
+                       required
+                       class="w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Nome de Usuário</label>
+                <input type="text" 
+                       name="username" 
+                       required
+                       class="w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">E-mail</label>
+                <input type="email" 
+                       name="email" 
+                       class="w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Senha</label>
+                <input type="password" 
+                       name="password" 
+                       required
+                       class="w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Confirmar Senha</label>
+                <input type="password" 
+                       name="confirm_password" 
+                       required
+                       class="w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Tipo de Visão</label>
+                <select name="role" 
+                        required
+                        onchange="updatePermissions(this.value, 'create')"
+                        class="w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2">
+                    {% for value, label in role_choices %}
+                        <option value="{{ value }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            {% if is_global_admin %}
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Regional (Estado)</label>
+                <select name="regional"
+                        class="w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2">
+                    <option value="">Nenhuma (Global)</option>
+                    {% for reg in regionais %}
+                        <option value="{{ reg.id }}">{{ reg.nome }} ({{ reg.estado }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="p-3 bg-amber-50 border border-amber-200 rounded-md">
+                <label class="flex items-center space-x-2">
+                    <input type="checkbox" name="is_global_admin" class="rounded border-gray-300 text-amber-600 shadow-sm focus:border-amber-500 focus:ring-amber-500">
+                    <span class="text-sm font-medium text-amber-900">Administrador Global (acesso total, ignora Filtro Regional)</span>
+                </label>
+            </div>
+            {% endif %}
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Setor (Área)</label>
+                <select name="setor"
+                        class="w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2">
+                    <option value="">Nenhum</option>
+                    <option value="TI">TI</option>
+                    <option value="PEC">PEC/ FINANCEIRO</option>
+                    <option value="QUALIDADE">QUALIDADE</option>
+                    <option value="PROJETOS">PROJETOS</option>
+                    <option value="SESMIT">SESMIT</option>
+                    <option value="SUPRIMENTOS">SUPRIMENTOS</option>
+                </select>
+            </div>
+
+            <div class="p-3 bg-gray-50 border rounded-md">
+                <label class="block text-sm font-medium text-gray-900 mb-2 border-b pb-1">Configurações de Notificação (Ocorrências)</label>
+                
+                <div class="flex items-center space-x-4 mb-3">
+                    <label class="flex items-center space-x-2">
+                        <input type="checkbox" name="is_regulatory" class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                        <span class="text-sm font-medium text-gray-700">É do Regulatório?</span>
+                    </label>
+
+                    <label class="flex items-center space-x-2">
+                        <input type="checkbox" name="is_general" class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                        <span class="text-sm font-medium text-gray-700">Gerente Geral (Recebe todos)</span>
+                    </label>
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-medium text-gray-700 mb-1">CRs (Se não for Geral, especifique separados por vírgula. Ex: 88390, 88391)</label>
+                    <input type="text" name="crs" placeholder="Ex: 88390, 88391" class="w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2 text-sm">
+                </div>
+            </div>
+
+            <div class="p-3 bg-gray-50 border rounded-md">
+                <label class="block text-sm font-medium text-gray-900 mb-2 border-b pb-1">Notificação de Livro Ata (WhatsApp)</label>
+
+                <label class="flex items-center space-x-2 mb-3">
+                    <input type="checkbox" name="notificar_livro_ata" onchange="document.getElementById('createWhatsappField').classList.toggle('hidden', !this.checked)" class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    <span class="text-sm font-medium text-gray-700">Recebe notificação quando um turno não preenche o Livro Ata</span>
+                </label>
+
+                <div id="createWhatsappField" class="hidden">
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Número do WhatsApp</label>
+                    <input type="text" name="whatsapp_notificacao" placeholder="Ex: 5562999999999" class="w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2 text-sm">
+                </div>
+            </div>
+
+            <div id="createPermissionsSection">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Permissões de Página</label>
+                
+                <!-- Informação sobre permissões disponíveis -->
+                {% if user.role != 'administrador' %}
+                <div class="mb-3 p-2 bg-blue-50 border border-blue-200 rounded-md">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <span class="text-xs text-blue-700">Exibindo apenas permissões que você tem acesso para gerenciar ({{ page_permissions|length }} de 12 módulos)</span>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="bg-gray-50 p-3 rounded-md space-y-2">
+                    {% for value, label in page_permissions %}
+                    <label class="flex items-center space-x-2">
+                        <input type="checkbox" 
+                               name="permissions" 
+                               value="{{ value }}"
+                               class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                        <span class="text-sm">{{ label }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 pt-4 sticky bottom-0 bg-white">
+                <button type="button" 
+                        onclick="closeCreateUserModal()"
+                        class="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50">
+                    Cancelar
+                </button>
+                <button type="submit" 
+                        class="px-4 py-2 text-white rounded-md hover:opacity-90"
+                        style="background-color: #0F172A;">
+                    Salvar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal de Edição de Usuário -->
+<div id="editUserModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="p-4 border-b sticky top-0 bg-white">
+            <h2 class="text-lg font-semibold">Editar Usuário</h2>
+        </div>
+        
+        <!-- Loading State -->
+        <div id="editUserLoading" class="p-8 text-center">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p class="text-gray-600">Carregando informações do usuário...</p>
+        </div>
+        
+        <!-- Form Content -->
+        <div id="editUserContent" class="hidden">
+            <form id="editUserForm" class="p-4 space-y-4">
+                <input type="hidden" name="user_id">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nome Completo</label>
+                    <input type="text" 
+                           name="name" 
+                           required
+                           class="w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nome de Usuário</label>
+                    <input type="text" 
+                           name="username" 
+                           required
+                           class="w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">E-mail</label>
+                    <input type="email" 
+                           name="email" 
+                           class="w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Tipo de Visão</label>
+                    <select name="role" 
+                            required
+                            onchange="updatePermissions(this.value, 'edit')"
+                            class="w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2">
+                        {% for value, label in role_choices %}
+                            <option value="{{ value }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                {% if is_global_admin %}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Regional (Estado)</label>
+                    <select name="regional"
+                            class="w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2">
+                        <option value="">Nenhuma (Global)</option>
+                        {% for reg in regionais %}
+                            <option value="{{ reg.id }}">{{ reg.nome }} ({{ reg.estado }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="p-3 bg-amber-50 border border-amber-200 rounded-md">
+                    <label class="flex items-center space-x-2">
+                        <input type="checkbox" name="is_global_admin" class="rounded border-gray-300 text-amber-600 shadow-sm focus:border-amber-500 focus:ring-amber-500">
+                        <span class="text-sm font-medium text-amber-900">Administrador Global (acesso total, ignora Filtro Regional)</span>
+                    </label>
+                </div>
+                {% endif %}
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Setor (Área)</label>
+                    <select name="setor" 
+                            class="w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2">
+                        <option value="">Nenhum</option>
+                        <option value="TI">TI</option>
+                        <option value="PEC">PEC/ FINANCEIRO</option>
+                        <option value="QUALIDADE">QUALIDADE</option>
+                        <option value="PROJETOS">PROJETOS</option>
+                        <option value="SESMIT">SESMIT</option>
+                        <option value="SUPRIMENTOS">SUPRIMENTOS</option>
+                    </select>
+                </div>
+
+                <div class="p-3 bg-gray-50 border rounded-md">
+                    <label class="block text-sm font-medium text-gray-900 mb-2 border-b pb-1">Configurações de Notificação (Ocorrências)</label>
+                    
+                    <div class="flex items-center space-x-4 mb-3">
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" name="is_regulatory" class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            <span class="text-sm font-medium text-gray-700">É do Regulatório?</span>
+                        </label>
+
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" name="is_general" class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            <span class="text-sm font-medium text-gray-700">Gerente Geral (Recebe todos)</span>
+                        </label>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 mb-1">CRs (Se não for Geral, especifique separados por vírgula. Ex: 88390, 88391)</label>
+                        <input type="text" name="crs" placeholder="Ex: 88390, 88391" class="w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2 text-sm">
+                    </div>
+                </div>
+
+                <div class="p-3 bg-gray-50 border rounded-md">
+                    <label class="block text-sm font-medium text-gray-900 mb-2 border-b pb-1">Notificação de Livro Ata (WhatsApp)</label>
+
+                    <label class="flex items-center space-x-2 mb-3">
+                        <input type="checkbox" name="notificar_livro_ata" onchange="document.getElementById('editWhatsappField').classList.toggle('hidden', !this.checked)" class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                        <span class="text-sm font-medium text-gray-700">Recebe notificação quando um turno não preenche o Livro Ata</span>
+                    </label>
+
+                    <div id="editWhatsappField" class="hidden">
+                        <label class="block text-xs font-medium text-gray-700 mb-1">Número do WhatsApp</label>
+                        <input type="text" name="whatsapp_notificacao" placeholder="Ex: 5562999999999" class="w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2 text-sm">
+                    </div>
+                </div>
+
+                <div id="editPermissionsSection">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Permissões Concedidas</label>
+                    
+                    <!-- Informação sobre permissões limitadas -->
+                    {% if user.role != 'administrador' %}
+                    <div class="mb-3 p-2 bg-amber-50 border border-amber-200 rounded-md">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 15.5c-.77.833.192 2.5 1.732 2.5z"/>
+                            </svg>
+                            <span class="text-xs text-amber-700">Você pode gerenciar apenas permissões que possui acesso ({{ page_permissions|length }} módulos disponíveis)</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Resumo das Permissões -->
+                    <div id="permissionsSummary" class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                        <div class="flex items-center gap-2 mb-2">
+                            <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <span class="text-sm font-medium text-blue-800">Resumo das Permissões</span>
+                        </div>
+                        <div id="permissionsCount" class="text-sm text-blue-700"></div>
+                    </div>
+                    
+                    <!-- Lista de Permissões -->
+                    <div class="bg-gray-50 p-3 rounded-md space-y-2">
+                        {% for value, label in page_permissions %}
+                        <label class="flex items-center justify-between space-x-2 p-2 bg-white rounded border">
+                            <div class="flex items-center space-x-2">
+                                <input type="checkbox" 
+                                       name="permissions" 
+                                       value="{{ value }}"
+                                       class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                <span class="text-sm">{{ label }}</span>
+                            </div>
+                            <span class="permission-status text-xs px-2 py-1 rounded-full hidden"></span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- Administrador Notice -->
+                    <div id="adminNotice" class="hidden mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.618 5.984A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                            </svg>
+                            <span class="text-sm font-medium text-yellow-800">Acesso Total</span>
+                        </div>
+                        <p class="text-sm text-yellow-700 mt-1">Administradores têm acesso completo a todas as funcionalidades do sistema.</p>
+                    </div>
+                </div>
+                
+                <div class="flex justify-end gap-2 pt-4 sticky bottom-0 bg-white">
+                    <button type="button" 
+                            onclick="closeEditUserModal()"
+                            class="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50">
+                        Cancelar
+                    </button>
+                    <button type="submit" 
+                            class="px-4 py-2 text-white rounded-md hover:opacity-90"
+                            style="background-color: #0F172A;">
+                        Salvar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function openCreateUserModal() {
+    document.getElementById('createUserModal').classList.remove('hidden');
+    // Setar permissões padrão para o primeiro role
+    const firstRole = document.querySelector('#createUserForm select[name="role"]').value;
+    updatePermissions(firstRole, 'create');
+}
+
+function closeCreateUserModal() {
+    document.getElementById('createUserModal').classList.add('hidden');
+    document.getElementById('createUserForm').reset();
+}
+
+async function openEditUserModal(userId) {
+    const modal = document.getElementById('editUserModal');
+    const loading = document.getElementById('editUserLoading');
+    const content = document.getElementById('editUserContent');
+    
+    // Mostrar loading
+    loading.classList.remove('hidden');
+    content.classList.add('hidden');
+    modal.classList.remove('hidden');
+    
+    try {
+        console.log('Buscando informações do usuário:', userId);
+        
+        // Buscar informações do usuário
+        const response = await fetch('{% url "gestao_a_vista:controle_acessos" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                action: 'get_user_permissions',
+                user_id: userId
+            })
+        });
+        
+        console.log('Response status:', response.status);
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            console.error('Erro na resposta:', errorData);
+            throw new Error(errorData.error || `Erro HTTP: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('Dados recebidos:', data);
+        
+        if (!data.success) {
+            throw new Error(data.error || 'Erro desconhecido');
+        }
+        
+        // Preencher formulário
+        const form = document.getElementById('editUserForm');
+        form.elements['user_id'].value = userId;
+        form.elements['name'].value = data.name || '';
+        form.elements['username'].value = data.username || '';
+        form.elements['email'].value = data.email || '';
+        form.elements['role'].value = data.role || '';
+        form.elements['is_regulatory'].checked = data.is_regulatory || false;
+        form.elements['is_general'].checked = data.is_general || false;
+        form.elements['crs'].value = data.crs || '';
+        form.elements['setor'].value = data.setor || '';
+        form.elements['notificar_livro_ata'].checked = data.notificar_livro_ata || false;
+        form.elements['whatsapp_notificacao'].value = data.whatsapp_notificacao || '';
+        document.getElementById('editWhatsappField').classList.toggle('hidden', !form.elements['notificar_livro_ata'].checked);
+        if (form.elements['regional']) {
+            form.elements['regional'].value = data.regional || '';
+        }
+        if (form.elements['is_global_admin']) {
+            form.elements['is_global_admin'].checked = data.is_global_admin || false;
+        }
+        
+        // Atualizar interface de permissões
+        updateEditPermissions(data.role, data.permissions || {});
+        
+        // Esconder loading e mostrar conteúdo
+        loading.classList.add('hidden');
+        content.classList.remove('hidden');
+        
+    } catch (error) {
+        console.error('Erro detalhado:', error);
+        showNotification(`Erro ao carregar informações do usuário: ${error.message}`, 'error');
+        closeEditUserModal();
+    }
+}
+
+function closeEditUserModal() {
+    document.getElementById('editUserModal').classList.add('hidden');
+}
+
+function updateEditPermissions(role, permissions) {
+    const section = document.getElementById('editPermissionsSection');
+    const checkboxes = section.querySelectorAll('input[type="checkbox"]');
+    const adminNotice = document.getElementById('adminNotice');
+    const summary = document.getElementById('permissionsSummary');
+    const countElement = document.getElementById('permissionsCount');
+    
+    let grantedCount = 0;
+    let totalCount = checkboxes.length;
+    
+    if (role === 'administrador') {
+        // Administrador: mostrar aviso e marcar tudo
+        adminNotice.classList.remove('hidden');
+        summary.classList.add('hidden');
+        section.querySelector('.bg-gray-50').style.opacity = '0.5';
+        
+        checkboxes.forEach(cb => {
+            cb.checked = true;
+            cb.disabled = true;
+            grantedCount++;
+            
+            // Atualizar status visual
+            const statusSpan = cb.closest('label').querySelector('.permission-status');
+            statusSpan.textContent = 'Concedido';
+            statusSpan.className = 'permission-status text-xs px-2 py-1 rounded-full bg-green-100 text-green-800';
+            statusSpan.classList.remove('hidden');
+        });
+    } else {
+        // Outros roles: mostrar controles
+        adminNotice.classList.add('hidden');
+        summary.classList.remove('hidden');
+        section.querySelector('.bg-gray-50').style.opacity = '1';
+        
+        checkboxes.forEach(cb => {
+            // Verificar se a permissão existe antes de acessá-la
+            const isGranted = permissions && permissions.hasOwnProperty(cb.value) ? permissions[cb.value] : false;
+            cb.checked = isGranted;
+            cb.disabled = false;
+            
+            if (isGranted) grantedCount++;
+            
+            // Atualizar status visual
+            const statusSpan = cb.closest('label').querySelector('.permission-status');
+            if (isGranted) {
+                statusSpan.textContent = 'Concedido';
+                statusSpan.className = 'permission-status text-xs px-2 py-1 rounded-full bg-green-100 text-green-800';
+                statusSpan.classList.remove('hidden');
+            } else {
+                statusSpan.textContent = 'Negado';
+                statusSpan.className = 'permission-status text-xs px-2 py-1 rounded-full bg-red-100 text-red-800';
+                statusSpan.classList.remove('hidden');
+            }
+        });
+    }
+    
+    // Atualizar contador
+    countElement.innerHTML = `
+        <strong>${grantedCount} de ${totalCount}</strong> permissões concedidas
+        ${grantedCount === totalCount ? '<span class="text-green-600">• Acesso Total</span>' : ''}
+        ${grantedCount === 0 ? '<span class="text-red-600">• Nenhum Acesso</span>' : ''}
+    `;
+}
+
+function updatePermissions(role, formType) {
+    const defaultPermissions = {
+        'administrador': {
+            'dashboard': true,
+            'monitoramento': true,
+            'qr_generator': true,
+            'etiquetas_generator': true,
+            'desativacao_cr': true,
+            'controle_chips': true,
+            'implantacoes_opsvista': true,
+            'implantacoes_fluxo': true,
+            'desmobilizacoes_fluxo': true,
+            'portaria_base': true,
+            'gestao_salas': true,
+            'reserva_salas': true,
+            'calendario_reservas': true,
+            'livro_ata': true,
+            'planner': true,
+            'explorer': true,
+            'torre_controle': true,
+            'relatorios': true,
+            'gestao_qualidade': true,
+            'calendario_2026': true,
+            'psicossocial': true,
+            'financeiro': true
+        },
+        'gerente': {
+            'dashboard': true,
+            'monitoramento': true,
+            'qr_generator': true,
+            'etiquetas_generator': true,
+            'desativacao_cr': false,
+            'controle_chips': true,
+            'implantacoes_opsvista': true,
+            'implantacoes_fluxo': true,
+            'desmobilizacoes_fluxo': true,
+            'portaria_base': true,
+            'gestao_salas': true,
+            'reserva_salas': true,
+            'calendario_reservas': true,
+            'livro_ata': true,
+            'planner': true,
+            'explorer': true,
+            'torre_controle': true,
+            'relatorios': true,
+            'gestao_qualidade': false,
+            'calendario_2026': false,
+            'psicossocial': false,
+            'financeiro': true
+        },
+        'publico': {
+            'dashboard': true,
+            'monitoramento': false,
+            'qr_generator': false,
+            'etiquetas_generator': false,
+            'desativacao_cr': false,
+            'controle_chips': false,
+            'implantacoes_opsvista': false,
+            'implantacoes_fluxo': false,
+            'desmobilizacoes_fluxo': false,
+            'portaria_base': true,
+            'gestao_salas': false,
+            'reserva_salas': true,
+            'calendario_reservas': true,
+            'livro_ata': true,
+            'planner': false,
+            'explorer': false,
+            'torre_controle': false,
+            'relatorios': false,
+            'gestao_qualidade': false,
+            'calendario_2026': false,
+            'psicossocial': false,
+            'financeiro': false
+        },
+        'cliente': {
+            'dashboard': false,
+            'monitoramento': false,
+            'qr_generator': false,
+            'etiquetas_generator': false,
+            'desativacao_cr': false,
+            'controle_chips': false,
+            'implantacoes_opsvista': false,
+            'implantacoes_fluxo': false,
+            'desmobilizacoes_fluxo': false,
+            'portaria_base': false,
+            'gestao_salas': false,
+            'reserva_salas': false,
+            'calendario_reservas': false,
+            'livro_ata': false,
+            'planner': false,
+            'explorer': false,
+            'torre_controle': false,
+            'relatorios': false,
+            'gestao_qualidade': false,
+            'calendario_2026': false,
+            'psicossocial': false,
+            'financeiro': false
+        }
+    };
+
+    if (formType === 'edit') {
+        updateEditPermissions(role, defaultPermissions[role]);
+        return;
+    }
+
+    // Lógica original para criar usuário
+    const sectionId = 'createPermissionsSection';
+    const section = document.getElementById(sectionId);
+    const checkboxes = section.querySelectorAll('input[type="checkbox"]');
+    
+    if (role === 'administrador') {
+        section.style.display = 'none';
+        checkboxes.forEach(cb => cb.checked = true);
+    } else {
+        section.style.display = 'block';
+        checkboxes.forEach(cb => {
+            // Verificar se a permissão existe no objeto defaultPermissions antes de tentar acessá-la
+            const hasPermission = defaultPermissions[role] && defaultPermissions[role].hasOwnProperty(cb.value);
+            cb.checked = hasPermission ? defaultPermissions[role][cb.value] : false;
+        });
+    }
+}
+
+// Event Listeners
+document.getElementById('createUserForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const password = this.elements['password'].value;
+    const confirmPassword = this.elements['confirm_password'].value;
+    
+    if (password !== confirmPassword) {
+        showNotification('As senhas não coincidem!', 'error');
+        return;
+    }
+    
+    const permissions = {};
+    this.querySelectorAll('input[name="permissions"]').forEach(cb => {
+        permissions[cb.value] = cb.checked;
+    });
+    
+    const formData = {
+        action: 'create',
+        name: this.elements['name'].value,
+        username: this.elements['username'].value,
+        email: this.elements['email'].value,
+        password: password,
+        role: this.elements['role'].value,
+        is_regulatory: this.elements['is_regulatory'].checked,
+        is_general: this.elements['is_general'].checked,
+        crs: this.elements['crs'].value,
+        setor: this.elements['setor'].value,
+        notificar_livro_ata: this.elements['notificar_livro_ata'].checked,
+        whatsapp_notificacao: this.elements['whatsapp_notificacao'].value,
+        regional: this.elements['regional'] ? this.elements['regional'].value : '',
+        is_global_admin: this.elements['is_global_admin'] ? this.elements['is_global_admin'].checked : false,
+        page_permissions: permissions
+    };
+
+    try {
+        const response = await fetch('{% url "gestao_a_vista:controle_acessos" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify(formData)
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success) {
+                window.location.reload();
+            } else {
+                showNotification(data.error || 'Erro ao criar usuário', 'error');
+            }
+        } else {
+            const errorData = await response.json();
+            showNotification(errorData.error || 'Erro ao criar usuário', 'error');
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+        showNotification('Erro ao criar usuário: ' + error.message, 'error');
+    }
+});
+
+document.getElementById('editUserForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const permissions = {};
+    this.querySelectorAll('input[name="permissions"]').forEach(cb => {
+        permissions[cb.value] = cb.checked;
+    });
+    
+    const formData = {
+        action: 'update',
+        user_id: this.elements['user_id'].value,
+        name: this.elements['name'].value,
+        username: this.elements['username'].value,
+        email: this.elements['email'].value,
+        role: this.elements['role'].value,
+        is_regulatory: this.elements['is_regulatory'].checked,
+        is_general: this.elements['is_general'].checked,
+        crs: this.elements['crs'].value,
+        setor: this.elements['setor'].value,
+        notificar_livro_ata: this.elements['notificar_livro_ata'].checked,
+        whatsapp_notificacao: this.elements['whatsapp_notificacao'].value,
+        regional: this.elements['regional'] ? this.elements['regional'].value : '',
+        is_global_admin: this.elements['is_global_admin'] ? this.elements['is_global_admin'].checked : false,
+        page_permissions: permissions
+    };
+
+    try {
+        const response = await fetch('{% url "gestao_a_vista:controle_acessos" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify(formData)
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success) {
+                window.location.reload();
+            } else {
+                showNotification(data.error || 'Erro ao atualizar usuário', 'error');
+            }
+        } else {
+            const errorData = await response.json();
+            showNotification(errorData.error || 'Erro ao atualizar usuário', 'error');
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+        showNotification('Erro ao atualizar usuário: ' + error.message, 'error');
+    }
+});
+
+async function resetPassword(userId, userName) {
+    if (!confirm(`Deseja realmente resetar a senha do usuário ${userName}?`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('{% url "gestao_a_vista:controle_acessos" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                action: 'reset_password',
+                user_id: userId
+            })
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success) {
+                showNotification('Senha resetada com sucesso para: senha123', 'success');
+            } else {
+                showNotification(data.error || 'Erro ao resetar senha', 'error');
+            }
+        } else {
+            const errorData = await response.json();
+            showNotification(errorData.error || 'Erro ao resetar senha', 'error');
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+        showNotification('Erro ao resetar senha: ' + error.message, 'error');
+    }
+}
+
+async function deleteUser(userId, userName) {
+    if (!confirm(`Deseja realmente excluir o usuário ${userName}?`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('{% url "gestao_a_vista:controle_acessos" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                action: 'delete',
+                user_id: userId
+            })
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success) {
+                window.location.reload();
+            } else {
+                showNotification(data.error || 'Erro ao excluir usuário', 'error');
+            }
+        } else {
+            const errorData = await response.json();
+            showNotification(errorData.error || 'Erro ao excluir usuário', 'error');
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+        showNotification('Erro ao excluir usuário: ' + error.message, 'error');
+    }
+}
+</script>
+{% endblock %} 

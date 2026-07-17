@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #f8fafc;
+        }
+        .timeline-item {
+            position: relative;
+            padding-left: 20px;
+            margin-bottom: 1.5rem;
+            border-left: 2px solid #dee2e6;
+        }
+        .timeline-item i.icon-step {
+            position: absolute;
+            left: -13px;
+            top: 0;
+            background-color: #f8fafc;
+            border-radius: 50%;
+            padding: 2px;
+            font-size: 1.2rem;
+        }
+        .img-preview {
+            max-width: 100%;
+            max-height: 70vh;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .text-darken {
+            color: #334155 !important;
+        }
+    </style>
+</head>
+<body class="p-3">
+    
+    {% csrf_token %}
+
+    <div class="container-fluid">
+        <h4 class="text-danger fw-bold mb-3"><i class="fas fa-exclamation-circle"></i> Auditoria: NCs Reincidentes</h4>
+        <p class="text-muted mb-4">Lista das ocorrências que já foram tratadas no passado e voltaram a apresentar falha. Analise o histórico e notifique a gestão.</p>
+
+        {% for r in reincidencias_pendentes %}
+        <div class="card mb-4 shadow-sm border-0 border-top border-danger border-4">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                <h5 class="mb-0 fw-bold text-dark"><i class="fas fa-hashtag text-danger"></i> CR: {{ r.cr_colaborador }} | <span class="text-danger">{{ r.item_reincidente }}</span></h5>
+                <span class="badge bg-danger p-2 fs-6"><i class="fas fa-calendar-alt"></i> Reincidência em: {{ r.data_reincidencia|date:"d/m/Y H:i" }}</span>
+            </div>
+            
+            <div class="card-body bg-light">
+                <div class="row">
+                    <div class="col-md-8">
+                        <h6 class="text-muted text-uppercase fw-bold mb-3"><i class="fas fa-route"></i> Histórico Completo da Tratativa Anterior</h6>
+                        
+                        <div class="ms-2">
+                            <div class="timeline-item">
+                                <i class="fas fa-plus-circle text-primary icon-step"></i>
+                                <strong class="text-dark">Plano Criado por:</strong> 
+                                <span class="text-primary">
+                                    {% if r.plano_original.criador_plano %}
+                                        {{ r.plano_original.criador_plano.name|default:r.plano_original.criador_plano.username }}
+                                    {% else %}
+                                        Desconhecido
+                                    {% endif %}
+                                </span><br>
+                                <small class="text-muted"><i class="far fa-clock"></i> Data de Abertura: {{ r.plano_original.data_criacao|date:"d/m/Y às H:i" }}</small>
+                            </div>
+
+                            <div class="timeline-item">
+                                <i class="fas fa-check-circle text-success icon-step"></i>
+                                <strong class="text-dark">Aprovado por:</strong> 
+                                <span class="text-success">
+                                    {% if r.plano_original.aprovador %}
+                                        {{ r.plano_original.aprovador.name|default:r.plano_original.aprovador.username }}
+                                    {% else %}
+                                        Sistema / Desconhecido
+                                    {% endif %}
+                                </span><br>
+                                <small class="text-muted"><i class="fas fa-user-tie"></i> Responsável do CR (Gerente/Coord): {{ r.gerente|default:r.coordenador|default:"Não Identificado" }}</small>
+                            </div>
+
+                            <div class="timeline-item">
+                                <i class="fas fa-shopping-cart text-warning icon-step"></i>
+                                <strong class="text-dark">Pedido / Comprado por:</strong> 
+                                <span class="text-warning text-darken">
+                                    {% if r.plano_original.comprador %}
+                                        {{ r.plano_original.comprador.name|default:r.plano_original.comprador.username }}
+                                    {% else %}
+                                        Não Identificado
+                                    {% endif %}
+                                </span><br>
+                                <small class="text-muted"><i class="far fa-calendar-check"></i> Data da Compra: {{ r.plano_original.data_compra|date:"d/m/Y"|default:"N/A" }}</small>
+                                
+                                {% if r.plano_original.nota_fiscal %}
+                                <div class="mt-2">
+                                    <a href="{{ r.plano_original.nota_fiscal.url }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                        <i class="fas fa-file-invoice"></i> Visualizar Nota Fiscal / Comprovante
+                                    </a>
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="timeline-item border-left-0 border-0 mb-0">
+                                <i class="fas fa-box-open text-info icon-step"></i>
+                                <strong class="text-dark">Entregue por:</strong> 
+                                <span class="text-info text-darken">
+                                    {% if r.plano_original.retirante %}
+                                        {{ r.plano_original.retirante.name|default:r.plano_original.retirante.username }}
+                                    {% else %}
+                                        Não Identificado
+                                    {% endif %}
+                                </span><br>
+                                <strong class="text-dark">Recebido na Base por:</strong> <span class="badge bg-success fs-6 mt-1">{{ r.plano_original.recebedor|default:"Não Identificado" }}</span><br>
+                                <small class="text-muted d-block mt-1"><i class="far fa-calendar-check"></i> Data da Entrega: {{ r.plano_original.data_retirada|date:"d/m/Y às H:i"|default:"N/A" }}</small>
+                                
+                                {% if r.plano_original.foto_retirada %}
+                                <div class="mt-2">
+                                    <button class="btn btn-sm btn-info text-white fw-bold" onclick="abrirModalFoto('{{ r.plano_original.foto_retirada.url }}')">
+                                        <i class="fas fa-camera"></i> Visualizar Foto de Evidência
+                                    </button>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="bg-white p-4 rounded shadow-sm h-100 border">
+                            <h6 class="text-danger text-uppercase fw-bold mb-3"><i class="fas fa-gavel"></i> Ações de Auditoria</h6>
+                            <p class="small text-muted mb-4">Utilize as opções abaixo para alertar os responsáveis sobre o problema ou finalizar a ocorrência.</p>
+                            
+                            <div class="d-grid gap-3">
+                                <button class="btn btn-primary fw-bold text-white py-2 shadow-sm" onclick="abrirModalVoltarNC('{{ r.id }}', '{{ r.cr_colaborador|escapejs }}', '{{ r.item_reincidente|escapejs }}')">
+                                    <i class="fas fa-undo"></i> Voltar para aba de NCs
+                                </button>
+
+                                <button class="btn btn-warning fw-bold text-dark py-2 shadow-sm" onclick="abrirModalNotificar('{{ r.id }}', '{{ r.cr_colaborador|escapejs }}')">
+                                    <i class="fas fa-envelope"></i> Notificar Gerente / Cood.
+                                </button>
+
+                                <button class="btn btn-success fw-bold py-2 shadow-sm" onclick="abrirModalResolver('{{ r.id }}', '{{ r.cr_colaborador|escapejs }}', '{{ r.item_reincidente|escapejs }}')">
+                                    <i class="fas fa-check-double"></i> Tratar e Resolver Definitivo
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="alert alert-success shadow-sm p-4 text-center border-0 border-start border-success border-4">
+            <h4 class="mb-2 text-success"><i class="fas fa-check-circle fa-2x mb-3"></i></h4>
+            <h5 class="fw-bold mb-1">Auditoria Limpa!</h5>
+            <p class="mb-0 text-muted">Nenhuma reincidência pendente de tratativa no momento.</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="modal fade" id="modalVerFoto" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title"><i class="fas fa-camera"></i> Evidência de Recebimento na Base</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center bg-dark">
+                    <img id="imgEvidencia" src="" class="img-preview" alt="Evidência de Retirada">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalNotificarGerente" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-envelope"></i> Notificar Gestão</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Você está prestes a enviar um alerta para o gerente responsável pelo CR <strong id="crNotificar" class="text-danger"></strong>.</p>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">E-mail do Gerente</label>
+                        <input type="email" id="emailGerenteNotificar" class="form-control" placeholder="exemplo@empresa.com.br">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-warning fw-bold text-dark" onclick="enviarEmailNotificacao()"><i class="fas fa-paper-plane"></i> Enviar E-mail de Alerta</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalResolver" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-check-double"></i> Tratar Reincidência</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-light border">
+                        <h6 class="mb-1">CR: <strong id="crResolver"></strong></h6>
+                        <span class="text-danger fw-bold">Item que falhou: <span id="itemResolver"></span></span>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Justificativa / O que foi feito?</label>
+                        <textarea id="justificativaResolucao" class="form-control" rows="4" placeholder="Descreva exatamente como o problema foi resolvido de forma definitiva..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-success fw-bold" onclick="confirmarResolucao()"><i class="fas fa-save"></i> Concluir Auditoria</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalVoltarNC" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-undo"></i> Voltar para NCs</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-light border">
+                        <h6 class="mb-1">CR: <strong id="crVoltarNC"></strong></h6>
+                        <span class="text-danger fw-bold">Item: <span id="itemVoltarNC"></span></span>
+                    </div>
+                    <p class="small text-muted mb-3">Ao retornar este item para a aba de NCs, o status atual de auditoria será desfeito, sendo necessário criar um novo plano de ação como se fosse uma NC normal.</p>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Justificativa da devolução (Obrigatório)</label>
+                        <textarea id="justificativaVoltar" class="form-control" rows="4" placeholder="Descreva o motivo de retornar esta ocorrência para NCs..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary fw-bold" onclick="confirmarVoltarNC()"><i class="fas fa-save"></i> Confirmar Retorno</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        let idOcorrenciaAtual = null;
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // Abre modal para ver a foto de evidência em tamanho grande
+        function abrirModalFoto(url) {
+            document.getElementById('imgEvidencia').src = url;
+            new bootstrap.Modal(document.getElementById('modalVerFoto')).show();
+        }
+
+        // Prepara e abre o Modal de Email
+        function abrirModalNotificar(id, cr) {
+            idOcorrenciaAtual = id;
+            document.getElementById('crNotificar').innerText = cr;
+            document.getElementById('emailGerenteNotificar').value = '';
+            new bootstrap.Modal(document.getElementById('modalNotificarGerente')).show();
+        }
+
+        // Dispara o email por requisição POST
+        function enviarEmailNotificacao() {
+            const email = document.getElementById('emailGerenteNotificar').value;
+            if (!email) {
+                Swal.fire({ icon: 'warning', title: 'Atenção', text: 'Informe o e-mail do gerente!' });
+                return;
+            }
+
+            const csrftoken = getCookie('csrftoken') || '{{ csrf_token }}';
+
+            Swal.fire({
+                title: 'Enviando e-mail...',
+                text: 'Disparando o alerta para a gestão.',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+
+            fetch(`/api/auditoria/${idOcorrenciaAtual}/notificar/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken 
+                },
+                body: JSON.stringify({ email: email })
+            }).then(response => response.json()).then(data => {
+                if (data.success) {
+                    Swal.fire({ icon: 'success', title: 'Enviado!', text: 'O gerente foi notificado com sucesso.' });
+                    bootstrap.Modal.getInstance(document.getElementById('modalNotificarGerente')).hide();
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Erro!', text: data.message });
+                }
+            }).catch(error => {
+                Swal.fire({ icon: 'error', title: 'Erro de ligação', text: 'Falha na comunicação com o servidor.' });
+            });
+        }
+
+        // Prepara e abre o Modal de Resolução Definitiva
+        function abrirModalResolver(id, cr, item) {
+            idOcorrenciaAtual = id;
+            document.getElementById('crResolver').innerText = cr;
+            document.getElementById('itemResolver').innerText = item;
+            document.getElementById('justificativaResolucao').value = '';
+            new bootstrap.Modal(document.getElementById('modalResolver')).show();
+        }
+
+        // Resolve a ocorrência reincidente
+        function confirmarResolucao() {
+            const justificativa = document.getElementById('justificativaResolucao').value;
+            if (!justificativa) {
+                Swal.fire({ icon: 'warning', title: 'Atenção', text: 'A justificativa do que foi feito é obrigatória!' });
+                return;
+            }
+
+            const csrftoken = getCookie('csrftoken') || '{{ csrf_token }}';
+
+            Swal.fire({
+                title: 'Salvando resolução...',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+
+            fetch(`/api/auditoria/${idOcorrenciaAtual}/resolver/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken 
+                },
+                body: JSON.stringify({ justificativa: justificativa })
+            }).then(response => response.json()).then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Resolvido!',
+                        text: 'A ocorrência foi tratada e finalizada da auditoria.',
+                        confirmButtonText: 'OK'
+                    }).then(() => {
+                        location.reload(); // Recarrega para remover a ocorrência da lista
+                    });
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Erro!', text: data.message });
+                }
+            }).catch(error => {
+                Swal.fire({ icon: 'error', title: 'Erro de ligação', text: 'Falha na comunicação com o servidor.' });
+            });
+        // Prepara e abre o Modal de Voltar para NC
+        function abrirModalVoltarNC(id, cr, item) {
+            idOcorrenciaAtual = id;
+            document.getElementById('crVoltarNC').innerText = cr;
+            document.getElementById('itemVoltarNC').innerText = item;
+            document.getElementById('justificativaVoltar').value = '';
+            new bootstrap.Modal(document.getElementById('modalVoltarNC')).show();
+        }
+
+        // Dispara a requisição para voltar para NC
+        function confirmarVoltarNC() {
+            const justificativa = document.getElementById('justificativaVoltar').value;
+            if (!justificativa) {
+                Swal.fire({ icon: 'warning', title: 'Atenção', text: 'A justificativa do retorno é obrigatória!' });
+                return;
+            }
+
+            const csrftoken = getCookie('csrftoken') || '{{ csrf_token }}';
+
+            Swal.fire({
+                title: 'Retornando para NCs...',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+
+            fetch(`/api/auditoria/${idOcorrenciaAtual}/voltar-nc/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken 
+                },
+                body: JSON.stringify({ justificativa: justificativa })
+            }).then(response => response.json()).then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Retornado!',
+                        text: 'A ocorrência voltou para a aba de NCs e a auditoria foi desfeita.',
+                        confirmButtonText: 'OK'
+                    }).then(() => {
+                        location.reload(); 
+                    });
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Erro!', text: data.message });
+                }
+            }).catch(error => {
+                Swal.fire({ icon: 'error', title: 'Erro de ligação', text: 'Falha na comunicação com o servidor.' });
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,1027 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboards - Gestão à Vista{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Loading indicator */
+    .htmx-indicator {
+        opacity: 0;
+        transition: opacity 200ms ease-in;
+    }
+
+    .htmx-request .htmx-indicator {
+        opacity: 1;
+    }
+
+    .htmx-request.htmx-indicator {
+        opacity: 1;
+    }
+
+    .dashboard-title {
+        background: linear-gradient(to right, #0F172A, #1e40af);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-size: 28px;
+        font-weight: bold;
+        margin: 0;
+    }
+
+    /* Estilos para o modal de visualização */
+    #viewModal {
+        transition: all 0.3s ease-in-out;
+    }
+
+    #viewModal .h-full {
+        height: 100vh;
+    }
+
+    /* Transições suaves */
+    .sidebar {
+        transition: visibility 0.3s ease-in-out, opacity 0.3s ease-in-out;
+    }
+
+    .sidebar.hiding {
+        opacity: 0;
+        visibility: hidden;
+    }
+
+    .sidebar.showing {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    /* Estilos do cabeçalho */
+    #viewModal .border-b {
+        position: fixed;
+        top: 0;
+        right: 0;
+        left: 0;
+        background: white;
+        z-index: 50;
+        width: 100%;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Ajuste quando o menu está aberto */
+    .sidebar-expanded #viewModal .border-b {
+        left: 250px;
+        width: calc(100% - 250px);
+    }
+
+    /* Conteúdo principal */
+    #viewModal .flex-1 {
+        margin-top: 57px;
+        /* Altura do cabeçalho */
+        height: calc(100vh - 57px);
+    }
+
+    #dashboardFrame,
+    #noDashboardContent {
+        height: 100% !important;
+    }
+
+    /* Ajustes para o menu lateral */
+    @media (min-width: 768px) {
+        .sidebar-expanded #viewModal {
+            left: 250px;
+        }
+    }
+
+    /* Ajustes responsivos */
+    @media (max-width: 768px) {
+        #viewModal .border-b {
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+
+        #viewModal .flex.items-center.gap-6 {
+            gap: 0.75rem;
+        }
+    }
+
+    /* Estilos gerais da página */
+    .container {
+        max-width: 2000px;
+        margin: 0 auto;
+    }
+
+    /* Ajustes de layout para conteúdo principal */
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 1.5rem;
+    }
+
+    @media (max-width: 640px) {
+        .dashboard-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* Estilos para o modal de visualização do dashboard */
+    #viewModal {
+        min-height: 100vh;
+        min-height: -webkit-fill-available;
+    }
+
+    #viewModal .h-screen {
+        height: 100vh;
+        height: -webkit-fill-available;
+    }
+
+    #dashboardFrame {
+        min-height: 100%;
+        min-width: 100%;
+        width: 100vw;
+        height: 100vh;
+    }
+
+    /* Ajustes para dispositivos móveis */
+    @media (max-width: 768px) {
+        #viewModal .flex.items-center.space-x-8 {
+            flex-direction: column;
+            align-items: flex-start;
+            space-x: 0 !important;
+        }
+
+        #viewModal .flex.items-center.space-x-8>* {
+            margin-left: 0 !important;
+            margin-bottom: 0.5rem;
+        }
+
+        #viewModal .flex.justify-between {
+            flex-direction: column;
+            gap: 1rem;
+        }
+    }
+
+    /* Estilos para dropdown customizado de CRs */
+    .cr-dropdown {
+        position: relative;
+    }
+
+    .cr-dropdown-toggle {
+        width: 100%;
+        padding: 0.5rem 0.75rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.375rem;
+        background-color: white;
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        min-height: 42px;
+    }
+
+    .cr-dropdown-toggle:focus {
+        outline: none;
+        ring: 2px;
+        ring-color: #3b82f6;
+        border-color: #3b82f6;
+    }
+
+    .cr-dropdown-content {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 1px solid #d1d5db;
+        border-radius: 0.375rem;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        z-index: 1000;
+        max-height: 300px;
+        overflow: hidden;
+        display: none;
+    }
+
+    .cr-dropdown-content.show {
+        display: block;
+    }
+
+    .cr-dropdown-search {
+        width: 100%;
+        padding: 0.5rem 0.75rem;
+        border: none;
+        border-bottom: 1px solid #e5e7eb;
+        outline: none;
+        font-size: 0.875rem;
+    }
+
+    .cr-dropdown-search:focus {
+        border-bottom-color: #3b82f6;
+    }
+
+    .cr-dropdown-options {
+        max-height: 200px;
+        overflow-y: auto;
+    }
+
+    .cr-dropdown-option {
+        padding: 0.5rem 0.75rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.875rem;
+        border-bottom: 1px solid #f3f4f6;
+    }
+
+    .cr-dropdown-option:hover {
+        background-color: #f9fafb;
+    }
+
+    .cr-dropdown-option:last-child {
+        border-bottom: none;
+    }
+
+    .cr-dropdown-option input[type="checkbox"] {
+        margin: 0;
+        width: 1rem;
+        height: 1rem;
+    }
+
+    .cr-dropdown-selected-count {
+        font-size: 0.875rem;
+        color: #6b7280;
+    }
+
+    .cr-dropdown-arrow {
+        transition: transform 0.2s;
+        color: #6b7280;
+    }
+
+    .cr-dropdown-arrow.rotated {
+        transform: rotate(180deg);
+    }
+
+    .cr-dropdown-no-results {
+        padding: 1rem;
+        text-align: center;
+        color: #6b7280;
+        font-size: 0.875rem;
+    }
+</style>
+<script src="https://unpkg.com/htmx.org@1.9.10"
+    integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC"
+    crossorigin="anonymous"></script>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6 max-w-[2000px] mx-auto px-4 py-6">
+    <!-- Mensagens de Feedback -->
+    {% if messages %}
+    <div class="space-y-2">
+        {% for message in messages %}
+        <div
+            class="p-4 rounded-lg {% if message.tags == 'success' %}bg-green-50 text-green-800 border border-green-200{% else %}bg-red-50 text-red-800 border border-red-200{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Cabeçalho -->
+    <div class="flex items-center justify-between mb-6">
+        <div class="flex-1">
+            <div class="flex items-center gap-3">
+                <svg class="h-8 w-8 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                <div>
+                    <h1 class="dashboard-title">Dashboards</h1>
+                    <p class="text-slate-600 mt-1">
+                        Gerencie e visualize dashboards do Power BI
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex-shrink-0 ml-4">
+            <button type="button" data-action="open-add-modal"
+                class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition-colors"
+                style="background-color: #0F172A;">
+                <svg class="h-4 w-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                <span>Adicionar Dashboard</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="bg-white rounded-lg border shadow-sm">
+        <div class="p-4 border-b">
+            <h2 class="text-lg font-semibold">Filtros</h2>
+        </div>
+        <div class="p-4">
+            <div class="p-4">
+                <div class="relative max-w-md">
+                    <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" fill="none"
+                        stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <input type="text" name="search" value="{{ search_term }}"
+                        placeholder="Buscar por nome ou cliente..."
+                        class="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        hx-get="{% url 'gestao_a_vista:dashboard' %}" hx-trigger="keyup changed delay:500ms, search"
+                        hx-target="#dashboard-list-container" hx-indicator="#search-indicator">
+                    <div id="search-indicator"
+                        class="htmx-indicator absolute right-3 top-1/2 transform -translate-y-1/2">
+                        <svg class="animate-spin h-4 w-4 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none"
+                            viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                            </circle>
+                            <path class="opacity-75" fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                            </path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de Dashboards -->
+    <div class="bg-white rounded-lg border shadow-sm">
+        <div class="p-4 border-b">
+            <h2 class="text-lg font-semibold">
+                Dashboards Disponíveis ({{ dashboards|length }})
+            </h2>
+        </div>
+        <div class="p-4">
+            <div class="p-4" id="dashboard-list-container">
+                {% include "dashboard_list_partial.html" %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Adicionar Dashboard -->
+    <div id="addModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div class="p-4 border-b">
+                <h2 class="text-lg font-semibold">Adicionar Novo Dashboard</h2>
+            </div>
+            <form method="post" class="p-4 space-y-4" hx-post="{% url 'gestao_a_vista:dashboard' %}"
+                hx-target="#dashboard-list-container" hx-swap="innerHTML" hx-indicator="#add-indicator"
+                hx-on::after-request="if(event.detail.successful) { closeAddModal(); this.reset(); clearCrDropdown('addCrDropdown'); }">
+                {% csrf_token %}
+                <div id="add-indicator" class="htmx-indicator flex justify-center mb-2">
+                    <svg class="animate-spin h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none"
+                        viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                        </circle>
+                        <path class="opacity-75" fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                        </path>
+                    </svg>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nome do Dashboard</label>
+                    <input type="text" name="nome" required placeholder="Digite o nome do dashboard"
+                        class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Cliente</label>
+                    <input type="text" name="cliente" required placeholder="Nome do cliente"
+                        class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">CRs (opcional)</label>
+                    <div class="cr-dropdown" id="addCrDropdown">
+                        <div class="cr-dropdown-toggle" onclick="toggleCrDropdown('addCrDropdown')">
+                            <div>
+                                <span class="cr-dropdown-selected-count">Nenhum CR selecionado</span>
+                            </div>
+                            <svg class="cr-dropdown-arrow w-4 h-4" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </div>
+                        <div class="cr-dropdown-content">
+                            <input type="text" class="cr-dropdown-search" placeholder="Pesquisar CRs..."
+                                onkeyup="filterCrOptions('addCrDropdown', this.value)">
+                            <div class="cr-dropdown-options">
+                                {% for cr in crs_disponiveis %}
+                                <div class="cr-dropdown-option"
+                                    onclick="toggleCrSelection('addCrDropdown', '{{ cr.id }}', '{{ cr.descricao }}')">
+                                    <input type="checkbox" name="crs" value="{{ cr.id }}" id="add_cr_{{ cr.id }}">
+                                    <label for="add_cr_{{ cr.id }}">{{ cr.descricao }}</label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Serviço</label>
+                    <select name="servico" required
+                        class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Selecione o serviço</option>
+                        <option value="Segurança">Segurança</option>
+                        <option value="Estoque">Estoque</option>
+                        <option value="Manutenção">Manutenção</option>
+                        <option value="Acompanhamento">Acompanhamento</option>
+                        <option value="Visitas">Visitas</option>
+                        <option value="Facilities">Facilities</option>
+                        <option value="Indicadores">Indicadores</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">URL do Power BI (opcional)</label>
+                    <input type="url" name="powerbi_url" placeholder="https://app.powerbi.com/..."
+                        class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="flex justify-end gap-3 mt-6">
+                    <button type="button" data-action="close-add-modal"
+                        class="px-4 py-2 border rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+                        Cancelar
+                    </button>
+                    <button type="submit"
+                        class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500"
+                        style="background-color: #0F172A;">
+                        Adicionar Dashboard
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Editar Dashboard -->
+    <div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div class="p-4 border-b">
+                <h2 class="text-lg font-semibold">Editar Dashboard</h2>
+            </div>
+            <form method="post" class="p-4 space-y-4" hx-post="{% url 'gestao_a_vista:dashboard' %}"
+                hx-target="#dashboard-list-container" hx-swap="innerHTML" hx-indicator="#edit-indicator"
+                hx-on::after-request="if(event.detail.successful) closeEditModal()">
+                {% csrf_token %}
+                <div id="edit-indicator" class="htmx-indicator flex justify-center mb-2">
+                    <svg class="animate-spin h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none"
+                        viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                        </circle>
+                        <path class="opacity-75" fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                        </path>
+                    </svg>
+                </div>
+                <input type="hidden" name="action" value="update">
+                <input type="hidden" name="dashboard_id" id="editDashboardId">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nome do Dashboard</label>
+                    <input type="text" name="nome" id="editNome" required placeholder="Digite o nome do dashboard"
+                        class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Cliente</label>
+                    <input type="text" name="cliente" id="editCliente" required placeholder="Nome do cliente"
+                        class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">CRs (opcional)</label>
+                    <div class="cr-dropdown" id="editCrDropdown">
+                        <div class="cr-dropdown-toggle" onclick="toggleCrDropdown('editCrDropdown')">
+                            <div>
+                                <span class="cr-dropdown-selected-count">Nenhum CR selecionado</span>
+                            </div>
+                            <svg class="cr-dropdown-arrow w-4 h-4" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </div>
+                        <div class="cr-dropdown-content">
+                            <input type="text" class="cr-dropdown-search" placeholder="Pesquisar CRs..."
+                                onkeyup="filterCrOptions('editCrDropdown', this.value)">
+                            <div class="cr-dropdown-options">
+                                {% for cr in crs_disponiveis %}
+                                <div class="cr-dropdown-option"
+                                    onclick="toggleCrSelection('editCrDropdown', '{{ cr.id }}', '{{ cr.descricao }}')">
+                                    <input type="checkbox" name="crs" value="{{ cr.id }}" id="edit_cr_{{ cr.id }}">
+                                    <label for="edit_cr_{{ cr.id }}">{{ cr.descricao }}</label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Serviço</label>
+                    <select name="servico" id="editServico" required
+                        class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Selecione o serviço</option>
+                        <option value="Seguranca">Segurança</option>
+                        <option value="Estoque">Estoque</option>
+                        <option value="Manutenção">Manutenção</option>
+                        <option value="Acompanhamento">Acompanhamento</option>
+                        <option value="Visitas">Visitas</option>
+                        <option value="Facilities">Facilities</option>
+                        <option value="Indicadores">Indicadores</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">URL do Power BI (opcional)</label>
+                    <input type="url" name="powerbi_url" id="editPowerbiUrl" placeholder="https://app.powerbi.com/..."
+                        class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="flex justify-end gap-3 mt-6">
+                    <button type="button" data-action="close-edit-modal"
+                        class="px-4 py-2 border rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+                        Cancelar
+                    </button>
+                    <button type="submit"
+                        class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500"
+                        style="background-color: #0F172A;">
+                        Atualizar Dashboard
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Excluir Dashboard -->
+    <div id="deleteModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div class="p-4 border-b">
+                <h2 class="text-lg font-semibold">Excluir Dashboard</h2>
+            </div>
+            <div class="p-4">
+                <p class="text-gray-600 mb-4">Tem certeza que deseja excluir o dashboard "<span id="deleteDashboardName"
+                        class="font-semibold"></span>"?</p>
+                <p class="text-sm text-red-600 mb-6">Esta ação não pode ser desfeita.</p>
+                <form method="post" class="flex justify-end gap-3" hx-post="{% url 'gestao_a_vista:dashboard' %}"
+                    hx-target="#dashboard-list-container" hx-swap="innerHTML" hx-indicator="#delete-indicator"
+                    hx-on::after-request="if(event.detail.successful) { document.getElementById('deleteModal').classList.add('hidden'); }">
+                    {% csrf_token %}
+                    <div id="delete-indicator" class="htmx-indicator absolute right-40">
+                        <svg class="animate-spin h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none"
+                            viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                            </circle>
+                            <path class="opacity-75" fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                            </path>
+                        </svg>
+                    </div>
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="dashboard_id" id="deleteDashboardId">
+                    <button type="button" data-action="close-delete-modal"
+                        class="px-4 py-2 border rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+                        Cancelar
+                    </button>
+                    <button type="submit"
+                        class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                        Excluir Dashboard
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Visualizar Dashboard -->
+    <div id="viewModal" class="fixed bg-white z-50 hidden" x-data="{ sidebarOpen: false }"
+        :class="{ 'left-0 right-0 top-0 bottom-0': !sidebarOpen, 'left-[250px] right-0 top-0 bottom-0': sidebarOpen }">
+        <div class="h-full flex flex-col">
+            <!-- Cabeçalho -->
+            <div class="bg-white border-b px-4 py-3 flex justify-between items-center flex-shrink-0 sticky top-0 z-10">
+                <div class="flex items-center gap-6 overflow-hidden">
+                    <button type="button" data-action="close-view-modal"
+                        class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-gray-700 hover:text-gray-900 flex-shrink-0 bg-white">
+                        <svg class="h-5 w-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                        </svg>
+                        Voltar à Lista
+                    </button>
+                    <div class="flex flex-col min-w-0 overflow-hidden">
+                        <h1 id="dashboardName" class="text-xl font-semibold text-gray-900 truncate"></h1>
+                        <div class="flex items-center text-sm text-gray-500 gap-2 overflow-hidden">
+                            <span id="dashboardClient" class="truncate"></span>
+                            <span class="flex-shrink-0">-</span>
+                            <span id="dashboardService" class="truncate"></span>
+                        </div>
+                    </div>
+                </div>
+                <a id="powerbiLink" href="#" target="_blank"
+                    class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-gray-700 hover:text-gray-900 flex-shrink-0 bg-white ml-4">
+                    <svg class="h-5 w-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                    Abrir no Power BI
+                </a>
+            </div>
+
+            <!-- Conteúdo do Dashboard -->
+            <div class="flex-1 bg-gray-50 relative">
+                <iframe id="dashboardFrame" class="w-full h-full absolute inset-0" frameborder="0"
+                    allowfullscreen="true" style="display: none;">
+                </iframe>
+                <div id="noDashboardContent"
+                    class="absolute inset-0 flex flex-col items-center justify-center text-gray-500">
+                    <p class="text-lg mb-2">Esse conteúdo não está disponível.</p>
+                    <a href="https://powerbi.microsoft.com/" target="_blank" class="text-blue-600 hover:underline">
+                        Saiba mais sobre o Power BI.
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script type="text/javascript">
+    window.dashboardsData = JSON.parse('{{ dashboards_json|escapejs }}');
+</script>
+<script type="text/javascript">
+    // Dashboards data
+    const dashboards = window.dashboardsData || [];
+
+    // Funções para o dropdown customizado de CRs
+    function toggleCrDropdown(dropdownId) {
+        const dropdown = document.getElementById(dropdownId);
+        const content = dropdown.querySelector('.cr-dropdown-content');
+        const arrow = dropdown.querySelector('.cr-dropdown-arrow');
+
+        if (content.classList.contains('show')) {
+            content.classList.remove('show');
+            arrow.classList.remove('rotated');
+        } else {
+            // Fechar outros dropdowns
+            document.querySelectorAll('.cr-dropdown-content.show').forEach(otherContent => {
+                otherContent.classList.remove('show');
+                otherContent.parentElement.querySelector('.cr-dropdown-arrow').classList.remove('rotated');
+            });
+
+            content.classList.add('show');
+            arrow.classList.add('rotated');
+
+            // Focar no campo de pesquisa
+            setTimeout(() => {
+                const searchInput = content.querySelector('.cr-dropdown-search');
+                if (searchInput) searchInput.focus();
+            }, 100);
+        }
+    }
+
+    function toggleCrSelection(dropdownId, crId, crText) {
+        const dropdown = document.getElementById(dropdownId);
+        const checkbox = dropdown.querySelector(`input[value="${crId}"]`);
+
+        // Toggle checkbox
+        checkbox.checked = !checkbox.checked;
+
+        // Atualizar contador
+        updateCrSelectedCount(dropdownId);
+
+        // Parar propagação para não fechar o dropdown
+        event.stopPropagation();
+    }
+
+    function updateCrSelectedCount(dropdownId) {
+        const dropdown = document.getElementById(dropdownId);
+        const checkboxes = dropdown.querySelectorAll('input[type="checkbox"]:checked');
+        const countSpan = dropdown.querySelector('.cr-dropdown-selected-count');
+
+        if (checkboxes.length === 0) {
+            countSpan.textContent = 'Nenhum CR selecionado';
+        } else if (checkboxes.length === 1) {
+            countSpan.textContent = '1 CR selecionado';
+        } else {
+            countSpan.textContent = `${checkboxes.length} CRs selecionados`;
+        }
+    }
+
+    function filterCrOptions(dropdownId, searchTerm) {
+        const dropdown = document.getElementById(dropdownId);
+        const options = dropdown.querySelectorAll('.cr-dropdown-option');
+        const searchLower = searchTerm.toLowerCase();
+        let visibleCount = 0;
+
+        options.forEach(option => {
+            const label = option.querySelector('label').textContent.toLowerCase();
+            if (label.includes(searchLower)) {
+                option.style.display = 'flex';
+                visibleCount++;
+            } else {
+                option.style.display = 'none';
+            }
+        });
+
+        // Mostrar mensagem se não houver resultados
+        let noResultsDiv = dropdown.querySelector('.cr-dropdown-no-results');
+        if (visibleCount === 0) {
+            if (!noResultsDiv) {
+                noResultsDiv = document.createElement('div');
+                noResultsDiv.className = 'cr-dropdown-no-results';
+                noResultsDiv.textContent = 'Nenhum CR encontrado';
+                dropdown.querySelector('.cr-dropdown-options').appendChild(noResultsDiv);
+            }
+            noResultsDiv.style.display = 'block';
+        } else if (noResultsDiv) {
+            noResultsDiv.style.display = 'none';
+        }
+    }
+
+    function clearCrDropdown(dropdownId) {
+        const dropdown = document.getElementById(dropdownId);
+        const checkboxes = dropdown.querySelectorAll('input[type="checkbox"]');
+        const searchInput = dropdown.querySelector('.cr-dropdown-search');
+
+        checkboxes.forEach(checkbox => checkbox.checked = false);
+        if (searchInput) searchInput.value = '';
+
+        // Mostrar todas as opções
+        const options = dropdown.querySelectorAll('.cr-dropdown-option');
+        options.forEach(option => option.style.display = 'flex');
+
+        // Esconder mensagem de "não encontrado"
+        const noResultsDiv = dropdown.querySelector('.cr-dropdown-no-results');
+        if (noResultsDiv) noResultsDiv.style.display = 'none';
+
+        updateCrSelectedCount(dropdownId);
+    }
+
+    function setCrDropdownValues(dropdownId, selectedIds) {
+        const dropdown = document.getElementById(dropdownId);
+        const checkboxes = dropdown.querySelectorAll('input[type="checkbox"]');
+
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = selectedIds.includes(checkbox.value);
+        });
+
+        updateCrSelectedCount(dropdownId);
+    }
+
+    // Fechar dropdown quando clicar fora
+    document.addEventListener('click', function (event) {
+        if (!event.target.closest('.cr-dropdown')) {
+            document.querySelectorAll('.cr-dropdown-content.show').forEach(content => {
+                content.classList.remove('show');
+                content.parentElement.querySelector('.cr-dropdown-arrow').classList.remove('rotated');
+            });
+        }
+    });
+
+    function openAddModal() {
+        clearCrDropdown('addCrDropdown');
+        document.getElementById('addModal').classList.remove('hidden');
+    }
+
+    function closeAddModal() {
+        document.getElementById('addModal').classList.add('hidden');
+        // Fechar dropdown se estiver aberto
+        const content = document.querySelector('#addCrDropdown .cr-dropdown-content');
+        if (content) {
+            content.classList.remove('show');
+            document.querySelector('#addCrDropdown .cr-dropdown-arrow').classList.remove('rotated');
+        }
+    }
+
+    function openEditModal(dashboardId) {
+        const dashboard = dashboards.find(d => d.id === dashboardId);
+        if (!dashboard) return;
+
+        // Preencher campos do formulário
+        document.getElementById('editDashboardId').value = dashboard.id;
+        document.getElementById('editNome').value = dashboard.nome || '';
+        document.getElementById('editCliente').value = dashboard.cliente || '';
+        document.getElementById('editServico').value = dashboard.servico || '';
+        document.getElementById('editPowerbiUrl').value = dashboard.powerbi_url || '';
+
+        // Selecionar CRs no dropdown customizado
+        setCrDropdownValues('editCrDropdown', dashboard.cr_ids || []);
+
+        document.getElementById('editModal').classList.remove('hidden');
+    }
+
+    function closeEditModal() {
+        document.getElementById('editModal').classList.add('hidden');
+        // Fechar dropdown se estiver aberto
+        const content = document.querySelector('#editCrDropdown .cr-dropdown-content');
+        if (content) {
+            content.classList.remove('show');
+            document.querySelector('#editCrDropdown .cr-dropdown-arrow').classList.remove('rotated');
+        }
+    }
+
+    function openDeleteModal(dashboardId) {
+        const dashboard = dashboards.find(d => d.id === dashboardId);
+        if (!dashboard) return;
+
+        document.getElementById('deleteDashboardId').value = dashboard.id;
+        document.getElementById('deleteDashboardName').textContent = dashboard.nome || '';
+        document.getElementById('deleteModal').classList.remove('hidden');
+    }
+
+    function closeDeleteModal() {
+        document.getElementById('deleteModal').classList.add('hidden');
+    }
+
+    function openViewModal(dashboardId) {
+        const dashboard = dashboards.find(d => d.id === dashboardId);
+        if (!dashboard) return;
+
+        // Update modal content
+        document.getElementById('dashboardName').textContent = dashboard.nome || '';
+        document.getElementById('dashboardClient').textContent = dashboard.cliente || '';
+        document.getElementById('dashboardService').textContent = dashboard.servico || '';
+
+        const powerbiLink = document.getElementById('powerbiLink');
+        const dashboardFrame = document.getElementById('dashboardFrame');
+        const noDashboardContent = document.getElementById('noDashboardContent');
+        const viewModal = document.getElementById('viewModal');
+        const header = viewModal.querySelector('.border-b');
+        const sidebar = document.querySelector('.sidebar');
+
+        // Guardar estado atual do menu
+        window._previousSidebarState = {
+            display: sidebar.style.display,
+            visibility: sidebar.style.visibility,
+            classes: [...sidebar.classList]
+        };
+
+        // Ocultar o menu lateral com transição
+        sidebar.classList.add('hiding');
+        setTimeout(() => {
+            sidebar.style.display = 'none';
+        }, 300);
+
+        // Ajustar posição do cabeçalho (agora sem considerar o menu)
+        header.style.left = '0';
+        header.style.width = '100%';
+
+        // Mostrar o modal em tela cheia
+        viewModal.classList.remove('hidden');
+
+        // Pequeno delay para garantir que o modal está visível e posicionado corretamente
+        setTimeout(() => {
+            if (dashboard.powerbi_url && dashboard.powerbi_url.trim() !== '') {
+                powerbiLink.href = dashboard.powerbi_url;
+                dashboardFrame.src = dashboard.powerbi_url;
+                dashboardFrame.style.display = 'block';
+                noDashboardContent.style.display = 'none';
+            } else {
+                powerbiLink.href = '#';
+                dashboardFrame.style.display = 'none';
+                noDashboardContent.style.display = 'flex';
+            }
+        }, 100);
+
+        // Adicionar listener para mudanças no menu
+        if (window._menuObserver) {
+            window._menuObserver.disconnect();
+        }
+
+        window._menuObserver = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.target.classList.contains('sidebar-expanded')) {
+                    header.style.left = '250px';
+                    header.style.width = 'calc(100% - 250px)';
+                } else {
+                    header.style.left = '0';
+                    header.style.width = '100%';
+                }
+            });
+        });
+
+        window._menuObserver.observe(document.body, {
+            attributes: true,
+            attributeFilter: ['class']
+        });
+    }
+
+    function closeViewModal() {
+        const viewModal = document.getElementById('viewModal');
+        const dashboardFrame = document.getElementById('dashboardFrame');
+        const noDashboardContent = document.getElementById('noDashboardContent');
+        const header = viewModal.querySelector('.border-b');
+        const sidebar = document.querySelector('.sidebar');
+
+        // Esconder o iframe e mostrar mensagem padrão
+        dashboardFrame.style.display = 'none';
+        noDashboardContent.style.display = 'flex';
+
+        // Limpar src do iframe para liberar recursos
+        dashboardFrame.src = '';
+
+        // Resetar estilos de posicionamento
+        header.style.left = '';
+        header.style.width = '';
+
+        // Restaurar estado anterior do menu com transição
+        if (window._previousSidebarState) {
+            // Primeiro restaurar o display
+            sidebar.style.display = window._previousSidebarState.display || '';
+
+            // Restaurar classes originais
+            sidebar.classList.remove(...sidebar.classList);
+            window._previousSidebarState.classes.forEach(cls => {
+                sidebar.classList.add(cls);
+            });
+
+            // Remover classe de ocultação e adicionar classe de exibição
+            sidebar.classList.remove('hiding');
+            sidebar.classList.add('showing');
+
+            // Após a transição, remover a classe de exibição
+            setTimeout(() => {
+                sidebar.classList.remove('showing');
+            }, 300);
+
+            delete window._previousSidebarState;
+        }
+
+        // Desconectar o observer
+        if (window._menuObserver) {
+            window._menuObserver.disconnect();
+            delete window._menuObserver;
+        }
+
+        // Esconder o modal
+        viewModal.classList.add('hidden');
+    }
+
+    // Close modals when clicking outside
+    document.addEventListener('click', function (event) {
+        const addModal = document.getElementById('addModal');
+        const editModal = document.getElementById('editModal');
+        const deleteModal = document.getElementById('deleteModal');
+        const viewModal = document.getElementById('viewModal');
+
+        if (event.target === addModal) {
+            closeAddModal();
+        }
+        if (event.target === editModal) {
+            closeEditModal();
+        }
+        if (event.target === deleteModal) {
+            closeDeleteModal();
+        }
+        if (event.target === viewModal) {
+            closeViewModal();
+        }
+    });
+
+    // Close modals with Escape key
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') {
+            closeAddModal();
+            closeEditModal();
+            closeDeleteModal();
+            closeViewModal();
+        }
+    });
+
+    // Event listeners para botões de dashboard
+    document.addEventListener('click', function (event) {
+        const target = event.target.closest('button[data-action]');
+        if (target) {
+            const action = target.getAttribute('data-action');
+            const dashboardId = target.getAttribute('data-dashboard-id');
+
+            switch (action) {
+                case 'view':
+                    openViewModal(dashboardId);
+                    break;
+                case 'edit':
+                    openEditModal(dashboardId);
+                    break;
+                case 'delete':
+                    openDeleteModal(dashboardId);
+                    break;
+            }
+        }
+
+        // Event listeners para outros botões
+        if (event.target.closest('[data-action="open-add-modal"]')) {
+            openAddModal();
+        }
+
+        if (event.target.closest('[data-action="close-add-modal"]')) {
+            closeAddModal();
+        }
+
+        if (event.target.closest('[data-action="close-edit-modal"]')) {
+            closeEditModal();
+        }
+
+        if (event.target.closest('[data-action="close-delete-modal"]')) {
+            closeDeleteModal();
+        }
+
+        if (event.target.closest('[data-action="close-view-modal"]')) {
+            closeViewModal();
+        }
+    });
+</script>
+{% endblock %}

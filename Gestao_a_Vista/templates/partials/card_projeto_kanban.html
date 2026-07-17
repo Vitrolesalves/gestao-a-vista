@@ -1,0 +1,63 @@
+<div class="kanban-card priority-{{ projeto.prioridade }}" 
+     data-project-id="{{ projeto.id }}" 
+     onclick="editarProjeto('{{ projeto.id }}')"
+     style="cursor: pointer; position: relative;">
+    
+    <div class="card-tags">
+        {% if projeto.tipo_servico %}
+        <span class="tag tag-service">{{ projeto.tipo_servico.nome }}</span>
+        {% endif %}
+        
+        {% if projeto.prioridade == 'Alto' %}
+            <span class="tag tag-priority-alto">ALTA</span>
+        {% elif projeto.prioridade == 'Médio' %}
+            <span class="tag tag-priority-medio">MÉDIA</span>
+        {% else %}
+            <span class="tag tag-priority-baixo">BAIXA</span>
+        {% endif %}
+    </div>
+
+    <div class="d-flex justify-content-between align-items-start mt-2">
+        <div class="card-title mb-1 text-truncate" style="max-width: 90%;">
+            {{ projeto.nome }}
+        </div>
+        <div class="card-actions">
+            <button onclick="event.stopPropagation(); excluirProjeto('{{ projeto.id }}')" 
+                    class="btn-card-action text-danger" 
+                    title="Excluir">
+                <i class="fas fa-trash-alt"></i>
+            </button>
+        </div>
+    </div>
+
+    {% if projeto.observacao %}
+    <div class="text-muted small mb-2 text-truncate">
+        {{ projeto.observacao }}
+    </div>
+    {% endif %}
+
+    <div class="card-footer d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
+        
+        <div class="card-date small text-muted {% if projeto.atrasado %}text-danger fw-bold{% endif %}">
+            <i class="far fa-calendar-alt me-1"></i>
+            {{ projeto.data_conclusao|date:"d/m" }}
+        </div>
+        
+        <div class="d-flex align-items-center">
+            {% for pr in projeto.projeto_responsaveis.all %}
+                <span class="badge rounded-pill bg-secondary ms-1" 
+                      title="{{ pr.responsavel.name }}"
+                      style="font-size: 0.65rem; padding: 0.25em 0.6em;">
+                    <i class="fas fa-user me-1"></i>
+                    {% if pr.responsavel.first_name %}
+                        {{ pr.responsavel.first_name }}
+                    {% else %}
+                        {{ pr.responsavel.username|slice:":5" }}
+                    {% endif %}
+                </span>
+            {% empty %}
+                <span class="text-muted small" style="font-size: 0.7rem;">Sem resp.</span>
+            {% endfor %}
+        </div>
+    </div>
+</div>

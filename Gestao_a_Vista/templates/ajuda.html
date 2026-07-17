@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+
+{% block title %}Ajuda — Tour pelo sistema{% endblock %}
+{% block page_title %}Ajuda{% endblock %}
+
+{% block extra_css %}
+<style>
+    .ajuda-title {
+        background: linear-gradient(to right, #0F172A, #1e40af);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-size: 26px;
+        font-weight: bold;
+        margin: 0;
+        text-transform: uppercase;
+    }
+    .ajuda-card { border: none; border-radius: 14px; box-shadow: var(--shadow-md); overflow: hidden; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+
+    <div class="d-flex align-items-center gap-2 mb-3">
+        <i class="fas fa-question-circle fs-3 text-primary"></i>
+        <div>
+            <h1 class="ajuda-title mb-0">Ajuda — Tour pelo sistema</h1>
+            <p class="text-muted mb-0 small">
+                O mesmo tour do primeiro acesso, sempre disponível aqui. Navegue pelos slides ou clique
+                direto num item do menu em miniatura.
+            </p>
+        </div>
+    </div>
+
+    <div class="card ajuda-card">
+        {% include 'partials/tutorial_slides.html' %}
+    </div>
+
+</div>
+{% endblock %}

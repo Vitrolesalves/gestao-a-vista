@@ -1,0 +1,91 @@
+<div class="section-title">Dados da demanda</div>
+<div class="row g-3 mb-3">
+    <div class="col-md-6"><label class="form-label small">Título da demanda / projeto</label><input type="text" class="form-control" name="nome" required placeholder="Ex: Implantação do painel na Unidade X"></div>
+    <div class="col-md-3"><label class="form-label small">Categoria</label><select class="form-select" name="tipo_servico" required>{% for tipo in tipos_servico %}<option value="{{ tipo.id }}">{{ tipo.nome }}</option>{% endfor %}</select></div>
+    <div class="col-md-3"><label class="form-label small">Etapa do Pipeline</label><select class="form-select" name="etapa">{% for stage in pipeline_stages %}<option value="{{ stage.id }}">{{ stage.nome }}</option>{% endfor %}</select></div>
+
+    <div class="col-md-3"><label class="form-label small">Tipo da demanda</label><select class="form-select" name="tipo_demanda">{% for value,label in tipo_demanda_choices %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select></div>
+    <div class="col-md-3"><label class="form-label small">Prioridade</label><select class="form-select" name="prioridade"><option value="Crítica">Crítica</option><option value="Alto">Alto</option><option value="Médio" selected>Médio</option><option value="Baixo">Baixo</option></select></div>
+    <div class="col-md-3"><label class="form-label small">Impacto</label><select class="form-select" name="impacto">{% for value,label in impacto_choices %}<option value="{{ value }}" {% if value == 'Médio' %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+    <div class="col-md-3"><label class="form-label small">Progresso (%)</label><input type="number" class="form-control" name="percentual_progresso" min="0" max="100" value="0"></div>
+
+    <div class="col-md-4"><label class="form-label small">Cliente / Unidade</label><input type="text" class="form-control" name="cliente" placeholder="Cliente, contrato ou unidade"></div>
+    <div class="col-md-4"><label class="form-label small">Solicitante</label><input type="text" class="form-control" name="solicitante" placeholder="Quem abriu a demanda"></div>
+    <div class="col-md-4"><label class="form-label small">Contato</label><input type="text" class="form-control" name="contato" placeholder="Pessoa de contato"></div>
+    <div class="col-md-3"><label class="form-label small">Telefone</label><input type="text" class="form-control" name="telefone"></div>
+    <div class="col-md-3"><label class="form-label small">E-mail</label><input type="email" class="form-control" name="email"></div>
+    <div class="col-md-3"><label class="form-label small">SLA</label><input type="text" class="form-control" name="sla" placeholder="Ex: 24h, 3 dias úteis"></div>
+    <div class="col-md-3"><label class="form-label small">Origem / Canal</label><input type="text" class="form-control" name="origem_lead" placeholder="Chamado, reunião, WhatsApp..."></div>
+
+    <div class="col-md-3"><label class="form-label small">Início</label><input type="date" class="form-control" name="data_inicial" required></div>
+    <div class="col-md-3"><label class="form-label small">Prazo / Entrega prevista</label><input type="date" class="form-control" name="data_conclusao" required></div>
+    <div class="col-md-3"><label class="form-label small">Valor / esforço estimado (R$)</label><input type="text" class="form-control" name="valor_estimado" placeholder="0,00"></div>
+    <div class="col-md-3"><label class="form-label small">Probabilidade / confiança (%)</label><input type="number" class="form-control" name="probabilidade" min="0" max="100" value="0"></div>
+    <div class="col-md-6"><label class="form-label small">Próxima ação</label><input type="text" class="form-control" name="proxima_acao" placeholder="Ex: Validar acesso com o cliente"></div>
+    <div class="col-md-3"><label class="form-label small">Responsável técnico</label><input type="text" class="form-control" name="responsavel_tecnico"></div>
+    <div class="col-md-3"><label class="form-label small">Validador / aprovador</label><input type="text" class="form-control" name="validador"></div>
+</div>
+
+<div class="section-title">CRM profissional: 360º, operacional e colaborativo</div>
+<div class="alert alert-primary py-2 small mb-3">Use esta seção para transformar o card em um registro de relacionamento: visão completa do cliente, automação do fluxo operacional e colaboração entre departamentos.</div>
+<div class="row g-3 mb-3">
+    <div class="col-md-4"><label class="form-label small">Tipo de CRM predominante</label><select class="form-select" name="crm_tipo">{% for value,label in crm_tipo_choices %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select></div>
+    <div class="col-md-4"><label class="form-label small">Saúde do relacionamento</label><input type="text" class="form-control" name="saude_relacionamento" placeholder="Ex: Saudável, Atenção, Crítico"></div>
+    <div class="col-md-4"><label class="form-label small">Canal de relacionamento</label><select class="form-select" name="canal_relacionamento">{% for value,label in canal_relacionamento_choices %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select></div>
+    <div class="col-md-6"><label class="form-label small">Visão 360º do cliente/demanda</label><textarea class="form-control" name="visao_360" rows="3" placeholder="Contexto do cliente, histórico, dores, valor, riscos e oportunidades."></textarea></div>
+    <div class="col-md-6"><label class="form-label small">Resumo colaborativo</label><textarea class="form-control" name="resumo_colaborativo" rows="3" placeholder="O que todas as áreas precisam saber para atuar alinhadas?"></textarea></div>
+    <div class="col-md-3"><label class="form-label small">Última interação</label><input type="date" class="form-control" name="ultima_interacao"></div>
+    <div class="col-md-3"><label class="form-label small">Próxima interação</label><input type="date" class="form-control" name="proxima_interacao"></div>
+    <div class="col-md-3"><label class="form-label small">Departamentos envolvidos</label><input type="text" class="form-control" name="departamentos_envolvidos" placeholder="TI, Operações, Comercial..."></div>
+    <div class="col-md-3"><label class="form-label small">Stakeholders e papéis</label><textarea class="form-control" name="stakeholders" rows="1" placeholder="Decisor, solicitante, aprovador..."></textarea></div>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-md-6"><label class="form-label small">Responsáveis</label><div id="{% if mode == 'edit' %}edit-{% endif %}responsaveis-container" class="d-flex flex-column gap-2"></div><button type="button" class="btn btn-sm btn-outline-secondary mt-2" onclick="{% if mode == 'edit' %}addResponsavelEdit(){% else %}addResponsavel(){% endif %}"><i class="fas fa-plus"></i> Adicionar</button></div>
+    <div class="col-md-6"><label class="form-label small">Observações / contexto</label><textarea class="form-control" name="observacao" rows="5" placeholder="Contexto, riscos, pendências, histórico e observações gerais..."></textarea></div>
+</div>
+
+<div class="section-title">Informações por etapa do Kanban</div>
+<div class="alert alert-info py-2 small mb-3">Preencha principalmente os campos da etapa atual. Ex.: em <b>Triagem</b>, detalhe diagnóstico e priorização; em <b>Planejamento 5W2H</b>, detalhe entregáveis, riscos e dependências.</div>
+<div class="row g-3 mb-3">
+    <div class="col-md-6"><label class="form-label small">Triagem - diagnóstico</label><textarea class="form-control" name="triagem_diagnostico" rows="2" placeholder="O que foi entendido na análise inicial? Escopo, impacto e urgência."></textarea></div>
+    <div class="col-md-6"><label class="form-label small">Triagem - priorização / impacto</label><textarea class="form-control" name="triagem_priorizacao" rows="2" placeholder="Critério usado para priorizar, impacto operacional, SLA ou risco."></textarea></div>
+    <div class="col-md-6"><label class="form-label small">Planejamento - entregáveis</label><textarea class="form-control" name="planejamento_entregaveis" rows="2" placeholder="Quais entregáveis, etapas e responsáveis foram definidos?"></textarea></div>
+    <div class="col-md-6"><label class="form-label small">Planejamento - riscos / dependências</label><textarea class="form-control" name="planejamento_riscos" rows="2" placeholder="Acessos, aprovações, fornecedor, cliente, ambiente, bloqueios."></textarea></div>
+    <div class="col-md-6"><label class="form-label small">Execução - andamento</label><textarea class="form-control" name="execucao_andamento" rows="2" placeholder="O que já foi executado, pendências e próximos passos."></textarea></div>
+    <div class="col-md-6"><label class="form-label small">Validação - resultado</label><textarea class="form-control" name="validacao_resultado" rows="2" placeholder="Resultado dos testes, homologação e aceite."></textarea></div>
+</div>
+
+<div class="section-title">Método 5W2H</div>
+<div class="row g-3 mb-3">
+    <div class="col-md-6"><label class="form-label small">What / O quê?</label><textarea class="form-control" name="w2h_what" rows="2" placeholder="O que será feito ou entregue?"></textarea></div>
+    <div class="col-md-6"><label class="form-label small">Why / Por quê?</label><textarea class="form-control" name="w2h_why" rows="2" placeholder="Por que isso precisa ser feito?"></textarea></div>
+    <div class="col-md-4"><label class="form-label small">Where / Onde?</label><input type="text" class="form-control" name="w2h_where" placeholder="Unidade, contrato, sistema, módulo..."></div>
+    <div class="col-md-4"><label class="form-label small">When / Quando?</label><input type="date" class="form-control" name="w2h_when"></div>
+    <div class="col-md-4"><label class="form-label small">Who / Quem?</label><input type="text" class="form-control" name="w2h_who" placeholder="Dono, executor e aprovador"></div>
+    <div class="col-md-8"><label class="form-label small">How / Como?</label><textarea class="form-control" name="w2h_how" rows="2" placeholder="Como a ação será realizada?"></textarea></div>
+    <div class="col-md-4"><label class="form-label small">How much / Quanto custa?</label><input type="text" class="form-control" name="w2h_how_much" placeholder="0,00"></div>
+</div>
+
+<div class="section-title">Campos específicos</div>
+<div class="row g-3 mb-3">
+    <div class="col-md-4"><label class="form-label small">Módulo / Sistema</label><input type="text" class="form-control" name="modulo_sistema" placeholder="Ex: Painel TV, Portal, Integração"></div>
+    <div class="col-md-4"><label class="form-label small">Ambiente</label><select class="form-select" name="ambiente">{% for value,label in ambiente_choices %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select></div>
+    <div class="col-md-4"><label class="form-label small">Link / PR / commit / documentação</label><input type="url" class="form-control" name="link_referencia" placeholder="https://..."></div>
+
+    <div class="col-md-4"><label class="form-label small">Etapa da implantação</label><input type="text" class="form-control" name="etapa_implantacao" placeholder="Diagnóstico, configuração, treinamento..."></div>
+    <div class="col-md-4"><label class="form-label small">Go-live previsto</label><input type="date" class="form-control" name="go_live_previsto"></div>
+    <div class="col-md-4 d-flex align-items-end"><div class="form-check mb-2"><input class="form-check-input" type="checkbox" name="treinamento_realizado" id="{% if mode == 'edit' %}edit_{% endif %}treinamento_realizado"><label class="form-check-label" for="{% if mode == 'edit' %}edit_{% endif %}treinamento_realizado">Treinamento realizado</label></div></div>
+
+    <div class="col-md-3"><label class="form-label small">Severidade da ocorrência</label><select class="form-select" name="severidade"><option value="">Não se aplica</option>{% for value,label in impacto_choices %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select></div>
+    <div class="col-md-9"><label class="form-label small">Critério de aceite / homologação</label><textarea class="form-control" name="criterio_aceite" rows="2" placeholder="Como saberemos que está pronto e validado?"></textarea></div>
+    <div class="col-md-4"><label class="form-label small">Causa raiz</label><textarea class="form-control" name="causa_raiz" rows="2"></textarea></div>
+    <div class="col-md-4"><label class="form-label small">Ação corretiva</label><textarea class="form-control" name="acao_corretiva" rows="2"></textarea></div>
+    <div class="col-md-4"><label class="form-label small">Ação preventiva</label><textarea class="form-control" name="acao_preventiva" rows="2"></textarea></div>
+</div>
+
+<div class="section-title">Execução e arquivos</div>
+<div class="row g-3">
+    <div class="col-md-6"><label class="form-label small">Checklist</label><div id="{% if mode == 'edit' %}edit-{% endif %}checklist-container" class="d-flex flex-column gap-2"></div><button type="button" class="btn btn-sm btn-outline-secondary mt-2" onclick="{% if mode == 'edit' %}addChecklistItemEdit(){% else %}addChecklistItem(){% endif %}"><i class="fas fa-plus"></i> Adicionar item</button></div>
+    <div class="col-md-6"><label class="form-label small fw-bold"><i class="fas fa-paperclip me-1 text-muted"></i>Anexos / Evidências</label><div id="{% if mode == 'edit' %}edit-{% endif %}attachments-container" class="d-flex flex-column gap-2 mb-2"></div><input type="file" id="{% if mode == 'edit' %}edit{% else %}new{% endif %}-project-file-input" style="display:none" multiple onchange="{% if mode == 'edit' %}handleEditProjectFileSelected(this){% else %}handleNewProjectFileSelected(this){% endif %}"><button type="button" class="btn btn-sm btn-outline-secondary" onclick="document.getElementById('{% if mode == 'edit' %}edit{% else %}new{% endif %}-project-file-input').click()"><i class="fas fa-plus"></i> Adicionar arquivo</button></div>
+</div>

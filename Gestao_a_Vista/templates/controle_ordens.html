@@ -1,0 +1,1517 @@
+{% extends 'base.html' %}
+
+{% block title %}Gestão de Ordens de Manutenção (PCM){% endblock %}
+{% block page_title %}Gestão de Ordens de Manutenção (PCM) — Innova Industrial{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ================================================================
+       DEMO — Sistema de Gestão de Ordens de Manutenção (PCM)
+       Baseada na especificação de requisitos do PCM e na planilha real
+       "1. Planejamento_ordens_Gestão_v3.xlsx" (base de 14/07/2026).
+       Front-end apenas: dados embutidos no JS, nada é gravado no banco.
+       ================================================================ */
+
+    .co-page { padding: 1.25rem 1.5rem 3rem; max-width: 1440px; margin: 0 auto; }
+
+    .co-demo-banner {
+        display: flex; align-items: center; gap: .6rem;
+        background: var(--amber-faint); border: 1px solid #fde68a;
+        color: #92400e; border-radius: var(--r-md);
+        padding: .5rem .9rem; font-size: .82rem; font-weight: 600;
+        margin-bottom: 1rem;
+    }
+
+    /* Cabeçalho */
+    .co-header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 1rem; }
+    .co-title { font-size: 1.45rem; font-weight: 800; color: var(--gray-900); letter-spacing: -.02em; margin: 0; }
+    .co-sub { color: var(--gray-500); font-size: .88rem; margin-top: .15rem; }
+    .co-controls { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; }
+
+    .role-switch { display: flex; background: #fff; border: 1px solid var(--gray-200); border-radius: 999px; padding: 3px; box-shadow: var(--shadow-xs); }
+    .role-switch button {
+        border: 0; background: transparent; border-radius: 999px;
+        padding: .35rem .85rem; font-size: .8rem; font-weight: 600; color: var(--gray-500);
+        cursor: pointer; white-space: nowrap; transition: all .15s ease;
+    }
+    .role-switch button.active { background: var(--navy); color: #fff; }
+    .role-hint { width: 100%; font-size: .78rem; color: var(--gray-500); display: flex; align-items: center; gap: .4rem; }
+
+    .co-select {
+        border: 1px solid var(--gray-200); border-radius: var(--r-md); background: #fff;
+        padding: .4rem .7rem; font-size: .82rem; font-weight: 600; color: var(--gray-700);
+        box-shadow: var(--shadow-xs); font-family: var(--f);
+    }
+    .btn-ghost {
+        display: inline-flex; align-items: center; gap: .4rem;
+        border: 1px solid var(--gray-200); background: #fff; color: var(--gray-600);
+        border-radius: var(--r-md); padding: .4rem .8rem; font-size: .82rem; font-weight: 600;
+        cursor: pointer; box-shadow: var(--shadow-xs); transition: all .15s ease;
+    }
+    .btn-ghost:hover { border-color: var(--gray-300); color: var(--gray-800); }
+    .btn-navy {
+        display: inline-flex; align-items: center; gap: .4rem;
+        border: 0; background: var(--navy); color: #fff;
+        border-radius: var(--r-md); padding: .45rem .9rem; font-size: .82rem; font-weight: 600;
+        cursor: pointer; box-shadow: var(--shadow-xs); transition: background .15s ease;
+    }
+    .btn-navy:hover { background: var(--navy-mid); }
+
+    /* Abas */
+    .co-tabs { display: flex; gap: .35rem; border-bottom: 1px solid var(--gray-200); margin-bottom: 1.15rem; flex-wrap: wrap; }
+    .co-tab {
+        border: 0; background: transparent; padding: .55rem .9rem;
+        font-size: .86rem; font-weight: 600; color: var(--gray-500);
+        border-bottom: 2px solid transparent; margin-bottom: -1px; cursor: pointer;
+        display: inline-flex; align-items: center; gap: .45rem;
+    }
+    .co-tab:hover { color: var(--gray-800); }
+    .co-tab.active { color: var(--navy); border-bottom-color: var(--navy); }
+    .co-tab .tab-count { background: var(--gray-100); color: var(--gray-600); border-radius: 999px; font-size: .7rem; font-weight: 700; padding: .1rem .45rem; }
+    .co-tab.active .tab-count { background: var(--navy-faint); color: var(--navy); }
+
+    /* Filtros do dashboard */
+    .filtro-row { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; margin-bottom: 1rem; }
+    .filtro-row label { font-size: .74rem; font-weight: 700; color: var(--gray-400); text-transform: uppercase; letter-spacing: .04em; }
+
+    /* Cards */
+    .co-card { background: #fff; border: 1px solid var(--gray-200); border-radius: var(--r-lg); box-shadow: var(--shadow-sm); }
+    .co-card-head { display: flex; justify-content: space-between; align-items: baseline; gap: .75rem; padding: 1rem 1.15rem .35rem; flex-wrap: wrap; }
+    .co-card-title { font-size: .95rem; font-weight: 700; color: var(--gray-800); margin: 0; }
+    .co-card-sub { font-size: .78rem; color: var(--gray-400); }
+    .co-card-body { padding: .75rem 1.15rem 1.1rem; }
+
+    .kpi-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: .85rem; margin-bottom: 1rem; }
+    .kpi-hero { grid-column: span 4; }
+    .kpi-tile { grid-column: span 2; }
+    .kpi-split { grid-column: span 4; }
+    @media (max-width: 1100px) {
+        .kpi-hero { grid-column: span 6; }
+        .kpi-split { grid-column: span 6; }
+        .kpi-tile { grid-column: span 3; }
+    }
+    @media (max-width: 720px) {
+        .kpi-hero, .kpi-split { grid-column: span 12; }
+        .kpi-tile { grid-column: span 6; }
+    }
+    .kpi-card { background: #fff; border: 1px solid var(--gray-200); border-radius: var(--r-lg); box-shadow: var(--shadow-sm); padding: .9rem 1rem; display: flex; flex-direction: column; justify-content: space-between; min-height: 104px; }
+    .kpi-label { font-size: .75rem; font-weight: 600; color: var(--gray-500); }
+    .kpi-value { font-size: 1.65rem; font-weight: 700; color: var(--gray-900); line-height: 1.1; margin-top: .3rem; }
+    .kpi-note { font-size: .73rem; color: var(--gray-400); margin-top: .35rem; }
+
+    .hero-value { font-size: 3rem; font-weight: 800; color: var(--gray-900); line-height: 1; letter-spacing: -.02em; }
+    .meter { position: relative; height: 8px; border-radius: 999px; background: #cde2fb; margin-top: .8rem; }
+    .meter-fill { height: 100%; border-radius: 999px; background: #2a78d6; }
+    .meter-goal { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--gray-400); }
+    .meter-legend { display: flex; justify-content: space-between; font-size: .72rem; color: var(--gray-400); margin-top: .35rem; }
+
+    .split-bar { display: flex; height: 18px; border-radius: 4px; overflow: hidden; margin-top: .7rem; }
+    .split-bar .seg-prev { background: #2a78d6; border-radius: 4px 0 0 4px; }
+    .split-bar .seg-gap { width: 2px; background: #fff; }
+    .split-bar .seg-corr { background: #cbd5e1; border-radius: 0 4px 4px 0; flex: 1; }
+    .split-legend { display: flex; gap: 1.1rem; margin-top: .55rem; font-size: .78rem; color: var(--gray-600); flex-wrap: wrap; }
+    .split-legend .sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: .35rem; vertical-align: -1px; }
+
+    /* Gráficos de barras horizontais */
+    .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: .85rem; margin-bottom: 1rem; }
+    @media (max-width: 900px) { .charts-row { grid-template-columns: 1fr; } }
+    .hbar-row { display: grid; grid-template-columns: 138px 1fr; align-items: center; gap: .6rem; padding: .28rem 0; }
+    .hbar-label { font-size: .8rem; color: var(--gray-600); text-align: right; }
+    .hbar-track { display: flex; align-items: center; gap: .5rem; border-left: 1px solid var(--gray-300); padding-left: 2px; min-height: 20px; }
+    .hbar-fill { height: 18px; border-radius: 0 4px 4px 0; min-width: 3px; transition: width .5s ease, opacity .15s ease; }
+    .hbar-fill.blue { background: #2a78d6; }
+    .hbar-fill.red { background: #d03b3b; }
+    .hbar-row:hover .hbar-fill { opacity: .82; }
+    .hbar-val { font-size: .8rem; font-weight: 700; color: var(--gray-800); font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .chart-empty { padding: 1.5rem; text-align: center; color: var(--gray-400); font-size: .84rem; }
+
+    /* Gráfico de linha (SVG) */
+    .linha-wrap svg { width: 100%; height: auto; display: block; }
+    .linha-dot { cursor: pointer; }
+
+    #vizTip {
+        position: fixed; z-index: 3000; pointer-events: none; display: none;
+        background: var(--gray-900); color: #fff; font-size: .75rem; font-weight: 600;
+        padding: .35rem .6rem; border-radius: var(--r); box-shadow: var(--shadow-md); max-width: 280px;
+    }
+
+    /* Tabelas */
+    .co-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+    .co-table th {
+        text-align: left; font-size: .7rem; text-transform: uppercase; letter-spacing: .04em;
+        color: var(--gray-400); font-weight: 700; padding: .55rem .6rem;
+        border-bottom: 1px solid var(--gray-200); white-space: nowrap; background: #fff;
+    }
+    .co-table td { padding: .5rem .6rem; border-bottom: 1px solid var(--gray-100); color: var(--gray-700); vertical-align: middle; }
+    .co-table tr:last-child td { border-bottom: 0; }
+    .co-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+    .co-table tfoot td { font-weight: 700; color: var(--gray-900); border-top: 1px solid var(--gray-200); background: var(--gray-50); }
+    .co-table tbody tr.destaque { background: var(--blue-faint); }
+
+    .sla-cell { display: flex; align-items: center; gap: .55rem; justify-content: flex-end; }
+    .sla-mini { width: 64px; height: 6px; border-radius: 999px; background: #cde2fb; overflow: hidden; flex-shrink: 0; }
+    .sla-mini > div { height: 100%; background: #2a78d6; border-radius: 999px; }
+
+    /* Chips */
+    .chip { display: inline-flex; align-items: center; gap: .3rem; border-radius: 999px; padding: .14rem .55rem; font-size: .72rem; font-weight: 700; white-space: nowrap; }
+    .chip-ok { background: var(--green-faint); color: #15803d; }
+    .chip-late { background: var(--red-faint); color: #b91c1c; }
+    .chip-done { background: var(--blue-faint); color: #1d4ed8; }
+    .chip-warn { background: var(--amber-faint); color: #92400e; }
+    .chip-neutral { background: var(--gray-100); color: var(--gray-600); }
+
+    /* Tabela de ordens */
+    .planilha-toolbar { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; padding: .9rem 1.15rem; border-bottom: 1px solid var(--gray-100); }
+    .planilha-toolbar input[type="search"] {
+        border: 1px solid var(--gray-200); border-radius: var(--r-md); padding: .4rem .7rem;
+        font-size: .82rem; min-width: 210px; font-family: var(--f);
+    }
+    .tbl-scroll { overflow: auto; max-height: 60vh; }
+    .tbl-scroll thead th { position: sticky; top: 0; z-index: 2; }
+    #ordensTable th:last-child, #ordensTable td:last-child {
+        position: sticky; right: 0; background: #fff;
+        box-shadow: -8px 0 8px -8px rgba(0, 0, 0, .15);
+    }
+    #ordensTable th:last-child { z-index: 3; }
+    .tbl-foot { padding: .6rem 1.15rem; font-size: .76rem; color: var(--gray-400); border-top: 1px solid var(--gray-100); display: flex; justify-content: space-between; flex-wrap: wrap; gap: .5rem; }
+
+    .icon-btn {
+        border: 1px solid var(--gray-200); background: #fff; color: var(--gray-500);
+        width: 28px; height: 28px; border-radius: var(--r); cursor: pointer;
+        display: inline-flex; align-items: center; justify-content: center; font-size: .75rem;
+        transition: all .15s ease;
+    }
+    .icon-btn:hover { color: var(--navy); border-color: var(--navy-light); }
+    .icon-btn[disabled] { opacity: .45; cursor: not-allowed; }
+
+    /* Barra de ação em lote */
+    .lote-bar {
+        display: none; align-items: center; gap: .6rem; flex-wrap: wrap;
+        background: var(--navy-faint); border-bottom: 1px solid var(--gray-150);
+        padding: .6rem 1.15rem; font-size: .82rem; color: var(--navy); font-weight: 600;
+    }
+    .lote-bar.on { display: flex; }
+
+    /* Cargas SAP */
+    .cargas-grid { display: grid; grid-template-columns: 2fr 1fr; gap: .85rem; margin-bottom: 1rem; }
+    @media (max-width: 1000px) { .cargas-grid { grid-template-columns: 1fr; } }
+    .regra-list { list-style: none; margin: 0; padding: 0; font-size: .82rem; color: var(--gray-600); }
+    .regra-list li { display: flex; gap: .5rem; padding: .4rem 0; border-bottom: 1px solid var(--gray-100); line-height: 1.5; }
+    .regra-list li:last-child { border-bottom: 0; }
+    .regra-list i { color: #15803d; margin-top: .2rem; }
+    .horario-chip { display: inline-flex; align-items: center; gap: .35rem; background: var(--gray-100); border-radius: var(--r-md); padding: .35rem .7rem; font-size: .82rem; font-weight: 700; color: var(--gray-700); font-variant-numeric: tabular-nums; }
+
+    /* Parametrizações */
+    .param-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .85rem; }
+    @media (max-width: 1000px) { .param-grid { grid-template-columns: 1fr; } }
+    .param-table input { border: 1px solid var(--gray-200); border-radius: var(--r); padding: .25rem .5rem; font-size: .8rem; font-family: var(--f); width: 100%; }
+    .alerta-depara { display: flex; gap: .5rem; align-items: center; background: var(--amber-faint); border: 1px solid #fde68a; color: #92400e; border-radius: var(--r-md); padding: .5rem .8rem; font-size: .78rem; font-weight: 600; margin-top: .7rem; }
+
+    /* Toasts */
+    #coToasts { position: fixed; bottom: 1.25rem; right: 1.25rem; z-index: 4000; display: flex; flex-direction: column; gap: .5rem; }
+    .co-toast {
+        background: var(--gray-900); color: #fff; border-radius: var(--r-md);
+        padding: .6rem .95rem; font-size: .82rem; font-weight: 600; box-shadow: var(--shadow-lg);
+        display: flex; align-items: center; gap: .55rem; max-width: 400px;
+        animation: toastIn .2s ease;
+    }
+    .co-toast.erro { background: #b91c1c; }
+    @keyframes toastIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+    /* Modais */
+    .co-modal .modal-content { border: 0; border-radius: var(--r-lg); box-shadow: var(--shadow-lg); font-family: var(--f); }
+    .co-modal .modal-header { border-bottom: 1px solid var(--gray-100); padding: 1rem 1.25rem; }
+    .co-modal .modal-title { font-size: 1rem; font-weight: 700; color: var(--gray-900); }
+    .co-modal .modal-body { padding: 1.1rem 1.25rem; }
+    .co-modal .modal-footer { border-top: 1px solid var(--gray-100); padding: .75rem 1.25rem; }
+    .co-modal label { font-size: .72rem; font-weight: 700; color: var(--gray-500); text-transform: uppercase; letter-spacing: .03em; margin-bottom: .25rem; }
+    .co-modal .form-control, .co-modal .form-select { font-size: .85rem; font-family: var(--f); }
+    .sap-field { background: var(--gray-50); border: 1px solid var(--gray-150); border-radius: var(--r); padding: .45rem .6rem; font-size: .84rem; color: var(--gray-600); min-height: 2.1rem; }
+    .sap-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .6rem .8rem; }
+    @media (max-width: 640px) { .sap-grid { grid-template-columns: 1fr 1fr; } }
+    .section-label { font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: var(--gray-400); margin: 1rem 0 .5rem; display: flex; align-items: center; gap: .5rem; }
+    .section-label::after { content: ''; flex: 1; height: 1px; background: var(--gray-100); }
+    .section-label:first-child { margin-top: 0; }
+    .dropzone {
+        border: 1.5px dashed var(--gray-300); border-radius: var(--r-md); padding: 1rem;
+        text-align: center; color: var(--gray-400); font-size: .8rem; cursor: pointer;
+        transition: all .15s ease;
+    }
+    .dropzone:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-faint); }
+
+    .log-item { display: flex; gap: .7rem; padding: .6rem 0; border-bottom: 1px solid var(--gray-100); font-size: .82rem; }
+    .log-item:last-child { border-bottom: 0; }
+    .log-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--gray-300); margin-top: .45rem; flex-shrink: 0; }
+    .log-dot.new { background: var(--blue); }
+    .log-meta { color: var(--gray-400); font-size: .72rem; margin-top: .1rem; }
+
+    .import-progress { height: 8px; border-radius: 999px; background: var(--gray-100); overflow: hidden; }
+    .import-progress > div { height: 100%; background: var(--blue); border-radius: 999px; width: 0; transition: width .3s ease; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="co-page">
+
+    <div class="co-demo-banner">
+        <i class="fas fa-flask"></i>
+        <span>DEMO — Protótipo navegável construído sobre a especificação do PCM. Os números são os <b>dados reais</b> da
+        planilha "Planejamento_ordens_Gestão_v3" (base de 14/07/2026), embutidos no navegador; nada é gravado no banco.</span>
+    </div>
+
+    <div class="co-header">
+        <div>
+            <h1 class="co-title">Gestão de Ordens de Manutenção — PCM</h1>
+            <div class="co-sub">Substitui a planilha do SharePoint · Carga SAP 3× ao dia + apontamento da operação + painel gerencial</div>
+        </div>
+        <div class="co-controls">
+            <button class="btn-ghost" onclick="abrirAuditoria()"><i class="fas fa-history"></i> Trilha de auditoria</button>
+            <button class="btn-navy" id="btnImportar" onclick="abrirImportacao()"><i class="fas fa-file-upload"></i> Nova carga SAP</button>
+        </div>
+        <div class="co-controls" style="width:100%">
+            <span style="font-size:.76rem;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:.04em">Simular perfil:</span>
+            <div class="role-switch" id="roleSwitch">
+                <button data-role="admin" class="active">Administrador (PCM)</button>
+                <button data-role="operacao">Operação</button>
+                <button data-role="gestao">Gestão / Leitura</button>
+            </div>
+            <span class="role-hint" id="roleHint"></span>
+        </div>
+    </div>
+
+    <div class="co-tabs" id="coTabs">
+        <button class="co-tab active" data-tab="dashboard"><i class="fas fa-chart-bar"></i> Dashboard</button>
+        <button class="co-tab" data-tab="ordens"><i class="fas fa-table"></i> Ordens &amp; Apontamento <span class="tab-count" id="tabCountOrdens"></span></button>
+        <button class="co-tab" data-tab="cps"><i class="fas fa-calendar-week"></i> CPS Semanal</button>
+        <button class="co-tab" data-tab="cargas"><i class="fas fa-cloud-download-alt"></i> Cargas SAP</button>
+        <button class="co-tab" data-tab="param"><i class="fas fa-sliders-h"></i> Parametrizações</button>
+    </div>
+
+    <!-- ============ DASHBOARD ============ -->
+    <section id="tab-dashboard">
+        <div class="filtro-row">
+            <label>Filtros:</label>
+            <select class="co-select" id="fMes"><option value="">Mês: Todos</option></select>
+            <select class="co-select" id="fDisc"><option value="">Disciplina: Todas</option></select>
+            <select class="co-select" id="fTipo">
+                <option value="">Tipo: Todos</option>
+                <option value="P">Preventiva</option>
+                <option value="C">Corretiva</option>
+            </select>
+            <span style="flex:1"></span>
+            <button class="btn-ghost" onclick="exportar('Excel')"><i class="fas fa-file-excel"></i> Excel</button>
+            <button class="btn-ghost" onclick="exportar('PDF')"><i class="fas fa-file-pdf"></i> PDF</button>
+        </div>
+
+        <div class="kpi-grid" id="kpiGrid"></div>
+
+        <div class="charts-row">
+            <div class="co-card">
+                <div class="co-card-head">
+                    <h3 class="co-card-title">Abertas por disciplina</h3>
+                    <span class="co-card-sub" id="chartAbertasSub"></span>
+                </div>
+                <div class="co-card-body" id="chartAbertas"></div>
+            </div>
+            <div class="co-card">
+                <div class="co-card-head">
+                    <h3 class="co-card-title">Abertas atrasadas por disciplina</h3>
+                    <span class="co-card-sub" id="chartAtrasadasSub"></span>
+                </div>
+                <div class="co-card-body" id="chartAtrasadas"></div>
+            </div>
+        </div>
+
+        <div class="charts-row">
+            <div class="co-card">
+                <div class="co-card-head">
+                    <h3 class="co-card-title">Visão por disciplina</h3>
+                    <span class="co-card-sub">Abertas → atrasadas → no prazo → concluídas → SLA</span>
+                </div>
+                <div class="co-card-body" style="overflow-x:auto">
+                    <table class="co-table" id="discTable">
+                        <thead>
+                            <tr>
+                                <th>Disciplina</th>
+                                <th class="num">Abertas</th>
+                                <th class="num">Atrasadas</th>
+                                <th class="num">No prazo</th>
+                                <th class="num">Concl. OK</th>
+                                <th class="num">Concl. atraso</th>
+                                <th class="num" style="min-width:140px">SLA</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                        <tfoot></tfoot>
+                    </table>
+                </div>
+            </div>
+            <div class="co-card">
+                <div class="co-card-head">
+                    <h3 class="co-card-title">Preventiva × Corretiva</h3>
+                    <span class="co-card-sub">Mesma abertura de indicadores por tipo de manutenção</span>
+                </div>
+                <div class="co-card-body" style="overflow-x:auto">
+                    <table class="co-table" id="tipoTable">
+                        <thead>
+                            <tr>
+                                <th>Tipo</th>
+                                <th class="num">Total</th>
+                                <th class="num">Abertas</th>
+                                <th class="num">Atrasadas</th>
+                                <th class="num">Concl. OK</th>
+                                <th class="num">Concl. atraso</th>
+                                <th class="num" style="min-width:140px">SLA</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                    <div class="section-label" style="margin-top:1.2rem"><i class="fas fa-chart-line"></i> Evolução do SLA por mês</div>
+                    <div class="linha-wrap" id="chartSlaMes"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ ORDENS & APONTAMENTO ============ -->
+    <section id="tab-ordens" style="display:none">
+        <div class="co-card">
+            <div class="planilha-toolbar">
+                <input type="search" id="oBusca" placeholder="Buscar nº da ordem ou texto breve…">
+                <select class="co-select" id="oDisc"><option value="">Todas as disciplinas</option></select>
+                <select class="co-select" id="oSit">
+                    <option value="">Todas as situações</option>
+                    <option>No prazo</option>
+                    <option>Atrasada</option>
+                    <option>Concluída no prazo</option>
+                    <option>Concluída em atraso</option>
+                </select>
+                <select class="co-select" id="oTipo">
+                    <option value="">Preventivas + Corretivas</option>
+                    <option>Preventiva</option>
+                    <option>Corretiva</option>
+                </select>
+                <select class="co-select" id="oStatus">
+                    <option value="">Status operação: todos</option>
+                    <option>— sem apontamento —</option>
+                    <option>Aberta</option>
+                    <option>Em andamento</option>
+                    <option>Concluída</option>
+                </select>
+            </div>
+            <div class="lote-bar" id="loteBar">
+                <span id="loteCount"></span>
+                <select class="co-select" id="loteStatus">
+                    <option value="">Status operação…</option>
+                    <option>Aberta</option>
+                    <option>Em andamento</option>
+                    <option>Concluída</option>
+                </select>
+                <select class="co-select" id="loteMotivo">
+                    <option value="">Motivo de atraso…</option>
+                </select>
+                <button class="btn-navy" style="padding:.3rem .8rem" onclick="aplicarLote()"><i class="fas fa-check-double"></i> Aplicar em lote</button>
+                <button class="btn-ghost" style="padding:.3rem .8rem" onclick="limparLote()">Limpar seleção</button>
+            </div>
+            <div class="tbl-scroll">
+                <table class="co-table" id="ordensTable">
+                    <thead>
+                        <tr>
+                            <th style="width:30px"><input type="checkbox" id="loteTodos" title="Selecionar visíveis"></th>
+                            <th title="Campo SAP — somente leitura">Ordem <i class="fas fa-lock" style="font-size:.6rem;opacity:.5"></i></th>
+                            <th title="Campo SAP — somente leitura">Texto breve <i class="fas fa-lock" style="font-size:.6rem;opacity:.5"></i></th>
+                            <th title="Campo SAP — somente leitura">Fim prog. <i class="fas fa-lock" style="font-size:.6rem;opacity:.5"></i></th>
+                            <th title="Campo SAP — somente leitura">Dt.real fim <i class="fas fa-lock" style="font-size:.6rem;opacity:.5"></i></th>
+                            <th title="Campo SAP — somente leitura">CenTrab. <i class="fas fa-lock" style="font-size:.6rem;opacity:.5"></i></th>
+                            <th title="Campo SAP — somente leitura">Tp. ordem <i class="fas fa-lock" style="font-size:.6rem;opacity:.5"></i></th>
+                            <th title="Calculado: semana ISO do Fim programado">Sem.</th>
+                            <th title="Calculado pelas regras do PCM">Situação prazo</th>
+                            <th title="Calculado pelo de-para de CenTrabPrinc.">Disciplina</th>
+                            <th>Status oper.</th>
+                            <th>Tipo atraso</th>
+                            <th>Motivo atraso</th>
+                            <th>Evid.</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <div class="tbl-foot">
+                <span id="ordensCount"></span>
+                <span>Campos com <i class="fas fa-lock" style="font-size:.65rem"></i> vêm da carga SAP e nunca são editados pela operação.</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ CPS SEMANAL ============ -->
+    <section id="tab-cps" style="display:none">
+        <div class="kpi-grid" id="cpsKpis"></div>
+        <div class="co-card" style="margin-bottom:1rem">
+            <div class="co-card-head">
+                <h3 class="co-card-title">Evolução semanal do CPS</h3>
+                <span class="co-card-sub">Cumprimento da Programação Semanal — semanas ISO de 2026 (dados reais da planilha)</span>
+            </div>
+            <div class="co-card-body linha-wrap" id="chartCps"></div>
+        </div>
+        <div class="co-card">
+            <div class="co-card-head">
+                <h3 class="co-card-title">Programado × concluído no prazo, por semana</h3>
+                <span class="co-card-sub">Semana programada = semana ISO do Fim programado</span>
+            </div>
+            <div class="co-card-body" style="overflow-x:auto">
+                <table class="co-table" id="cpsTable">
+                    <thead>
+                        <tr>
+                            <th>Semana</th>
+                            <th class="num">Prev. prog.</th>
+                            <th class="num">Prev. concl.</th>
+                            <th class="num">CPS Prev.</th>
+                            <th class="num">Corr. prog.</th>
+                            <th class="num">Corr. concl.</th>
+                            <th class="num">CPS Corr.</th>
+                            <th class="num">Total prog.</th>
+                            <th class="num">Total concl.</th>
+                            <th class="num">CPS</th>
+                            <th class="num">Acumulado</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ CARGAS SAP ============ -->
+    <section id="tab-cargas" style="display:none">
+        <div class="cargas-grid">
+            <div class="co-card">
+                <div class="co-card-head">
+                    <h3 class="co-card-title">Log de cargas</h3>
+                    <span class="co-card-sub">Toda carga registra novas, atualizadas (com valor anterior e novo), duplicatas e ignoradas</span>
+                </div>
+                <div class="co-card-body" style="overflow-x:auto">
+                    <table class="co-table" id="cargasTable">
+                        <thead>
+                            <tr>
+                                <th>Data / hora</th><th>Origem</th><th>Usuário / rotina</th>
+                                <th class="num">Linhas</th><th class="num">Novas</th><th class="num">Atualizadas</th>
+                                <th class="num">Duplicatas</th><th class="num">Ignoradas</th><th></th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+            <div>
+                <div class="co-card" style="margin-bottom:.85rem">
+                    <div class="co-card-head"><h3 class="co-card-title">Horários de carga</h3></div>
+                    <div class="co-card-body">
+                        <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+                            <span class="horario-chip"><i class="fas fa-clock"></i> 08:00</span>
+                            <span class="horario-chip"><i class="fas fa-clock"></i> 13:00</span>
+                            <span class="horario-chip"><i class="fas fa-clock"></i> 17:00</span>
+                        </div>
+                        <div class="kpi-note" style="margin-top:.7rem">
+                            Fase 1: upload manual ou pasta monitorada.<br>
+                            Fase 2: integração direta (RFC/BAPI, OData ou extração agendada), eliminando a etapa manual.
+                        </div>
+                    </div>
+                </div>
+                <div class="co-card">
+                    <div class="co-card-head"><h3 class="co-card-title">Regras de importação (upsert)</h3></div>
+                    <div class="co-card-body">
+                        <ul class="regra-list">
+                            <li><i class="fas fa-check-circle"></i><span>Chave única = nº da <b>Ordem</b>, normalizada (espaços, zeros à esquerda, número = texto).</span></li>
+                            <li><i class="fas fa-check-circle"></i><span>Ordem existente: atualiza <b>somente Dt.real fim</b>; nunca duplica.</span></li>
+                            <li><i class="fas fa-check-circle"></i><span><b>Campo vazio nunca apaga</b> dado já existente.</span></li>
+                            <li><i class="fas fa-check-circle"></i><span>Duplicidade no arquivo: vale a linha com Dt.real fim mais recente.</span></li>
+                            <li><i class="fas fa-check-circle"></i><span>Apontamentos da operação são <b>sempre preservados</b> nas cargas.</span></li>
+                            <li><i class="fas fa-check-circle"></i><span>Linhas sem nº de ordem são ignoradas e contabilizadas no log.</span></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ PARAMETRIZAÇÕES ============ -->
+    <section id="tab-param" style="display:none">
+        <div class="param-grid">
+            <div class="co-card">
+                <div class="co-card-head">
+                    <h3 class="co-card-title">De-para: CenTrabPrinc. → Disciplina</h3>
+                    <span class="co-card-sub">Tabela parametrizável — novos centros podem surgir</span>
+                </div>
+                <div class="co-card-body">
+                    <table class="co-table param-table" id="deparaCentro"><tbody></tbody></table>
+                    <div class="alerta-depara" id="alertaDepara" style="display:none"></div>
+                    <button class="btn-ghost" style="margin-top:.7rem" onclick="toastDemo('Novo de-para adicionado (demo).')"><i class="fas fa-plus"></i> Adicionar centro</button>
+                </div>
+            </div>
+            <div class="co-card">
+                <div class="co-card-head">
+                    <h3 class="co-card-title">De-para: Tipo de ordem → Tipo de manutenção</h3>
+                    <span class="co-card-sub">ZM01 gera Preventiva; ZO, ZF e ZS geram Corretiva</span>
+                </div>
+                <div class="co-card-body">
+                    <table class="co-table param-table" id="deparaTipo"><tbody></tbody></table>
+                    <button class="btn-ghost" style="margin-top:.7rem" onclick="toastDemo('Novo tipo de ordem adicionado (demo).')"><i class="fas fa-plus"></i> Adicionar tipo</button>
+                </div>
+            </div>
+            <div class="co-card">
+                <div class="co-card-head">
+                    <h3 class="co-card-title">Listas do apontamento</h3>
+                    <span class="co-card-sub">Tipo e motivo de atraso — parametrizáveis, com opção de texto livre</span>
+                </div>
+                <div class="co-card-body" id="listasParam"></div>
+            </div>
+            <div class="co-card">
+                <div class="co-card-head">
+                    <h3 class="co-card-title">Retenção e segurança</h3>
+                </div>
+                <div class="co-card-body">
+                    <ul class="regra-list">
+                        <li><i class="fas fa-check-circle"></i><span>Arquivos de carga originais retidos por <b>24 meses</b> (parametrizável).</span></li>
+                        <li><i class="fas fa-check-circle"></i><span>Nenhuma exclusão física de ordem — encerramento apenas por status.</span></li>
+                        <li><i class="fas fa-check-circle"></i><span>Autenticação integrada ao AD corporativo.</span></li>
+                        <li><i class="fas fa-check-circle"></i><span>Dimensionado para 10 anos de histórico (~5.500 ordens ativas + 2–4 mil/ano).</span></li>
+                    </ul>
+                    <button class="btn-navy" style="margin-top:.8rem" onclick="toastDemo('Parametrizações salvas (demo).')"><i class="fas fa-check"></i> Salvar parametrizações</button>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<div id="vizTip"></div>
+<div id="coToasts"></div>
+{% endblock %}
+
+{% block modals %}
+<!-- Modal: apontamento da ordem -->
+<div class="modal fade co-modal" id="ordemModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h5 class="modal-title" id="ordemModalTitle">Ordem</h5>
+                    <div style="font-size:.78rem;color:var(--gray-400)" id="ordemModalSub"></div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="ordemModalBody"></div>
+            <div class="modal-footer">
+                <span style="flex:1;font-size:.74rem;color:var(--gray-400)" id="ordemModalPerm"></span>
+                <button type="button" class="btn-ghost" data-bs-dismiss="modal">Fechar</button>
+                <button type="button" class="btn-navy" id="ordemModalSalvar" onclick="salvarOrdem()"><i class="fas fa-check"></i> Salvar apontamento</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: nova carga SAP (simulada) -->
+<div class="modal fade co-modal" id="importModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Nova carga de ordens do SAP</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="importStep1">
+                    <div class="dropzone" onclick="simularUpload()">
+                        <i class="fas fa-cloud-upload-alt" style="font-size:1.5rem;margin-bottom:.4rem;display:block"></i>
+                        Arraste a exportação do SAP aqui (.xlsx / .csv)<br>
+                        <span style="font-size:.72rem">layout fixo: Ordem · Texto breve · Fim programado · Data programação · Dt.real fim · CenTrabPrinc. · Tipo de ordem<br><b>Simulação:</b> nenhum arquivo é enviado</span>
+                    </div>
+                </div>
+                <div id="importStep2" style="display:none">
+                    <div style="font-size:.84rem;font-weight:600;color:var(--gray-700);margin-bottom:.5rem" id="importStatus"></div>
+                    <div class="import-progress"><div id="importBar"></div></div>
+                    <div id="importResumo" style="display:none;margin-top:1rem">
+                        <div class="chip chip-ok" style="margin-bottom:.6rem"><i class="fas fa-check"></i> Carga processada e registrada no log</div>
+                        <ul style="font-size:.84rem;color:var(--gray-600);margin:0;padding-left:1.1rem;line-height:1.9">
+                            <li><b>5.378</b> linhas no arquivo</li>
+                            <li><b>27</b> ordens novas inseridas</li>
+                            <li><b>93</b> atualizadas — somente o campo <b>Dt.real fim</b> (valor anterior → novo no log)</li>
+                            <li><b>5.255</b> duplicatas processadas (sem alteração)</li>
+                            <li><b>3</b> linhas ignoradas (sem nº de ordem)</li>
+                            <li><span class="chip chip-ok" style="font-size:.68rem">✓</span> apontamentos da operação preservados</li>
+                            <li><span class="chip chip-ok" style="font-size:.68rem">✓</span> Dt.real fim vazia não apagou datas existentes</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-ghost" data-bs-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: detalhe de uma carga -->
+<div class="modal fade co-modal" id="cargaModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h5 class="modal-title" id="cargaModalTitle">Detalhe da carga</h5>
+                    <div style="font-size:.78rem;color:var(--gray-400)">Atualizações com valor anterior e novo — exigência da trilha de auditoria</div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="cargaModalBody"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: trilha de auditoria -->
+<div class="modal fade co-modal" id="logModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h5 class="modal-title">Trilha de auditoria</h5>
+                    <div style="font-size:.78rem;color:var(--gray-400)">Cargas e edições: quem alterou, quando, valor anterior e novo</div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="logModalBody"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+/* ======================================================================
+   DEMO PCM — dados reais da planilha v3 (14/07/2026), somente front-end
+   ====================================================================== */
+(function () {
+    'use strict';
+
+    // Dados REAIS extraidos de '1. Planejamento_ordens_Gestão_v3.xlsx' (base 14/07/2026)
+const CUBO = [{"m": "", "d": "Civil", "t": "C", "ap": 0, "aa": 0, "cp": 0, "ca": 17, "ev": 0}, {"m": "", "d": "Elétrica", "t": "C", "ap": 0, "aa": 0, "cp": 0, "ca": 2, "ev": 0}, {"m": "", "d": "Refrigeração", "t": "C", "ap": 0, "aa": 0, "cp": 0, "ca": 2, "ev": 0}, {"m": "", "d": "Sem de-para", "t": "C", "ap": 0, "aa": 0, "cp": 0, "ca": 1, "ev": 0}, {"m": "2025-10", "d": "Civil", "t": "C", "ap": 0, "aa": 0, "cp": 94, "ca": 0, "ev": 0}, {"m": "2025-10", "d": "Combate a Incêndio", "t": "P", "ap": 0, "aa": 0, "cp": 1, "ca": 3, "ev": 0}, {"m": "2025-10", "d": "Elevadores", "t": "P", "ap": 0, "aa": 0, "cp": 4, "ca": 0, "ev": 0}, {"m": "2025-10", "d": "Elétrica", "t": "C", "ap": 0, "aa": 0, "cp": 47, "ca": 0, "ev": 0}, {"m": "2025-10", "d": "Elétrica", "t": "P", "ap": 0, "aa": 0, "cp": 29, "ca": 8, "ev": 0}, {"m": "2025-10", "d": "Mecânica", "t": "C", "ap": 0, "aa": 0, "cp": 1, "ca": 0, "ev": 0}, {"m": "2025-10", "d": "Mecânica", "t": "P", "ap": 0, "aa": 0, "cp": 39, "ca": 41, "ev": 0}, {"m": "2025-10", "d": "Refrigeração", "t": "C", "ap": 0, "aa": 0, "cp": 14, "ca": 0, "ev": 0}, {"m": "2025-10", "d": "Refrigeração", "t": "P", "ap": 0, "aa": 0, "cp": 86, "ca": 89, "ev": 0}, {"m": "2025-10", "d": "Reservatório", "t": "P", "ap": 0, "aa": 0, "cp": 1, "ca": 3, "ev": 0}, {"m": "2025-10", "d": "Sem de-para", "t": "C", "ap": 0, "aa": 0, "cp": 1, "ca": 0, "ev": 0}, {"m": "2025-11", "d": "Civil", "t": "C", "ap": 0, "aa": 0, "cp": 91, "ca": 0, "ev": 0}, {"m": "2025-11", "d": "Civil", "t": "P", "ap": 0, "aa": 0, "cp": 21, "ca": 2, "ev": 0}, {"m": "2025-11", "d": "Combate a Incêndio", "t": "P", "ap": 0, "aa": 0, "cp": 19, "ca": 0, "ev": 0}, {"m": "2025-11", "d": "Elevadores", "t": "C", "ap": 0, "aa": 0, "cp": 1, "ca": 0, "ev": 0}, {"m": "2025-11", "d": "Elevadores", "t": "P", "ap": 0, "aa": 0, "cp": 3, "ca": 1, "ev": 0}, {"m": "2025-11", "d": "Elétrica", "t": "C", "ap": 0, "aa": 0, "cp": 33, "ca": 0, "ev": 0}, {"m": "2025-11", "d": "Elétrica", "t": "P", "ap": 0, "aa": 0, "cp": 31, "ca": 1, "ev": 0}, {"m": "2025-11", "d": "Mecânica", "t": "P", "ap": 0, "aa": 0, "cp": 49, "ca": 9, "ev": 0}, {"m": "2025-11", "d": "Refrigeração", "t": "C", "ap": 0, "aa": 0, "cp": 10, "ca": 0, "ev": 0}, {"m": "2025-11", "d": "Refrigeração", "t": "P", "ap": 0, "aa": 0, "cp": 142, "ca": 35, "ev": 0}, {"m": "2025-11", "d": "Reservatório", "t": "P", "ap": 0, "aa": 0, "cp": 1, "ca": 3, "ev": 0}, {"m": "2025-11", "d": "Sem de-para", "t": "C", "ap": 0, "aa": 0, "cp": 1, "ca": 0, "ev": 0}, {"m": "2025-12", "d": "Civil", "t": "C", "ap": 0, "aa": 0, "cp": 182, "ca": 1, "ev": 0}, {"m": "2025-12", "d": "Civil", "t": "P", "ap": 0, "aa": 0, "cp": 3, "ca": 0, "ev": 0}, {"m": "2025-12", "d": "Combate a Incêndio", "t": "P", "ap": 0, "aa": 0, "cp": 16, "ca": 1, "ev": 0}, {"m": "2025-12", "d": "Elevadores", "t": "P", "ap": 0, "aa": 0, "cp": 4, "ca": 0, "ev": 0}, {"m": "2025-12", "d": "Elétrica", "t": "C", "ap": 0, "aa": 0, "cp": 38, "ca": 0, "ev": 0}, {"m": "2025-12", "d": "Elétrica", "t": "P", "ap": 0, "aa": 0, "cp": 23, "ca": 0, "ev": 0}, {"m": "2025-12", "d": "Mecânica", "t": "C", "ap": 0, "aa": 0, "cp": 0, "ca": 1, "ev": 0}, {"m": "2025-12", "d": "Mecânica", "t": "P", "ap": 0, "aa": 0, "cp": 89, "ca": 2, "ev": 0}, {"m": "2025-12", "d": "Refrigeração", "t": "C", "ap": 0, "aa": 0, "cp": 7, "ca": 0, "ev": 0}, {"m": "2025-12", "d": "Refrigeração", "t": "P", "ap": 0, "aa": 0, "cp": 167, "ca": 10, "ev": 0}, {"m": "2025-12", "d": "Reservatório", "t": "P", "ap": 0, "aa": 0, "cp": 1, "ca": 3, "ev": 0}, {"m": "2026-01", "d": "Civil", "t": "C", "ap": 0, "aa": 0, "cp": 152, "ca": 0, "ev": 0}, {"m": "2026-01", "d": "Civil", "t": "P", "ap": 0, "aa": 0, "cp": 21, "ca": 0, "ev": 0}, {"m": "2026-01", "d": "Combate a Incêndio", "t": "C", "ap": 0, "aa": 0, "cp": 1, "ca": 0, "ev": 0}, {"m": "2026-01", "d": "Combate a Incêndio", "t": "P", "ap": 0, "aa": 0, "cp": 0, "ca": 1, "ev": 0}, {"m": "2026-01", "d": "Elevadores", "t": "C", "ap": 0, "aa": 0, "cp": 2, "ca": 0, "ev": 0}, {"m": "2026-01", "d": "Elevadores", "t": "P", "ap": 0, "aa": 0, "cp": 4, "ca": 0, "ev": 0}, {"m": "2026-01", "d": "Elétrica", "t": "C", "ap": 0, "aa": 0, "cp": 57, "ca": 0, "ev": 0}, {"m": "2026-01", "d": "Elétrica", "t": "P", "ap": 0, "aa": 0, "cp": 57, "ca": 0, "ev": 0}, {"m": "2026-01", "d": "Mecânica", "t": "P", "ap": 0, "aa": 0, "cp": 87, "ca": 2, "ev": 0}, {"m": "2026-01", "d": "Refrigeração", "t": "C", "ap": 0, "aa": 0, "cp": 18, "ca": 0, "ev": 0}, {"m": "2026-01", "d": "Refrigeração", "t": "P", "ap": 0, "aa": 0, "cp": 163, "ca": 19, "ev": 0}, {"m": "2026-01", "d": "Reservatório", "t": "P", "ap": 0, "aa": 0, "cp": 1, "ca": 3, "ev": 0}, {"m": "2026-02", "d": "Civil", "t": "C", "ap": 0, "aa": 0, "cp": 122, "ca": 0, "ev": 0}, {"m": "2026-02", "d": "Civil", "t": "P", "ap": 0, "aa": 0, "cp": 25, "ca": 0, "ev": 0}, {"m": "2026-02", "d": "Combate a Incêndio", "t": "P", "ap": 0, "aa": 0, "cp": 0, "ca": 19, "ev": 0}, {"m": "2026-02", "d": "Elevadores", "t": "P", "ap": 0, "aa": 0, "cp": 2, "ca": 2, "ev": 0}, {"m": "2026-02", "d": "Elétrica", "t": "C", "ap": 0, "aa": 0, "cp": 37, "ca": 0, "ev": 0}, {"m": "2026-02", "d": "Elétrica", "t": "P", "ap": 0, "aa": 0, "cp": 43, "ca": 0, "ev": 0}, {"m": "2026-02", "d": "Mecânica", "t": "P", "ap": 0, "aa": 0, "cp": 52, "ca": 4, "ev": 0}, {"m": "2026-02", "d": "Refrigeração", "t": "C", "ap": 0, "aa": 0, "cp": 9, "ca": 0, "ev": 0}, {"m": "2026-02", "d": "Refrigeração", "t": "P", "ap": 0, "aa": 0, "cp": 136, "ca": 31, "ev": 0}, {"m": "2026-02", "d": "Reservatório", "t": "P", "ap": 0, "aa": 0, "cp": 4, "ca": 0, "ev": 0}, {"m": "2026-03", "d": "Civil", "t": "C", "ap": 0, "aa": 0, "cp": 184, "ca": 0, "ev": 0}, {"m": "2026-03", "d": "Civil", "t": "P", "ap": 0, "aa": 0, "cp": 7, "ca": 19, "ev": 0}, {"m": "2026-03", "d": "Combate a Incêndio", "t": "P", "ap": 0, "aa": 0, "cp": 2, "ca": 15, "ev": 0}, {"m": "2026-03", "d": "Elevadores", "t": "C", "ap": 0, "aa": 0, "cp": 1, "ca": 0, "ev": 0}, {"m": "2026-03", "d": "Elevadores", "t": "P", "ap": 0, "aa": 0, "cp": 4, "ca": 0, "ev": 0}, {"m": "2026-03", "d": "Elétrica", "t": "C", "ap": 0, "aa": 0, "cp": 54, "ca": 0, "ev": 0}, {"m": "2026-03", "d": "Elétrica", "t": "P", "ap": 0, "aa": 0, "cp": 33, "ca": 2, "ev": 0}, {"m": "2026-03", "d": "Mecânica", "t": "P", "ap": 0, "aa": 0, "cp": 83, "ca": 4, "ev": 0}, {"m": "2026-03", "d": "Refrigeração", "t": "C", "ap": 0, "aa": 0, "cp": 24, "ca": 0, "ev": 0}, {"m": "2026-03", "d": "Refrigeração", "t": "P", "ap": 0, "aa": 0, "cp": 114, "ca": 19, "ev": 0}, {"m": "2026-03", "d": "Reservatório", "t": "P", "ap": 0, "aa": 0, "cp": 4, "ca": 0, "ev": 0}, {"m": "2026-04", "d": "Civil", "t": "C", "ap": 0, "aa": 0, "cp": 172, "ca": 0, "ev": 0}, {"m": "2026-04", "d": "Civil", "t": "P", "ap": 0, "aa": 0, "cp": 21, "ca": 0, "ev": 0}, {"m": "2026-04", "d": "Combate a Incêndio", "t": "P", "ap": 0, "aa": 0, "cp": 0, "ca": 1, "ev": 0}, {"m": "2026-04", "d": "Elevadores", "t": "C", "ap": 0, "aa": 0, "cp": 3, "ca": 0, "ev": 0}, {"m": "2026-04", "d": "Elevadores", "t": "P", "ap": 0, "aa": 0, "cp": 3, "ca": 1, "ev": 0}, {"m": "2026-04", "d": "Elétrica", "t": "C", "ap": 0, "aa": 0, "cp": 50, "ca": 0, "ev": 0}, {"m": "2026-04", "d": "Elétrica", "t": "P", "ap": 0, "aa": 0, "cp": 26, "ca": 12, "ev": 0}, {"m": "2026-04", "d": "Mecânica", "t": "P", "ap": 0, "aa": 0, "cp": 70, "ca": 3, "ev": 0}, {"m": "2026-04", "d": "Refrigeração", "t": "C", "ap": 0, "aa": 0, "cp": 18, "ca": 0, "ev": 0}, {"m": "2026-04", "d": "Refrigeração", "t": "P", "ap": 0, "aa": 0, "cp": 100, "ca": 29, "ev": 0}, {"m": "2026-04", "d": "Reservatório", "t": "P", "ap": 0, "aa": 0, "cp": 4, "ca": 0, "ev": 0}, {"m": "2026-05", "d": "Civil", "t": "C", "ap": 0, "aa": 0, "cp": 136, "ca": 1, "ev": 0}, {"m": "2026-05", "d": "Civil", "t": "P", "ap": 0, "aa": 0, "cp": 2, "ca": 0, "ev": 0}, {"m": "2026-05", "d": "Combate a Incêndio", "t": "P", "ap": 0, "aa": 0, "cp": 0, "ca": 19, "ev": 0}, {"m": "2026-05", "d": "Elevadores", "t": "C", "ap": 0, "aa": 0, "cp": 0, "ca": 1, "ev": 0}, {"m": "2026-05", "d": "Elevadores", "t": "P", "ap": 0, "aa": 0, "cp": 4, "ca": 0, "ev": 0}, {"m": "2026-05", "d": "Elétrica", "t": "C", "ap": 0, "aa": 0, "cp": 84, "ca": 0, "ev": 0}, {"m": "2026-05", "d": "Elétrica", "t": "P", "ap": 0, "aa": 0, "cp": 27, "ca": 0, "ev": 0}, {"m": "2026-05", "d": "Mecânica", "t": "P", "ap": 0, "aa": 0, "cp": 50, "ca": 4, "ev": 0}, {"m": "2026-05", "d": "Refrigeração", "t": "C", "ap": 0, "aa": 0, "cp": 37, "ca": 0, "ev": 0}, {"m": "2026-05", "d": "Refrigeração", "t": "P", "ap": 0, "aa": 0, "cp": 120, "ca": 13, "ev": 0}, {"m": "2026-05", "d": "Reservatório", "t": "P", "ap": 0, "aa": 0, "cp": 4, "ca": 0, "ev": 0}, {"m": "2026-06", "d": "Civil", "t": "C", "ap": 0, "aa": 0, "cp": 149, "ca": 2, "ev": 0}, {"m": "2026-06", "d": "Civil", "t": "P", "ap": 0, "aa": 0, "cp": 4, "ca": 0, "ev": 0}, {"m": "2026-06", "d": "Combate a Incêndio", "t": "P", "ap": 0, "aa": 0, "cp": 0, "ca": 17, "ev": 0}, {"m": "2026-06", "d": "Elevadores", "t": "C", "ap": 0, "aa": 0, "cp": 1, "ca": 0, "ev": 0}, {"m": "2026-06", "d": "Elevadores", "t": "P", "ap": 0, "aa": 0, "cp": 4, "ca": 0, "ev": 0}, {"m": "2026-06", "d": "Elétrica", "t": "C", "ap": 0, "aa": 0, "cp": 51, "ca": 0, "ev": 0}, {"m": "2026-06", "d": "Elétrica", "t": "P", "ap": 0, "aa": 0, "cp": 30, "ca": 0, "ev": 0}, {"m": "2026-06", "d": "Mecânica", "t": "P", "ap": 0, "aa": 0, "cp": 86, "ca": 4, "ev": 0}, {"m": "2026-06", "d": "Refrigeração", "t": "C", "ap": 0, "aa": 0, "cp": 5, "ca": 0, "ev": 0}, {"m": "2026-06", "d": "Refrigeração", "t": "P", "ap": 0, "aa": 0, "cp": 138, "ca": 4, "ev": 0}, {"m": "2026-06", "d": "Reservatório", "t": "P", "ap": 0, "aa": 0, "cp": 4, "ca": 0, "ev": 0}, {"m": "2026-07", "d": "Civil", "t": "C", "ap": 0, "aa": 0, "cp": 94, "ca": 0, "ev": 0}, {"m": "2026-07", "d": "Civil", "t": "P", "ap": 23, "aa": 0, "cp": 21, "ca": 1, "ev": 0}, {"m": "2026-07", "d": "Combate a Incêndio", "t": "P", "ap": 0, "aa": 1, "cp": 0, "ca": 0, "ev": 1}, {"m": "2026-07", "d": "Elevadores", "t": "P", "ap": 0, "aa": 0, "cp": 3, "ca": 1, "ev": 0}, {"m": "2026-07", "d": "Elétrica", "t": "C", "ap": 0, "aa": 0, "cp": 31, "ca": 1, "ev": 0}, {"m": "2026-07", "d": "Elétrica", "t": "P", "ap": 33, "aa": 3, "cp": 26, "ca": 1, "ev": 0}, {"m": "2026-07", "d": "Mecânica", "t": "P", "ap": 49, "aa": 1, "cp": 20, "ca": 1, "ev": 0}, {"m": "2026-07", "d": "Refrigeração", "t": "C", "ap": 0, "aa": 0, "cp": 3, "ca": 0, "ev": 0}, {"m": "2026-07", "d": "Refrigeração", "t": "P", "ap": 89, "aa": 7, "cp": 48, "ca": 2, "ev": 0}, {"m": "2026-07", "d": "Reservatório", "t": "P", "ap": 1, "aa": 3, "cp": 0, "ca": 0, "ev": 0}, {"m": "2026-08", "d": "Combate a Incêndio", "t": "P", "ap": 19, "aa": 0, "cp": 0, "ca": 0, "ev": 0}, {"m": "2026-08", "d": "Elevadores", "t": "P", "ap": 4, "aa": 0, "cp": 0, "ca": 0, "ev": 0}, {"m": "2026-08", "d": "Elétrica", "t": "P", "ap": 33, "aa": 0, "cp": 0, "ca": 0, "ev": 0}, {"m": "2026-08", "d": "Mecânica", "t": "P", "ap": 45, "aa": 0, "cp": 0, "ca": 0, "ev": 0}, {"m": "2026-08", "d": "Refrigeração", "t": "P", "ap": 115, "aa": 0, "cp": 0, "ca": 0, "ev": 0}, {"m": "2026-08", "d": "Reservatório", "t": "P", "ap": 4, "aa": 0, "cp": 0, "ca": 0, "ev": 0}, {"m": "2026-09", "d": "Civil", "t": "P", "ap": 26, "aa": 0, "cp": 0, "ca": 0, "ev": 0}, {"m": "2027-06", "d": "Civil", "t": "C", "ap": 0, "aa": 0, "cp": 1, "ca": 0, "ev": 0}];
+
+const CPS_REAL = [{"sem": 1, "pp": 50, "pc": 31, "cp": 7, "cc": 7, "tp": 57, "tc": 38, "cps": 0.6667}, {"sem": 2, "pp": 89, "pc": 85, "cp": 35, "cc": 35, "tp": 124, "tc": 120, "cps": 0.9677}, {"sem": 3, "pp": 84, "pc": 84, "cp": 73, "cc": 73, "tp": 157, "tc": 157, "cps": 1}, {"sem": 4, "pp": 40, "pc": 40, "cp": 59, "cc": 59, "tp": 99, "tc": 99, "cps": 1}, {"sem": 5, "pp": 95, "pc": 93, "cp": 58, "cc": 58, "tp": 153, "tc": 151, "cps": 0.9869}, {"sem": 6, "pp": 124, "pc": 74, "cp": 51, "cc": 51, "tp": 175, "tc": 125, "cps": 0.7143}, {"sem": 7, "pp": 61, "pc": 59, "cp": 54, "cc": 54, "tp": 115, "tc": 113, "cps": 0.9826}, {"sem": 8, "pp": 78, "pc": 76, "cp": 24, "cc": 24, "tp": 102, "tc": 100, "cps": 0.9804}, {"sem": 9, "pp": 55, "pc": 53, "cp": 37, "cc": 37, "tp": 92, "tc": 90, "cps": 0.9783}, {"sem": 10, "pp": 81, "pc": 64, "cp": 56, "cc": 56, "tp": 137, "tc": 120, "cps": 0.8759}, {"sem": 11, "pp": 57, "pc": 54, "cp": 51, "cc": 51, "tp": 108, "tc": 105, "cps": 0.9722}, {"sem": 12, "pp": 44, "pc": 38, "cp": 83, "cc": 83, "tp": 127, "tc": 121, "cps": 0.9528}, {"sem": 13, "pp": 57, "pc": 44, "cp": 51, "cc": 51, "tp": 108, "tc": 95, "cps": 0.8796}, {"sem": 14, "pp": 92, "pc": 60, "cp": 48, "cc": 48, "tp": 140, "tc": 108, "cps": 0.7714}, {"sem": 15, "pp": 49, "pc": 37, "cp": 42, "cc": 42, "tp": 91, "tc": 79, "cps": 0.8681}, {"sem": 16, "pp": 59, "pc": 43, "cp": 58, "cc": 58, "tp": 117, "tc": 101, "cps": 0.8632}, {"sem": 17, "pp": 48, "pc": 43, "cp": 45, "cc": 45, "tp": 93, "tc": 88, "cps": 0.9462}, {"sem": 18, "pp": 89, "pc": 88, "cp": 93, "cc": 93, "tp": 182, "tc": 181, "cps": 0.9945}, {"sem": 19, "pp": 92, "pc": 69, "cp": 72, "cc": 72, "tp": 164, "tc": 141, "cps": 0.8598}, {"sem": 20, "pp": 38, "pc": 32, "cp": 77, "cc": 76, "tp": 115, "tc": 108, "cps": 0.9391}, {"sem": 21, "pp": 56, "pc": 52, "cp": 48, "cc": 48, "tp": 104, "tc": 100, "cps": 0.9615}, {"sem": 22, "pp": 57, "pc": 54, "cp": 41, "cc": 40, "tp": 98, "tc": 94, "cps": 0.9592}, {"sem": 23, "pp": 87, "pc": 66, "cp": 52, "cc": 52, "tp": 139, "tc": 118, "cps": 0.8489}, {"sem": 24, "pp": 46, "pc": 46, "cp": 35, "cc": 35, "tp": 81, "tc": 81, "cps": 1}, {"sem": 25, "pp": 45, "pc": 44, "cp": 54, "cc": 53, "tp": 99, "tc": 97, "cps": 0.9798}, {"sem": 26, "pp": 57, "pc": 55, "cp": 51, "cc": 51, "tp": 108, "tc": 106, "cps": 0.9815}, {"sem": 27, "pp": 90, "pc": 83, "cp": 51, "cc": 49, "tp": 141, "tc": 132, "cps": 0.9362}, {"sem": 28, "pp": 70, "pc": 66, "cp": 55, "cc": 55, "tp": 125, "tc": 121, "cps": 0.968}, {"sem": 29, "pp": 63, "pc": 24, "cp": 37, "cc": 37, "tp": 100, "tc": 61, "cps": 0.61}, {"sem": 30, "pp": 68, "pc": 0, "cp": 0, "cc": 0, "tp": 68, "tc": 0, "cps": 0}, {"sem": 31, "pp": 99, "pc": 0, "cp": 2, "cc": 2, "tp": 101, "tc": 2, "cps": 0.0198}, {"sem": 32, "pp": 70, "pc": 0, "cp": 0, "cc": 0, "tp": 70, "tc": 0, "cps": 0}, {"sem": 33, "pp": 59, "pc": 0, "cp": 0, "cc": 0, "tp": 59, "tc": 0, "cps": 0}, {"sem": 34, "pp": 36, "pc": 0, "cp": 0, "cc": 0, "tp": 36, "tc": 0, "cps": 0}, {"sem": 35, "pp": 55, "pc": 0, "cp": 0, "cc": 0, "tp": 55, "tc": 0, "cps": 0}, {"sem": 36, "pp": 0, "pc": 0, "cp": 0, "cc": 0, "tp": 0, "tc": 0, "cps": null}, {"sem": 37, "pp": 0, "pc": 0, "cp": 0, "cc": 0, "tp": 0, "tc": 0, "cps": null}, {"sem": 38, "pp": 0, "pc": 0, "cp": 0, "cc": 0, "tp": 0, "tc": 0, "cps": null}, {"sem": 39, "pp": 23, "pc": 0, "cp": 0, "cc": 0, "tp": 23, "tc": 0, "cps": 0}, {"sem": 40, "pp": 3, "pc": 0, "cp": 0, "cc": 0, "tp": 3, "tc": 0, "cps": 0}, {"sem": 41, "pp": 0, "pc": 0, "cp": 0, "cc": 0, "tp": 0, "tc": 0, "cps": null}, {"sem": 42, "pp": 0, "pc": 0, "cp": 0, "cc": 0, "tp": 0, "tc": 0, "cps": null}, {"sem": 43, "pp": 0, "pc": 0, "cp": 0, "cc": 0, "tp": 0, "tc": 0, "cps": null}, {"sem": 44, "pp": 0, "pc": 0, "cp": 0, "cc": 0, "tp": 0, "tc": 0, "cps": null}, {"sem": 45, "pp": 0, "pc": 0, "cp": 0, "cc": 0, "tp": 0, "tc": 0, "cps": null}, {"sem": 46, "pp": 0, "pc": 0, "cp": 0, "cc": 0, "tp": 0, "tc": 0, "cps": null}, {"sem": 47, "pp": 0, "pc": 0, "cp": 0, "cc": 0, "tp": 0, "tc": 0, "cps": null}, {"sem": 48, "pp": 0, "pc": 0, "cp": 0, "cc": 0, "tp": 0, "tc": 0, "cps": null}, {"sem": 49, "pp": 0, "pc": 0, "cp": 0, "cc": 0, "tp": 0, "tc": 0, "cps": null}, {"sem": 50, "pp": 0, "pc": 0, "cp": 0, "cc": 0, "tp": 0, "tc": 0, "cps": null}, {"sem": 51, "pp": 0, "pc": 0, "cp": 0, "cc": 0, "tp": 0, "tc": 0, "cps": null}, {"sem": 52, "pp": 0, "pc": 0, "cp": 0, "cc": 0, "tp": 0, "tc": 0, "cps": null}, {"sem": 53, "pp": 0, "pc": 0, "cp": 0, "cc": 0, "tp": 0, "tc": 0, "cps": null}];
+
+const AMOSTRA = [
+{"ordem":"2032107840","texto":"PRV DET. TÉRMICO 9ºA-ALA B-OESTE (9B)","fimProg":"08/07/2026","dataProg":"","dtReal":"","centrab":"TAUAUTC1","tipoOrdem":"ZM01","tipoManut":"Preventiva","semana":28,"situacao":"Atrasada","oficina":"Combate a Incêndio","statusOp":"Concluída","tipoAtraso":"In Haus","motivo":"Aguardando evidências Subcontratada","evidFlag":"Sim","validPlan":false},
+{"ordem":"2032137805","texto":"PRV LUM EMERGÊNCIA 8ºA-ALA A-LESTE (8A)","fimProg":"13/07/2026","dataProg":"","dtReal":"","centrab":"ELEELEC1","tipoOrdem":"ZM01","tipoManut":"Preventiva","semana":29,"situacao":"Atrasada","oficina":"Elétrica","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":false},
+{"ordem":"2032137866","texto":"PRV LUM EMERGÊNCIA 8ºA-ALA B-OESTE (8B)","fimProg":"13/07/2026","dataProg":"","dtReal":"","centrab":"ELEELEC1","tipoOrdem":"ZM01","tipoManut":"Preventiva","semana":29,"situacao":"Atrasada","oficina":"Elétrica","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":false},
+{"ordem":"2032137878","texto":"PRV AC-5252161 AR COND SPLIT 8ºA-ALA A-L","fimProg":"13/07/2026","dataProg":"","dtReal":"","centrab":"MECREFC1","tipoOrdem":"ZM01","tipoManut":"Preventiva","semana":29,"situacao":"Atrasada","oficina":"Refrigeração","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":false},
+{"ordem":"2032204306","texto":"PRV GE-5147001 GRUP GERAD ENTORN-ALA B-O","fimProg":"13/07/2026","dataProg":"","dtReal":"","centrab":"MECMECC1","tipoOrdem":"ZM01","tipoManut":"Preventiva","semana":29,"situacao":"Atrasada","oficina":"Mecânica","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":false},
+{"ordem":"2032107889","texto":"PRV TQ-6122003 RESERVATÓRIO SS-ALA A-L","fimProg":"03/07/2026","dataProg":"","dtReal":"","centrab":"OMPCIVC1","tipoOrdem":"ZM01","tipoManut":"Preventiva","semana":27,"situacao":"Atrasada","oficina":"Reservatório","statusOp":"Concluída","tipoAtraso":"","motivo":"Aguardando evidências Subcontratada","evidFlag":"","validPlan":false},
+{"ordem":"2032107898","texto":"PRV TQ-6122004 RESERVATÓRIO SS-ALA A-L","fimProg":"03/07/2026","dataProg":"","dtReal":"","centrab":"OMPCIVC1","tipoOrdem":"ZM01","tipoManut":"Preventiva","semana":27,"situacao":"Atrasada","oficina":"Reservatório","statusOp":"Concluída","tipoAtraso":"","motivo":"Aguardando evidências Subcontratada","evidFlag":"","validPlan":false},
+{"ordem":"2032107751","texto":"PRV TQ-6122005 RESERVATÓRIO SS-ALA A-L","fimProg":"03/07/2026","dataProg":"","dtReal":"","centrab":"OMPCIVC1","tipoOrdem":"ZM01","tipoManut":"Preventiva","semana":27,"situacao":"Atrasada","oficina":"Reservatório","statusOp":"Concluída","tipoAtraso":"","motivo":"Aguardando evidências Subcontratada","evidFlag":"","validPlan":false},
+{"ordem":"2032137867","texto":"PRV PN-5252028 PAIN ELETR 5ºA-ALA B-O","fimProg":"13/07/2026","dataProg":"","dtReal":"","centrab":"ELEELEC1","tipoOrdem":"ZM01","tipoManut":"Preventiva","semana":29,"situacao":"Atrasada","oficina":"Elétrica","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":false},
+{"ordem":"2032138236","texto":"AC-5252179 PRV AR COND SPRINGER","fimProg":"13/07/2026","dataProg":"","dtReal":"","centrab":"MECREFC1","tipoOrdem":"ZM01","tipoManut":"Preventiva","semana":29,"situacao":"Atrasada","oficina":"Refrigeração","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":false},
+{"ordem":"2032138248","texto":"VT-5252012 PRV VENTILADOR 5ºA-ALA B-O","fimProg":"13/07/2026","dataProg":"","dtReal":"","centrab":"MECREFC1","tipoOrdem":"ZM01","tipoManut":"Preventiva","semana":29,"situacao":"Atrasada","oficina":"Refrigeração","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":false},
+{"ordem":"2032138227","texto":"AC-5252187 PRV AR COND.SPLIT 5ºA-ALA A-L","fimProg":"13/07/2026","dataProg":"","dtReal":"","centrab":"MECREFC1","tipoOrdem":"ZM01","tipoManut":"Preventiva","semana":29,"situacao":"Atrasada","oficina":"Refrigeração","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":false},
+{"ordem":"2032138347","texto":"AC-5252188 PRV AR COND.SPLIT 5ºA-ALA A-L","fimProg":"13/07/2026","dataProg":"","dtReal":"","centrab":"MECREFC1","tipoOrdem":"ZM01","tipoManut":"Preventiva","semana":29,"situacao":"Atrasada","oficina":"Refrigeração","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":false},
+{"ordem":"2032138388","texto":"AC-5252189 PRV AR COND.SPLIT 5ºA-ALA A-L","fimProg":"13/07/2026","dataProg":"","dtReal":"","centrab":"MECREFC1","tipoOrdem":"ZM01","tipoManut":"Preventiva","semana":29,"situacao":"Atrasada","oficina":"Refrigeração","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":false},
+{"ordem":"2032138454","texto":"AC-525AC-5252190 PRV AR COND.SPLIT 5ºA-A","fimProg":"13/07/2026","dataProg":"","dtReal":"","centrab":"MECREFC1","tipoOrdem":"ZM01","tipoManut":"Preventiva","semana":29,"situacao":"Atrasada","oficina":"Refrigeração","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":false},
+{"ordem":"2032137932","texto":"PRV AC-5252034 FAN COIL 4ºA-ALA A-L","fimProg":"15/07/2026","dataProg":"","dtReal":"","centrab":"MECREFC1","tipoOrdem":"ZM01","tipoManut":"Preventiva","semana":29,"situacao":"No prazo","oficina":"Refrigeração","statusOp":"Concluída","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":false},
+{"ordem":"2032326502","texto":"0125.P01.ECCOB - INSP TELHADO E COBERTUR","fimProg":"24/09/2026","dataProg":"","dtReal":"","centrab":"PEDCIVC1","tipoOrdem":"ZM01","tipoManut":"Preventiva","semana":39,"situacao":"No prazo","oficina":"Civil","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":true},
+{"ordem":"2032234323","texto":"PRV DET. FUMAÇA 3ºA-ALA A/B","fimProg":"05/08/2026","dataProg":"","dtReal":"","centrab":"TAUAUTC1","tipoOrdem":"ZM01","tipoManut":"Preventiva","semana":32,"situacao":"No prazo","oficina":"Combate a Incêndio","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":true},
+{"ordem":"2032326342","texto":"PRV LUM EMERGÊNCIA 1ºA-ALA B-OESTE (1B)","fimProg":"24/08/2026","dataProg":"","dtReal":"","centrab":"ELEELEC1","tipoOrdem":"ZM01","tipoManut":"Preventiva","semana":35,"situacao":"No prazo","oficina":"Elétrica","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":true},
+{"ordem":"2032263462","texto":"PRV AC-5252141 AR COND SPLIT 3ºA-ALA A-L","fimProg":"07/08/2026","dataProg":"","dtReal":"","centrab":"MECREFC1","tipoOrdem":"ZM01","tipoManut":"Preventiva","semana":32,"situacao":"No prazo","oficina":"Refrigeração","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":true},
+{"ordem":"2032204364","texto":"PRV B-6122004 BOMB CENTRIFUGA SS-ALA A-L","fimProg":"30/07/2026","dataProg":"","dtReal":"","centrab":"MECMECC1","tipoOrdem":"ZM01","tipoManut":"Preventiva","semana":31,"situacao":"No prazo","oficina":"Mecânica","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":true},
+{"ordem":"2032234641","texto":"PRV EL-8268001 ELEVADOR 9ºA-ALA B-O","fimProg":"04/08/2026","dataProg":"","dtReal":"","centrab":"MECMOVC1","tipoOrdem":"ZM01","tipoManut":"Preventiva","semana":32,"situacao":"No prazo","oficina":"Elevadores","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":true},
+{"ordem":"2032204052","texto":"PRV TQ-6122001 RESERVATÓR COBER-ALA B-O","fimProg":"27/07/2026","dataProg":"","dtReal":"","centrab":"OMPCIVC1","tipoOrdem":"ZM01","tipoManut":"Preventiva","semana":31,"situacao":"No prazo","oficina":"Reservatório","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":true},
+{"ordem":"2032326321","texto":"0125.P01.ECEST - INSP ESTRUT CONCRETO","fimProg":"28/09/2026","dataProg":"","dtReal":"","centrab":"PEDCIVC1","tipoOrdem":"ZM01","tipoManut":"Preventiva","semana":40,"situacao":"No prazo","oficina":"Civil","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":true},
+{"ordem":"2032234378","texto":"PRV ACION MANUAL 8º ANDAR-ALA A/B","fimProg":"05/08/2026","dataProg":"","dtReal":"","centrab":"TAUAUTC1","tipoOrdem":"ZM01","tipoManut":"Preventiva","semana":32,"situacao":"No prazo","oficina":"Combate a Incêndio","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":true},
+{"ordem":"2032203888","texto":"PRV LUM EMERGÊNCIA 1ºA-ALA B-OESTE (1B)","fimProg":"24/07/2026","dataProg":"","dtReal":"","centrab":"ELEELEC1","tipoOrdem":"ZM01","tipoManut":"Preventiva","semana":30,"situacao":"No prazo","oficina":"Elétrica","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":true},
+{"ordem":"2032234722","texto":"PRV AC-5252145 AR COND SPLIT 7ºA-ALA A-L","fimProg":"05/08/2026","dataProg":"","dtReal":"","centrab":"MECREFC1","tipoOrdem":"ZM01","tipoManut":"Preventiva","semana":32,"situacao":"No prazo","oficina":"Refrigeração","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":true},
+{"ordem":"2032234810","texto":"PRV B-6122005 BOMB CENTRIFUGA SS-ALA A-L","fimProg":"04/08/2026","dataProg":"","dtReal":"","centrab":"MECMECC1","tipoOrdem":"ZM01","tipoManut":"Preventiva","semana":32,"situacao":"No prazo","oficina":"Mecânica","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":true},
+{"ordem":"2032234693","texto":"PRV EL-8268002 ELEVADOR 9ºA-ALA B-O","fimProg":"04/08/2026","dataProg":"","dtReal":"","centrab":"MECMOVC1","tipoOrdem":"ZM01","tipoManut":"Preventiva","semana":32,"situacao":"No prazo","oficina":"Elevadores","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":true},
+{"ordem":"2032326282","texto":"PRV TQ-6122001 RESERVATÓR COBER-ALA B-O","fimProg":"25/08/2026","dataProg":"","dtReal":"","centrab":"OMPCIVC1","tipoOrdem":"ZM01","tipoManut":"Preventiva","semana":35,"situacao":"No prazo","oficina":"Reservatório","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":true},
+{"ordem":"16902468","texto":"ORAGANIZAÇÃO DOS CABOS SLA AUTOMAÇÃO","fimProg":"03/07/2026","dataProg":"","dtReal":"06/07/2026","centrab":"ELEELEC1","tipoOrdem":"ZO","tipoManut":"Corretiva","semana":27,"situacao":"Concluída em atraso","oficina":"Elétrica","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":false},
+{"ordem":"16898027","texto":"","fimProg":"","dataProg":"","dtReal":"03/07/2026","centrab":"PEDCIVC1","tipoOrdem":"ZO","tipoManut":"Corretiva","semana":"","situacao":"Concluída em atraso","oficina":"Civil","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":false},
+{"ordem":"16881516","texto":"AJUSTAR ACABAMENTO AR-CONDICIONADO 6° A","fimProg":"","dataProg":"","dtReal":"25/06/2026","centrab":"MECREFC1","tipoOrdem":"ZO","tipoManut":"Corretiva","semana":"","situacao":"Concluída em atraso","oficina":"Refrigeração","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":false},
+{"ordem":"16792516","texto":"EL-8268001 - DEFEITO TRINCO PORTA","fimProg":"13/05/2026","dataProg":"","dtReal":"14/05/2026","centrab":"MECMOVC1","tipoOrdem":"ZF","tipoManut":"Corretiva","semana":20,"situacao":"Concluída em atraso","oficina":"Elevadores","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":false},
+{"ordem":"16629310","texto":"INSTALAR RODAPÉ BANHEIRO FEMININO 1° B","fimProg":"","dataProg":"","dtReal":"26/02/2026","centrab":"","tipoOrdem":"ZO","tipoManut":"Corretiva","semana":"","situacao":"Concluída em atraso","oficina":"Sem de-para","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":false},
+{"ordem":"16515050","texto":"B-5420004 - VIBRAÇÃO ANORMAL","fimProg":"18/12/2025","dataProg":"","dtReal":"29/12/2025","centrab":"MECMECC1","tipoOrdem":"ZF","tipoManut":"Corretiva","semana":"","situacao":"Concluída em atraso","oficina":"Mecânica","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":false},
+{"ordem":"2031870144","texto":"PRV DET. TÉRMICO 1ºA-ALA B-OESTE (1B)","fimProg":"07/05/2026","dataProg":"","dtReal":"09/05/2026","centrab":"TAUAUTC1","tipoOrdem":"ZM01","tipoManut":"Preventiva","semana":19,"situacao":"Concluída em atraso","oficina":"Combate a Incêndio","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":true},
+{"ordem":"2031345308","texto":"PRV TQ-6122003 RESERVATÓRIO SS-ALA A-L","fimProg":"05/01/2026","dataProg":"","dtReal":"12/01/2026","centrab":"OMPCIVC1","tipoOrdem":"ZM01","tipoManut":"Preventiva","semana":2,"situacao":"Concluída em atraso","oficina":"Reservatório","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":true},
+{"ordem":"16733418","texto":"MOVIMENTAÇÃO DE PONTO ELETRICO P° 4°","fimProg":"","dataProg":"","dtReal":"14/04/2026","centrab":"ELEELEC1","tipoOrdem":"ZO","tipoManut":"Corretiva","semana":"","situacao":"Concluída em atraso","oficina":"Elétrica","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":false},
+{"ordem":"16898026","texto":"","fimProg":"","dataProg":"","dtReal":"03/07/2026","centrab":"PEDCIVC1","tipoOrdem":"ZO","tipoManut":"Corretiva","semana":"","situacao":"Concluída em atraso","oficina":"Civil","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":false},
+{"ordem":"16575563","texto":"MELHORAR ISOLAMENTO LINHA FRIGORIGENA","fimProg":"","dataProg":"","dtReal":"29/01/2026","centrab":"MECREFC1","tipoOrdem":"ZO","tipoManut":"Corretiva","semana":"","situacao":"Concluída em atraso","oficina":"Refrigeração","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":false},
+{"ordem":"2031459606","texto":"PRV EL-8268001 ELEVADOR 9ºA-ALA B-O","fimProg":"02/02/2026","dataProg":"","dtReal":"03/02/2026","centrab":"MECMOVC1","tipoOrdem":"ZM01","tipoManut":"Preventiva","semana":6,"situacao":"Concluída em atraso","oficina":"Elevadores","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":true},
+{"ordem":"2030959972","texto":"PRV B-6122004 BOMB CENTRIFUGA SS-ALA A-L","fimProg":"03/10/2025","dataProg":"","dtReal":"09/10/2025","centrab":"MECMECC1","tipoOrdem":"ZM01","tipoManut":"Preventiva","semana":"","situacao":"Concluída em atraso","oficina":"Mecânica","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":true},
+{"ordem":"2031870166","texto":"PRV DET. TÉRMICO 2ºA-ALA B-OESTE 2B","fimProg":"07/05/2026","dataProg":"","dtReal":"09/05/2026","centrab":"TAUAUTC1","tipoOrdem":"ZM01","tipoManut":"Preventiva","semana":19,"situacao":"Concluída em atraso","oficina":"Combate a Incêndio","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":true},
+{"ordem":"16917194","texto":"SINALIZAÇÃO SAIDA DE EMERG. AUDITORIO","fimProg":"16/07/2026","dataProg":"","dtReal":"13/07/2026","centrab":"ELEELEC1","tipoOrdem":"ZO","tipoManut":"Corretiva","semana":29,"situacao":"Concluída no prazo","oficina":"Elétrica","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":false},
+{"ordem":"16916811","texto":"FORRO MINERAL COM AVARIA 7° ALA A SL 103","fimProg":"18/07/2026","dataProg":"","dtReal":"13/07/2026","centrab":"PEDCIVC1","tipoOrdem":"ZO","tipoManut":"Corretiva","semana":29,"situacao":"Concluída no prazo","oficina":"Civil","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":false},
+{"ordem":"16916809","texto":"FIXAR RECEPTOR AR-COND. 7° A SL 103","fimProg":"18/07/2026","dataProg":"","dtReal":"13/07/2026","centrab":"MECREFC1","tipoOrdem":"ZO","tipoManut":"Corretiva","semana":29,"situacao":"Concluída no prazo","oficina":"Refrigeração","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":false},
+{"ordem":"16883310","texto":"EL-8268004 - FALHA NA ABERTURA DA PORTA","fimProg":"29/06/2026","dataProg":"","dtReal":"26/06/2026","centrab":"MECMOVC1","tipoOrdem":"ZF","tipoManut":"Corretiva","semana":27,"situacao":"Concluída no prazo","oficina":"Elevadores","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":false},
+{"ordem":"16566853","texto":"MANUTENÇÃO NO AMI L00165 BOTOEIRA SS","fimProg":"27/01/2026","dataProg":"","dtReal":"26/01/2026","centrab":"INSINSC1","tipoOrdem":"ZO","tipoManut":"Corretiva","semana":5,"situacao":"Concluída no prazo","oficina":"Combate a Incêndio","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":false},
+{"ordem":"16436581","texto":"VERIFICAÇÃO DE FORTE ODOR NO AUDITÓRIO","fimProg":"17/11/2025","dataProg":"","dtReal":"13/11/2025","centrab":"","tipoOrdem":"ZO","tipoManut":"Corretiva","semana":"","situacao":"Concluída no prazo","oficina":"Sem de-para","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":false},
+{"ordem":"16390276","texto":"VAZAMENTO NA BOMBA DE VACUO B-6122006 01","fimProg":"23/10/2025","dataProg":"","dtReal":"22/10/2025","centrab":"MECMECC1","tipoOrdem":"ZS","tipoManut":"Corretiva","semana":"","situacao":"Concluída no prazo","oficina":"Mecânica","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":false},
+{"ordem":"2031535453","texto":"PRV TQ-6122001 RESERVATÓR COBER-ALA B-O","fimProg":"26/02/2026","dataProg":"","dtReal":"23/02/2026","centrab":"OMPCIVC1","tipoOrdem":"ZM01","tipoManut":"Preventiva","semana":9,"situacao":"Concluída no prazo","oficina":"Reservatório","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":true},
+{"ordem":"16916654","texto":"TROCA LAMPADA SALA RINST 7°A","fimProg":"15/07/2026","dataProg":"","dtReal":"13/07/2026","centrab":"ELEELEC1","tipoOrdem":"ZO","tipoManut":"Corretiva","semana":29,"situacao":"Concluída no prazo","oficina":"Elétrica","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":false},
+{"ordem":"16912431","texto":"FINALIZAR ACABAMENTO FORRO SL TIC 1ºB","fimProg":"15/07/2026","dataProg":"","dtReal":"10/07/2026","centrab":"PEDCIVC1","tipoOrdem":"ZO","tipoManut":"Corretiva","semana":29,"situacao":"Concluída no prazo","oficina":"Civil","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":false},
+{"ordem":"16914123","texto":"ISOLAMENTO DA TUBULAÇÃO COBERTURA","fimProg":"10/07/2026","dataProg":"","dtReal":"10/07/2026","centrab":"MECREFC1","tipoOrdem":"ZO","tipoManut":"Corretiva","semana":28,"situacao":"Concluída no prazo","oficina":"Refrigeração","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":false},
+{"ordem":"16756539","texto":"EL-8268001 - DEFEITO BOTOEIRA INTERNA","fimProg":"28/04/2026","dataProg":"","dtReal":"27/04/2026","centrab":"MECMOVC1","tipoOrdem":"ZF","tipoManut":"Corretiva","semana":18,"situacao":"Concluída no prazo","oficina":"Elevadores","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":false},
+{"ordem":"2031135399","texto":"PRV SDAI ACION MAN 2º ANDAR-ALA A/B","fimProg":"13/11/2025","dataProg":"","dtReal":"08/11/2025","centrab":"TAUAUTC1","tipoOrdem":"ZM01","tipoManut":"Preventiva","semana":"","situacao":"Concluída no prazo","oficina":"Combate a Incêndio","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":true},
+{"ordem":"16389823","texto":"LAMPADA QUEIMADA NA SALA DO VIDEO WALL 9","fimProg":"22/10/2025","dataProg":"","dtReal":"22/10/2025","centrab":"","tipoOrdem":"ZO","tipoManut":"Corretiva","semana":"","situacao":"Concluída no prazo","oficina":"Sem de-para","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":false},
+{"ordem":"2031199546","texto":"PRV B-6122004 BOMB CENTRIFUGA SS-ALA A-L","fimProg":"02/12/2025","dataProg":"","dtReal":"27/11/2025","centrab":"MECMECC1","tipoOrdem":"ZM01","tipoManut":"Preventiva","semana":"","situacao":"Concluída no prazo","oficina":"Mecânica","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":true},
+{"ordem":"2031930733","texto":"PRV TQ-6122001 RESERVATÓR COBER-ALA B-O","fimProg":"27/05/2026","dataProg":"","dtReal":"25/05/2026","centrab":"OMPCIVC1","tipoOrdem":"ZM01","tipoManut":"Preventiva","semana":22,"situacao":"Concluída no prazo","oficina":"Reservatório","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":true},
+{"ordem":"16912430","texto":"IDENTIFICAÇÃO CIRCUITO TOMADA SL 102 1ºA","fimProg":"15/07/2026","dataProg":"","dtReal":"10/07/2026","centrab":"ELEELEC1","tipoOrdem":"ZO","tipoManut":"Corretiva","semana":29,"situacao":"Concluída no prazo","oficina":"Elétrica","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":false},
+{"ordem":"16912429","texto":"PINTURA ALÇAPÃO SL JURIDICO 4º A","fimProg":"15/07/2026","dataProg":"","dtReal":"10/07/2026","centrab":"PEDCIVC1","tipoOrdem":"ZO","tipoManut":"Corretiva","semana":29,"situacao":"Concluída no prazo","oficina":"Civil","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":false},
+{"ordem":"16902470","texto":"SUBS DE COMPRESSOR COBERTURA","fimProg":"06/07/2026","dataProg":"","dtReal":"06/07/2026","centrab":"MECREFC1","tipoOrdem":"ZO","tipoManut":"Corretiva","semana":28,"situacao":"Concluída no prazo","oficina":"Refrigeração","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":false},
+{"ordem":"16713780","texto":"EL-8268004 - DEFEITO BOTOEIRA INTERNA","fimProg":"08/04/2026","dataProg":"","dtReal":"06/04/2026","centrab":"MECMOVC1","tipoOrdem":"ZF","tipoManut":"Corretiva","semana":15,"situacao":"Concluída no prazo","oficina":"Elevadores","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":false},
+{"ordem":"2031135675","texto":"PRV ACION MANUAL 8º ANDAR-ALA A/B","fimProg":"13/11/2025","dataProg":"","dtReal":"08/11/2025","centrab":"TAUAUTC1","tipoOrdem":"ZM01","tipoManut":"Preventiva","semana":"","situacao":"Concluída no prazo","oficina":"Combate a Incêndio","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":true},
+{"ordem":"2031319778","texto":"PRV B-6122004 BOMB CENTRIFUGA SS-ALA A-L","fimProg":"02/01/2026","dataProg":"","dtReal":"29/12/2025","centrab":"MECMECC1","tipoOrdem":"ZM01","tipoManut":"Preventiva","semana":1,"situacao":"Concluída no prazo","oficina":"Mecânica","statusOp":"","tipoAtraso":"","motivo":"","evidFlag":"","validPlan":true}
+];
+
+    const fmt = new Intl.NumberFormat('pt-BR');
+    const pct1 = v => (v * 100).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%';
+    const MES_NOME = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+    const mesLabel = m => m ? MES_NOME[+m.split('-')[1] - 1] + '/' + m.split('-')[0].slice(2) : 'Sem data';
+    const SEMANA_ATUAL = 29; // semana ISO da base (14/07/2026)
+
+    const MOTIVOS = ['Aguardando evidências Subcontratada', 'Aguardando material / peça', 'Aguardando liberação de área (cliente)', 'Outro (texto livre)'];
+    const TIPOS_ATRASO = ['In Haus', 'Petrobras'];
+
+    const ROLES = {
+        admin: {
+            label: 'Administrador (PCM)',
+            hint: 'Perfil Administrador (PCM): parametrizações, cargas e acesso a todas as telas.',
+            tabs: ['dashboard', 'ordens', 'cps', 'cargas', 'param'],
+            edita: true, importa: true,
+        },
+        operacao: {
+            label: 'Operação',
+            hint: 'Perfil Operação: edita apenas os campos de apontamento (status, atraso, evidências) — campos SAP bloqueados e sem acesso a cargas/parametrizações.',
+            tabs: ['ordens'],
+            edita: true, importa: false,
+        },
+        gestao: {
+            label: 'Gestão / Leitura',
+            hint: 'Perfil Gestão/Leitura: dashboard e consultas, sem nenhuma edição.',
+            tabs: ['dashboard', 'ordens', 'cps'],
+            edita: false, importa: false,
+        },
+    };
+
+    const state = { role: 'admin', ordemAberta: null, selecao: new Set() };
+
+    /* ---------- Derivações do cubo ---------- */
+    const MESES = [...new Set(CUBO.map(e => e.m).filter(Boolean))].sort();
+    const totalPorDisc = {};
+    CUBO.forEach(e => { totalPorDisc[e.d] = (totalPorDisc[e.d] || 0) + e.ap + e.aa + e.cp + e.ca; });
+    const DISCIPLINAS = Object.keys(totalPorDisc).sort((a, b) => totalPorDisc[b] - totalPorDisc[a]);
+
+    function soma(filtro) {
+        const r = { ap: 0, aa: 0, cp: 0, ca: 0, ev: 0 };
+        CUBO.forEach(e => {
+            if (filtro.m && e.m !== filtro.m) return;
+            if (filtro.d && e.d !== filtro.d) return;
+            if (filtro.t && e.t !== filtro.t) return;
+            r.ap += e.ap; r.aa += e.aa; r.cp += e.cp; r.ca += e.ca; r.ev += e.ev;
+        });
+        r.abertas = r.ap + r.aa;
+        r.concluidas = r.cp + r.ca;
+        r.total = r.abertas + r.concluidas;
+        r.sla = r.concluidas ? r.cp / r.concluidas : null;
+        return r;
+    }
+    const filtrosAtuais = () => ({
+        m: document.getElementById('fMes').value,
+        d: document.getElementById('fDisc').value,
+        t: document.getElementById('fTipo').value,
+    });
+
+    /* ---------- Tooltip ---------- */
+    const tip = document.getElementById('vizTip');
+    function bindTip(el, htmlFn) {
+        el.addEventListener('mouseenter', () => { tip.innerHTML = typeof htmlFn === 'function' ? htmlFn() : htmlFn; tip.style.display = 'block'; });
+        el.addEventListener('mousemove', e => {
+            tip.style.left = Math.min(e.clientX + 14, window.innerWidth - 300) + 'px';
+            tip.style.top = (e.clientY + 14) + 'px';
+        });
+        el.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
+    }
+
+    /* ---------- Dashboard: KPIs ---------- */
+    function renderKpis() {
+        const d = soma(filtrosAtuais());
+        // O split P×C ignora o filtro de tipo (mostra sempre a divisão do recorte mês/disciplina)
+        const prev = soma({ ...filtrosAtuais(), t: 'P' });
+        const corr = soma({ ...filtrosAtuais(), t: 'C' });
+        const baseSplit = prev.total + corr.total;
+        const slaTxt = d.sla === null ? '—' : pct1(d.sla);
+        document.getElementById('kpiGrid').innerHTML = `
+            <div class="kpi-card kpi-hero">
+                <div class="kpi-label">SLA — % de concluídas no prazo</div>
+                <div class="hero-value">${slaTxt}</div>
+                <div class="meter">
+                    <div class="meter-fill" style="width:${d.sla ? (d.sla * 100).toFixed(1) : 0}%"></div>
+                    <div class="meter-goal" style="left:90%"></div>
+                </div>
+                <div class="meter-legend"><span>${fmt.format(d.cp)} de ${fmt.format(d.concluidas)} concluídas</span><span>meta 90%</span></div>
+            </div>
+            <div class="kpi-card kpi-tile"><div class="kpi-label">Total de ordens</div><div class="kpi-value">${fmt.format(d.total)}</div><div class="kpi-note">no recorte filtrado</div></div>
+            <div class="kpi-card kpi-tile"><div class="kpi-label">Abertas</div><div class="kpi-value">${fmt.format(d.abertas)}</div><div class="kpi-note">sem Dt.real fim</div></div>
+            <div class="kpi-card kpi-tile"><div class="kpi-label">Concluídas</div><div class="kpi-value">${fmt.format(d.concluidas)}</div><div class="kpi-note">com Dt.real fim</div></div>
+            <div class="kpi-card kpi-tile"><div class="kpi-label">Com evidência de atraso</div><div class="kpi-value">${fmt.format(d.ev)}</div><div class="kpi-note">anexos registrados</div></div>
+            <div class="kpi-card kpi-tile"><div class="kpi-label">Abertas atrasadas</div><div class="kpi-value" style="color:#b91c1c">${fmt.format(d.aa)}</div><div class="kpi-note">fim programado vencido</div></div>
+            <div class="kpi-card kpi-tile"><div class="kpi-label">Abertas no prazo</div><div class="kpi-value" style="color:#15803d">${fmt.format(d.ap)}</div><div class="kpi-note">dentro do fim programado</div></div>
+            <div class="kpi-card kpi-tile"><div class="kpi-label">Concluídas no prazo</div><div class="kpi-value">${fmt.format(d.cp)}</div><div class="kpi-note">Dt.real fim ≤ fim prog.</div></div>
+            <div class="kpi-card kpi-tile"><div class="kpi-label">Concluídas em atraso</div><div class="kpi-value" style="color:#b45309">${fmt.format(d.ca)}</div><div class="kpi-note">Dt.real fim &gt; fim prog.</div></div>
+            <div class="kpi-card kpi-split">
+                <div class="kpi-label">Divisão preventiva × corretiva</div>
+                <div class="split-bar">
+                    <div class="seg-prev" style="width:${baseSplit ? (prev.total / baseSplit * 100).toFixed(1) : 0}%"></div>
+                    <div class="seg-gap"></div>
+                    <div class="seg-corr"></div>
+                </div>
+                <div class="split-legend">
+                    <span><span class="sw" style="background:#2a78d6"></span>Preventivas <b>${fmt.format(prev.total)}</b>${baseSplit ? ` (${pct1(prev.total / baseSplit)})` : ''}</span>
+                    <span><span class="sw" style="background:#cbd5e1"></span>Corretivas <b>${fmt.format(corr.total)}</b>${baseSplit ? ` (${pct1(corr.total / baseSplit)})` : ''}</span>
+                </div>
+            </div>`;
+    }
+
+    /* ---------- Dashboard: barras por disciplina ---------- */
+    function renderHBars(elId, rows, cor, totalRef, vazioMsg) {
+        const el = document.getElementById(elId);
+        el.innerHTML = '';
+        const comValor = rows.filter(r => r.valor > 0);
+        if (!comValor.length) {
+            el.innerHTML = `<div class="chart-empty">${vazioMsg}</div>`;
+            return;
+        }
+        const max = Math.max(...comValor.map(r => r.valor));
+        comValor.forEach(r => {
+            const row = document.createElement('div');
+            row.className = 'hbar-row';
+            row.innerHTML = `
+                <div class="hbar-label">${r.label}</div>
+                <div class="hbar-track">
+                    <div class="hbar-fill ${cor}" style="width:${(r.valor / max * 100).toFixed(1)}%"></div>
+                    <span class="hbar-val">${fmt.format(r.valor)}</span>
+                </div>`;
+            bindTip(row, `<b>${r.label}</b><br>${fmt.format(r.valor)} ordens · ${pct1(r.valor / totalRef)} do recorte`);
+            el.appendChild(row);
+        });
+    }
+
+    function renderCharts() {
+        const f = filtrosAtuais();
+        const porDisc = DISCIPLINAS.map(disc => ({ disc, s: soma({ ...f, d: disc }) }));
+        const d = soma(f);
+        renderHBars('chartAbertas',
+            porDisc.map(x => ({ label: x.disc, valor: x.s.abertas })).sort((a, b) => b.valor - a.valor),
+            'blue', d.abertas || 1, 'Nenhuma ordem aberta neste recorte.');
+        document.getElementById('chartAbertasSub').textContent = `${fmt.format(d.abertas)} abertas`;
+        renderHBars('chartAtrasadas',
+            porDisc.map(x => ({ label: x.disc, valor: x.s.aa })).sort((a, b) => b.valor - a.valor),
+            'red', d.aa || 1, 'Nenhuma ordem aberta em atraso neste recorte.');
+        document.getElementById('chartAtrasadasSub').textContent = `${fmt.format(d.aa)} abertas atrasadas`;
+    }
+
+    /* ---------- Dashboard: tabelas ---------- */
+    function slaCell(sla) {
+        if (sla === null) return '<div class="sla-cell">—</div>';
+        return `<div class="sla-cell"><div class="sla-mini"><div style="width:${(sla * 100).toFixed(1)}%"></div></div><b style="font-variant-numeric:tabular-nums">${pct1(sla)}</b></div>`;
+    }
+
+    function renderDiscTable() {
+        const f = filtrosAtuais();
+        const linhas = DISCIPLINAS.map(disc => ({ disc, s: soma({ ...f, d: disc }) })).filter(x => x.s.total > 0);
+        document.querySelector('#discTable tbody').innerHTML = linhas.map(({ disc, s }) => `
+            <tr>
+                <td style="font-weight:600;color:var(--gray-800)">${disc}</td>
+                <td class="num">${fmt.format(s.abertas)}</td>
+                <td class="num" style="color:#b91c1c;font-weight:600">${fmt.format(s.aa)}</td>
+                <td class="num">${fmt.format(s.ap)}</td>
+                <td class="num">${fmt.format(s.cp)}</td>
+                <td class="num" style="color:#b45309">${fmt.format(s.ca)}</td>
+                <td class="num">${slaCell(s.sla)}</td>
+            </tr>`).join('');
+        const t = soma(f);
+        document.querySelector('#discTable tfoot').innerHTML = `
+            <tr>
+                <td>Total</td>
+                <td class="num">${fmt.format(t.abertas)}</td>
+                <td class="num">${fmt.format(t.aa)}</td>
+                <td class="num">${fmt.format(t.ap)}</td>
+                <td class="num">${fmt.format(t.cp)}</td>
+                <td class="num">${fmt.format(t.ca)}</td>
+                <td class="num">${slaCell(t.sla)}</td>
+            </tr>`;
+    }
+
+    function renderTipoTable() {
+        const f = filtrosAtuais();
+        const linhas = [['Preventiva', 'P'], ['Corretiva', 'C']].map(([nome, t]) => ({ nome, s: soma({ ...f, t }) }));
+        document.querySelector('#tipoTable tbody').innerHTML = linhas.map(({ nome, s }) => `
+            <tr>
+                <td style="font-weight:600;color:var(--gray-800)">${nome}</td>
+                <td class="num">${fmt.format(s.total)}</td>
+                <td class="num">${fmt.format(s.abertas)}</td>
+                <td class="num" style="color:#b91c1c">${fmt.format(s.aa)}</td>
+                <td class="num">${fmt.format(s.cp)}</td>
+                <td class="num" style="color:#b45309">${fmt.format(s.ca)}</td>
+                <td class="num">${slaCell(s.sla)}</td>
+            </tr>`).join('');
+    }
+
+    /* ---------- Gráfico de linha SVG ---------- */
+    function renderLinha(elId, pontos, corLinha) {
+        const el = document.getElementById(elId);
+        const pts = pontos.filter(p => p.y !== null && p.y !== undefined);
+        if (pts.length < 2) { el.innerHTML = '<div class="chart-empty">Sem dados suficientes neste recorte.</div>'; return; }
+        const W = 660, H = 210, L = 46, R = 14, T = 16, B = 30;
+        const ys = pts.map(p => p.y);
+        const yMin = Math.max(0, Math.min(...ys) - 0.06), yMax = Math.min(1.02, Math.max(...ys) + 0.04);
+        const px = i => L + i * (W - L - R) / (pts.length - 1);
+        const py = v => T + (1 - (v - yMin) / (yMax - yMin)) * (H - T - B);
+        const ticks = [yMin, (yMin + yMax) / 2, yMax];
+        const iMin = ys.indexOf(Math.min(...ys)), iMax = ys.indexOf(Math.max(...ys));
+        const rotulo = new Set([0, pts.length - 1, iMin, iMax]);
+        const passoX = Math.ceil(pts.length / 10);
+        let svg = `<svg viewBox="0 0 ${W} ${H}" role="img">`;
+        ticks.forEach(v => {
+            svg += `<line x1="${L}" y1="${py(v)}" x2="${W - R}" y2="${py(v)}" stroke="#e2e8f0" stroke-width="1"/>` +
+                `<text x="${L - 6}" y="${py(v) + 3}" text-anchor="end" font-size="10" fill="#94a3b8">${Math.round(v * 100)}%</text>`;
+        });
+        svg += `<polyline fill="none" stroke="${corLinha}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="${pts.map((p, i) => px(i).toFixed(1) + ',' + py(p.y).toFixed(1)).join(' ')}"/>`;
+        pts.forEach((p, i) => {
+            if (i % passoX === 0 || i === pts.length - 1) {
+                svg += `<text x="${px(i)}" y="${H - 8}" text-anchor="middle" font-size="10" fill="#94a3b8">${p.x}</text>`;
+            }
+            svg += `<circle class="linha-dot" data-i="${i}" cx="${px(i)}" cy="${py(p.y)}" r="4.5" fill="${corLinha}" stroke="#fff" stroke-width="2"/>`;
+            if (rotulo.has(i)) {
+                svg += `<text x="${px(i)}" y="${py(p.y) - 9}" text-anchor="middle" font-size="10.5" font-weight="700" fill="#334155">${pct1(p.y)}</text>`;
+            }
+        });
+        svg += '</svg>';
+        el.innerHTML = svg;
+        el.querySelectorAll('.linha-dot').forEach(dot => {
+            const p = pts[+dot.dataset.i];
+            bindTip(dot, `<b>${p.tipLabel || p.x}</b><br>${pct1(p.y)}${p.tipExtra ? '<br>' + p.tipExtra : ''}`);
+        });
+    }
+
+    function renderSlaMes() {
+        const f = filtrosAtuais();
+        // Meses com menos de 5 concluídas ficam fora: um ponto de 1 ordem distorce a linha
+        const pontos = MESES.map(m => {
+            const s = soma({ m, d: f.d, t: f.t });
+            return { x: mesLabel(m), y: s.concluidas >= 5 ? s.sla : null, tipLabel: mesLabel(m), tipExtra: s.concluidas ? `${fmt.format(s.cp)} de ${fmt.format(s.concluidas)} concluídas no prazo` : '' };
+        }).filter(p => p.y !== null);
+        renderLinha('chartSlaMes', pontos, '#2a78d6');
+    }
+
+    /* ---------- Ordens & apontamento ---------- */
+    AMOSTRA.forEach(o => { o.hist = o.hist || []; o.anexos = o.evidFlag === 'Sim' ? [{ nome: `Evidencia_${o.ordem}.pdf`, quem: 'Equipe Innova', quando: '10/07/2026 09:14' }] : []; });
+
+    function chipSituacao(s) {
+        if (s === 'Concluída no prazo') return '<span class="chip chip-done"><i class="fas fa-check"></i> Concl. no prazo</span>';
+        if (s === 'Concluída em atraso') return '<span class="chip chip-warn"><i class="fas fa-check"></i> Concl. em atraso</span>';
+        if (s === 'Atrasada') return '<span class="chip chip-late"><i class="fas fa-exclamation-triangle"></i> Atrasada</span>';
+        return '<span class="chip chip-ok"><i class="fas fa-clock"></i> No prazo</span>';
+    }
+
+    function ordensFiltradas() {
+        const busca = document.getElementById('oBusca').value.trim().toLowerCase();
+        const disc = document.getElementById('oDisc').value;
+        const sit = document.getElementById('oSit').value;
+        const tipo = document.getElementById('oTipo').value;
+        const st = document.getElementById('oStatus').value;
+        return AMOSTRA.filter(o =>
+            (!busca || o.ordem.includes(busca) || o.texto.toLowerCase().includes(busca)) &&
+            (!disc || o.oficina === disc) &&
+            (!sit || o.situacao === sit) &&
+            (!tipo || o.tipoManut === tipo) &&
+            (!st || (st === '— sem apontamento —' ? !o.statusOp : o.statusOp === st))
+        );
+    }
+
+    function renderOrdens() {
+        const role = ROLES[state.role];
+        const rows = ordensFiltradas();
+        document.querySelector('#ordensTable tbody').innerHTML = rows.map(o => {
+            const semMotivo = o.situacao === 'Atrasada' && !o.motivo;
+            return `
+            <tr>
+                <td><input type="checkbox" class="loteCb" data-ordem="${o.ordem}" ${state.selecao.has(o.ordem) ? 'checked' : ''} ${role.edita ? '' : 'disabled'}></td>
+                <td style="font-variant-numeric:tabular-nums;font-weight:600;color:var(--gray-800)">${o.ordem}</td>
+                <td style="max-width:250px">${o.texto}</td>
+                <td style="font-variant-numeric:tabular-nums">${o.fimProg || '—'}</td>
+                <td style="font-variant-numeric:tabular-nums">${o.dtReal || '—'}</td>
+                <td style="font-variant-numeric:tabular-nums">${o.centrab}</td>
+                <td><span class="chip chip-neutral">${o.tipoOrdem}</span> <span style="font-size:.72rem;color:var(--gray-400)">${o.tipoManut}</span></td>
+                <td class="num">${o.semana || '—'}</td>
+                <td>${chipSituacao(o.situacao)}</td>
+                <td>${o.oficina}</td>
+                <td>${o.statusOp || '<span style="color:var(--gray-300)">—</span>'}</td>
+                <td>${o.tipoAtraso || '<span style="color:var(--gray-300)">—</span>'}</td>
+                <td style="max-width:190px">${semMotivo
+                    ? '<span class="chip chip-late"><i class="fas fa-bell"></i> Pendente</span>'
+                    : (o.motivo ? `<span style="font-size:.78rem">${o.motivo}</span>` : '<span style="color:var(--gray-300)">—</span>')}</td>
+                <td>${o.anexos.length ? `<span class="chip chip-ok"><i class="fas fa-paperclip"></i> ${o.anexos.length}</span>` : '<span style="color:var(--gray-300)">—</span>'}</td>
+                <td>
+                    <button class="icon-btn" title="${role.edita ? (semMotivo ? 'Justificar atraso' : 'Abrir apontamento') : 'Somente leitura'}" onclick="abrirOrdem('${o.ordem}')">
+                        <i class="fas ${role.edita ? (semMotivo ? 'fa-bell' : 'fa-pen') : 'fa-eye'}"></i>
+                    </button>
+                </td>
+            </tr>`;
+        }).join('');
+        document.getElementById('ordensCount').innerHTML =
+            `Exibindo <b>${rows.length}</b> ordens da amostra (66 linhas reais) — a base completa tem <b>5.351</b> ordens.`;
+        document.querySelectorAll('.loteCb').forEach(cb => {
+            cb.addEventListener('change', () => {
+                cb.checked ? state.selecao.add(cb.dataset.ordem) : state.selecao.delete(cb.dataset.ordem);
+                renderLoteBar();
+            });
+        });
+        renderLoteBar();
+    }
+
+    function renderLoteBar() {
+        const n = state.selecao.size;
+        const bar = document.getElementById('loteBar');
+        bar.classList.toggle('on', n > 0 && ROLES[state.role].edita);
+        document.getElementById('loteCount').textContent = `${n} ordem(ns) selecionada(s) — aplicar o mesmo apontamento:`;
+    }
+
+    window.aplicarLote = function () {
+        const st = document.getElementById('loteStatus').value;
+        const mot = document.getElementById('loteMotivo').value;
+        if (!st && !mot) { toast('Escolha um status ou motivo para aplicar.', 'fa-exclamation-circle', true); return; }
+        let n = 0;
+        AMOSTRA.forEach(o => {
+            if (!state.selecao.has(o.ordem)) return;
+            if (st && o.statusOp !== st) { registrarHist(o, 'Status Operação', o.statusOp, st); o.statusOp = st; }
+            if (mot && o.motivo !== mot) { registrarHist(o, 'Motivo atraso', o.motivo, mot); o.motivo = mot; if (!o.tipoAtraso) o.tipoAtraso = 'In Haus'; }
+            n++;
+        });
+        limparLote();
+        renderOrdens();
+        toast(`Apontamento aplicado em lote a ${n} ordens.`, 'fa-check-double');
+    };
+    window.limparLote = function () {
+        state.selecao.clear();
+        document.getElementById('loteTodos').checked = false;
+        renderOrdens();
+    };
+
+    /* ---------- Modal da ordem ---------- */
+    function registrarHist(o, campo, de, para) {
+        const ent = { quando: agora(), quem: usuarioDemo(), campo, de: de || '—', para: para || '—' };
+        o.hist.unshift(ent);
+        AUDIT.unshift({ quando: ent.quando, quem: ent.quem, acao: `Ordem ${o.ordem}: ${campo} "${ent.de}" → "${ent.para}".`, novo: true });
+    }
+
+    window.abrirOrdem = function (numero) {
+        const o = AMOSTRA.find(x => x.ordem === numero);
+        if (!o) return;
+        const role = ROLES[state.role];
+        const edita = role.edita;
+        state.ordemAberta = o;
+        const atrasoAtivo = o.situacao === 'Atrasada' || o.situacao === 'Concluída em atraso';
+        const dis = edita ? '' : 'disabled';
+        const disAtraso = (edita && atrasoAtivo) ? '' : 'disabled';
+
+        document.getElementById('ordemModalTitle').textContent = `Ordem ${o.ordem} — ${o.oficina}`;
+        document.getElementById('ordemModalSub').textContent = o.texto;
+        document.getElementById('ordemModalPerm').innerHTML = edita
+            ? '<i class="fas fa-pen"></i> Apontamento liberado. Toda alteração entra na trilha de auditoria.'
+            : '<i class="fas fa-lock"></i> Perfil somente leitura.';
+        document.getElementById('ordemModalSalvar').style.display = edita ? '' : 'none';
+
+        document.getElementById('ordemModalBody').innerHTML = `
+            <div class="section-label"><i class="fas fa-lock"></i> Origem SAP (somente leitura)</div>
+            <div class="sap-grid">
+                <div><label>Ordem</label><div class="sap-field">${o.ordem}</div></div>
+                <div><label>Tipo de ordem</label><div class="sap-field">${o.tipoOrdem}</div></div>
+                <div><label>CenTrabPrinc.</label><div class="sap-field">${o.centrab}</div></div>
+                <div><label>Fim programado</label><div class="sap-field">${o.fimProg || '—'}</div></div>
+                <div><label>Data programação</label><div class="sap-field">${o.dataProg || '—'}</div></div>
+                <div><label>Dt.real fim</label><div class="sap-field">${o.dtReal || '—'}</div></div>
+            </div>
+
+            <div class="section-label"><i class="fas fa-calculator"></i> Calculados pelo sistema</div>
+            <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+                <span class="chip chip-neutral">${o.tipoManut}</span>
+                <span class="chip chip-neutral">Disciplina: ${o.oficina}</span>
+                <span class="chip chip-neutral">Semana ISO: ${o.semana || '—'}</span>
+                ${chipSituacao(o.situacao)}
+                <span class="chip ${o.validPlan ? 'chip-ok' : 'chip-warn'}" title="Divergência entre Dt.real fim do SAP e a data confirmada pela execução">Validação PLAN: ${o.validPlan ? 'OK' : 'divergente'}</span>
+            </div>
+
+            <div class="section-label"><i class="fas fa-user-cog"></i> Apontamento da operação</div>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label>Status operação</label>
+                    <select class="form-select" id="mStatusOp" ${dis}>
+                        <option value="">— sem apontamento —</option>
+                        ${['Aberta', 'Em andamento', 'Concluída'].map(s => `<option ${s === o.statusOp ? 'selected' : ''}>${s}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label>Tipo de atraso</label>
+                    <select class="form-select" id="mTipoAtraso" ${disAtraso}>
+                        <option value="">— selecionar —</option>
+                        ${TIPOS_ATRASO.map(t => `<option ${t === o.tipoAtraso ? 'selected' : ''}>${t}</option>`).join('')}
+                    </select>
+                    ${atrasoAtivo ? '' : '<div style="font-size:.7rem;color:var(--gray-400);margin-top:.2rem">Habilitado apenas quando há atraso</div>'}
+                </div>
+                <div class="col-md-4">
+                    <label>Possui evidência de atraso?</label>
+                    <select class="form-select" id="mEvid" ${disAtraso}>
+                        <option value="">—</option>
+                        <option ${o.evidFlag === 'Sim' ? 'selected' : ''}>Sim</option>
+                        <option ${o.evidFlag === 'Não' ? 'selected' : ''}>Não</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label>Motivo do atraso ${atrasoAtivo ? '<span style="color:#b91c1c">*</span>' : ''}</label>
+                    <select class="form-select" id="mMotivo" ${disAtraso}>
+                        <option value="">— selecionar —</option>
+                        ${MOTIVOS.map(m => `<option ${m === o.motivo ? 'selected' : ''}>${m}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label>Detalhe (texto livre)</label>
+                    <input class="form-control" id="mMotivoLivre" ${disAtraso} placeholder="Complemento do motivo, se necessário" value="${o.motivoLivre || ''}">
+                </div>
+            </div>
+
+            <div class="section-label"><i class="fas fa-paperclip"></i> Evidências (múltiplos anexos, com autor e data/hora)</div>
+            ${o.anexos.map(a => `<div class="chip chip-ok" style="margin:0 .4rem .5rem 0"><i class="fas fa-paperclip"></i> ${a.nome} <span style="font-weight:400;opacity:.75">· ${a.quem} · ${a.quando}</span></div>`).join('') || ''}
+            <div class="dropzone" ${edita ? 'onclick="anexarEvidencia()"' : ''} style="${edita ? '' : 'opacity:.5;cursor:not-allowed'}">
+                <i class="fas fa-paperclip"></i> Anexar foto, PDF, e-mail ou link — simulação
+            </div>
+
+            <div class="section-label"><i class="fas fa-history"></i> Histórico da ordem</div>
+            ${o.hist.length
+                ? o.hist.map(h => `<div class="log-item"><div class="log-dot new"></div><div><div><b>${h.campo}</b>: "${h.de}" → "${h.para}"</div><div class="log-meta">${h.quando} · ${h.quem}</div></div></div>`).join('')
+                : '<div style="font-size:.8rem;color:var(--gray-400)">Nenhuma alteração registrada nesta ordem ainda.</div>'}
+        `;
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('ordemModal')).show();
+    };
+
+    window.salvarOrdem = function () {
+        const o = state.ordemAberta;
+        if (!o) return;
+        const novo = {
+            statusOp: document.getElementById('mStatusOp').value,
+            tipoAtraso: document.getElementById('mTipoAtraso').disabled ? o.tipoAtraso : document.getElementById('mTipoAtraso').value,
+            motivo: document.getElementById('mMotivo').disabled ? o.motivo : document.getElementById('mMotivo').value,
+            evidFlag: document.getElementById('mEvid').disabled ? o.evidFlag : document.getElementById('mEvid').value,
+            motivoLivre: document.getElementById('mMotivoLivre').value,
+        };
+        if (o.situacao === 'Atrasada' && novo.statusOp !== 'Concluída' && !novo.motivo) {
+            toast('Motivo de atraso é obrigatório para ordem atrasada.', 'fa-exclamation-circle', true);
+            return;
+        }
+        [['statusOp', 'Status Operação'], ['tipoAtraso', 'Tipo atraso'], ['motivo', 'Motivo atraso'], ['evidFlag', 'Possui evidência']].forEach(([k, nome]) => {
+            if (novo[k] !== o[k]) { registrarHist(o, nome, o[k], novo[k]); o[k] = novo[k]; }
+        });
+        o.motivoLivre = novo.motivoLivre;
+        bootstrap.Modal.getInstance(document.getElementById('ordemModal')).hide();
+        renderOrdens();
+        toast(`Apontamento da ordem ${o.ordem} salvo e auditado.`);
+    };
+
+    window.anexarEvidencia = function () {
+        const o = state.ordemAberta;
+        if (!o) return;
+        o.anexos.push({ nome: `Evidencia_${o.ordem}_${o.anexos.length + 1}.pdf`, quem: usuarioDemo(), quando: agora() });
+        registrarHist(o, 'Evidência', '—', o.anexos[o.anexos.length - 1].nome);
+        toast('Evidência anexada (simulação).', 'fa-paperclip');
+        abrirOrdem(o.ordem);
+    };
+
+    /* ---------- CPS ---------- */
+    const cpsFechadas = CPS_REAL.filter(s => s.sem <= SEMANA_ATUAL && s.tp > 0);
+    const cpsFuturas = CPS_REAL.filter(s => s.sem > SEMANA_ATUAL && s.tp > 0);
+
+    function renderCps() {
+        let acumP = 0, acumC = 0;
+        const linhas = cpsFechadas.map(s => {
+            acumP += s.tp; acumC += s.tc;
+            return { ...s, acum: acumP ? acumC / acumP : null };
+        });
+        const acumAno = acumP ? acumC / acumP : 0;
+        const fechadasCompletas = linhas.filter(s => s.sem < SEMANA_ATUAL);
+        const ult = fechadasCompletas[fechadasCompletas.length - 1];
+        const melhor = [...fechadasCompletas].sort((a, b) => b.cps - a.cps)[0];
+        const pior = [...fechadasCompletas].sort((a, b) => a.cps - b.cps)[0];
+
+        document.getElementById('cpsKpis').innerHTML = `
+            <div class="kpi-card kpi-hero">
+                <div class="kpi-label">CPS acumulado no ano — concluídas no prazo ÷ programadas</div>
+                <div class="hero-value">${pct1(acumAno)}</div>
+                <div class="meter"><div class="meter-fill" style="width:${(acumAno * 100).toFixed(1)}%"></div><div class="meter-goal" style="left:90%"></div></div>
+                <div class="meter-legend"><span>${fmt.format(acumC)} de ${fmt.format(acumP)} ordens</span><span>meta 90%</span></div>
+            </div>
+            <div class="kpi-card kpi-tile"><div class="kpi-label">Última semana fechada (S${ult.sem})</div><div class="kpi-value">${pct1(ult.cps)}</div><div class="kpi-note">${fmt.format(ult.tc)} de ${fmt.format(ult.tp)} programadas</div></div>
+            <div class="kpi-card kpi-tile"><div class="kpi-label">Semana atual (S${SEMANA_ATUAL})</div><div class="kpi-value">${pct1(linhas[linhas.length - 1].cps)}</div><div class="kpi-note">parcial — em execução</div></div>
+            <div class="kpi-card kpi-tile"><div class="kpi-label">Melhor semana (S${melhor.sem})</div><div class="kpi-value" style="color:#15803d">${pct1(melhor.cps)}</div><div class="kpi-note">${fmt.format(melhor.tc)}/${fmt.format(melhor.tp)}</div></div>
+            <div class="kpi-card kpi-tile"><div class="kpi-label">Pior semana (S${pior.sem})</div><div class="kpi-value" style="color:#b91c1c">${pct1(pior.cps)}</div><div class="kpi-note">${fmt.format(pior.tc)}/${fmt.format(pior.tp)}</div></div>`;
+
+        renderLinha('chartCps',
+            linhas.map(s => ({ x: 'S' + s.sem, y: s.cps, tipLabel: `Semana ${s.sem}`, tipExtra: `${fmt.format(s.tc)} de ${fmt.format(s.tp)} programadas · acumulado ${pct1(s.acum)}` })),
+            '#2a78d6');
+
+        document.querySelector('#cpsTable tbody').innerHTML =
+            linhas.map(s => `
+                <tr class="${s.sem === SEMANA_ATUAL ? 'destaque' : ''}">
+                    <td style="font-weight:600;color:var(--gray-800)">S${s.sem}${s.sem === SEMANA_ATUAL ? ' <span class="chip chip-done" style="font-size:.62rem">atual</span>' : ''}</td>
+                    <td class="num">${fmt.format(s.pp)}</td><td class="num">${fmt.format(s.pc)}</td>
+                    <td class="num">${s.pp ? pct1(s.pc / s.pp) : '—'}</td>
+                    <td class="num">${fmt.format(s.cp)}</td><td class="num">${fmt.format(s.cc)}</td>
+                    <td class="num">${s.cp ? pct1(s.cc / s.cp) : '—'}</td>
+                    <td class="num">${fmt.format(s.tp)}</td><td class="num">${fmt.format(s.tc)}</td>
+                    <td class="num" style="font-weight:700">${pct1(s.cps)}</td>
+                    <td class="num">${pct1(s.acum)}</td>
+                </tr>`).join('') +
+            cpsFuturas.map(s => `
+                <tr style="opacity:.55">
+                    <td>S${s.sem} <span class="chip chip-neutral" style="font-size:.62rem">futura</span></td>
+                    <td class="num">${fmt.format(s.pp)}</td><td class="num">—</td><td class="num">—</td>
+                    <td class="num">${fmt.format(s.cp)}</td><td class="num">—</td><td class="num">—</td>
+                    <td class="num">${fmt.format(s.tp)}</td><td class="num">—</td><td class="num">—</td><td class="num">—</td>
+                </tr>`).join('');
+    }
+
+    /* ---------- Cargas SAP ---------- */
+    const CARGAS = [
+        { quando: '16/07/2026 13:00', origem: 'Pasta monitorada', quem: 'rotina-pcm', linhas: 5378, novas: 12, atualizadas: 34, dup: 5330, ign: 2 },
+        { quando: '16/07/2026 08:00', origem: 'Pasta monitorada', quem: 'rotina-pcm', linhas: 5366, novas: 8, atualizadas: 61, dup: 5297, ign: 0 },
+        { quando: '15/07/2026 17:00', origem: 'Upload manual', quem: 'PCM · planejamento', linhas: 5358, novas: 15, atualizadas: 47, dup: 5293, ign: 3 },
+        { quando: '15/07/2026 13:00', origem: 'Pasta monitorada', quem: 'rotina-pcm', linhas: 5343, novas: 5, atualizadas: 52, dup: 5286, ign: 0 },
+        { quando: '15/07/2026 08:00', origem: 'Pasta monitorada', quem: 'rotina-pcm', linhas: 5338, novas: 21, atualizadas: 88, dup: 5229, ign: 0 },
+        { quando: '14/07/2026 17:00', origem: 'Upload manual', quem: 'PCM · planejamento', linhas: 5351, novas: 42, atualizadas: 118, dup: 5191, ign: 0 },
+    ];
+    const CARGA_DETALHE = [
+        { ordem: '16917194', de: '—', para: '13/07/2026' },
+        { ordem: '16916811', de: '—', para: '13/07/2026' },
+        { ordem: '2032137805', de: '10/07/2026', para: '14/07/2026' },
+        { ordem: '16914123', de: '—', para: '10/07/2026' },
+        { ordem: '2032107840', de: '—', para: '13/07/2026' },
+    ];
+
+    function renderCargas() {
+        document.querySelector('#cargasTable tbody').innerHTML = CARGAS.map((c, i) => `
+            <tr>
+                <td style="font-variant-numeric:tabular-nums;font-weight:600;color:var(--gray-800)">${c.quando}</td>
+                <td>${c.origem}</td>
+                <td>${c.quem}</td>
+                <td class="num">${fmt.format(c.linhas)}</td>
+                <td class="num" style="color:#15803d;font-weight:600">${c.novas}</td>
+                <td class="num" style="color:#1d4ed8;font-weight:600">${c.atualizadas}</td>
+                <td class="num">${fmt.format(c.dup)}</td>
+                <td class="num" ${c.ign ? 'style="color:#b45309;font-weight:600"' : ''}>${c.ign}</td>
+                <td><button class="icon-btn" title="Ver detalhe da carga" onclick="abrirCarga(${i})"><i class="fas fa-search"></i></button></td>
+            </tr>`).join('');
+    }
+
+    window.abrirCarga = function (i) {
+        const c = CARGAS[i];
+        document.getElementById('cargaModalTitle').textContent = `Carga ${c.quando} — ${c.origem}`;
+        document.getElementById('cargaModalBody').innerHTML = `
+            <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem">
+                <span class="chip chip-ok">${c.novas} novas</span>
+                <span class="chip chip-done">${c.atualizadas} atualizadas (Dt.real fim)</span>
+                <span class="chip chip-neutral">${fmt.format(c.dup)} duplicatas processadas</span>
+                <span class="chip ${c.ign ? 'chip-warn' : 'chip-neutral'}">${c.ign} ignoradas</span>
+            </div>
+            <div class="section-label">Atualizações — valor anterior → novo (amostra)</div>
+            <table class="co-table">
+                <thead><tr><th>Ordem</th><th>Campo</th><th>Valor anterior</th><th>Valor novo</th></tr></thead>
+                <tbody>${CARGA_DETALHE.map(d => `
+                    <tr>
+                        <td style="font-variant-numeric:tabular-nums;font-weight:600">${d.ordem}</td>
+                        <td>Dt.real fim</td>
+                        <td style="font-variant-numeric:tabular-nums;color:var(--gray-400)">${d.de}</td>
+                        <td style="font-variant-numeric:tabular-nums;font-weight:600;color:#1d4ed8">${d.para}</td>
+                    </tr>`).join('')}
+                </tbody>
+            </table>
+            <div class="kpi-note" style="margin-top:.8rem"><i class="fas fa-info-circle"></i> O arquivo original desta carga fica retido para auditoria (período parametrizável).</div>`;
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('cargaModal')).show();
+    };
+
+    window.abrirImportacao = function () {
+        document.getElementById('importStep1').style.display = '';
+        document.getElementById('importStep2').style.display = 'none';
+        document.getElementById('importResumo').style.display = 'none';
+        document.getElementById('importBar').style.width = '0';
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('importModal')).show();
+    };
+
+    window.simularUpload = function () {
+        document.getElementById('importStep1').style.display = 'none';
+        document.getElementById('importStep2').style.display = '';
+        const bar = document.getElementById('importBar');
+        const status = document.getElementById('importStatus');
+        const fases = [
+            [15, 'Lendo IW38_export_20260716.xlsx (5.378 linhas)…'],
+            [35, 'Normalizando chave: espaços, zeros à esquerda, número = texto…'],
+            [55, 'Removendo duplicidade interna (vale a Dt.real fim mais recente)…'],
+            [75, 'Upsert: inserindo novas e atualizando somente Dt.real fim…'],
+            [90, 'Preservando apontamentos da operação e gravando log…'],
+            [100, 'Concluído.'],
+        ];
+        fases.forEach(([w, txt], i) => {
+            setTimeout(() => {
+                bar.style.width = w + '%';
+                status.textContent = txt;
+                if (w === 100) {
+                    document.getElementById('importResumo').style.display = '';
+                    CARGAS.unshift({ quando: agora(), origem: 'Upload manual', quem: usuarioDemo(), linhas: 5378, novas: 27, atualizadas: 93, dup: 5255, ign: 3 });
+                    AUDIT.unshift({ quando: agora(), quem: usuarioDemo(), acao: 'Carga SAP: 27 novas, 93 atualizadas (Dt.real fim), 5.255 duplicatas, 3 ignoradas.', novo: true });
+                    renderCargas();
+                    toast('Carga SAP processada e registrada no log (simulação).', 'fa-file-upload');
+                }
+            }, 420 * (i + 1));
+        });
+    };
+
+    /* ---------- Parametrizações ---------- */
+    const DEPARA_CENTRO = [
+        ['PEDCIVC1', 'Civil'], ['ELEELEC1', 'Elétrica'], ['MECREFC1', 'Refrigeração'],
+        ['MECMECC1', 'Mecânica'], ['MECMOVC1', 'Elevadores'], ['TAUAUTC1', 'Combate a Incêndio (SDCI)'],
+        ['OMPCIVC1', 'Reservatório'],
+    ];
+    const DEPARA_TIPO = [['ZM01', 'Preventiva'], ['ZO', 'Corretiva'], ['ZF', 'Corretiva'], ['ZS', 'Corretiva']];
+
+    function renderParam() {
+        document.querySelector('#deparaCentro tbody').innerHTML =
+            '<tr><th>CenTrabPrinc.</th><th>Disciplina</th></tr>' +
+            DEPARA_CENTRO.map(([c, d]) => `<tr><td style="font-variant-numeric:tabular-nums;font-weight:600">${c}</td><td><input value="${d}"></td></tr>`).join('');
+        const semDepara = totalPorDisc['Sem de-para'] || 0;
+        if (semDepara) {
+            const alerta = document.getElementById('alertaDepara');
+            alerta.style.display = 'flex';
+            alerta.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${semDepara} ordens da base atual têm centro de trabalho sem de-para cadastrado — aparecem como "Sem de-para" nos painéis.`;
+        }
+        document.querySelector('#deparaTipo tbody').innerHTML =
+            '<tr><th>Tipo de ordem</th><th>Tipo de manutenção</th></tr>' +
+            DEPARA_TIPO.map(([t, m]) => `<tr><td style="font-variant-numeric:tabular-nums;font-weight:600">${t}</td><td><input value="${m}"></td></tr>`).join('');
+        document.getElementById('listasParam').innerHTML = `
+            <div class="section-label">Tipo de atraso</div>
+            <div style="display:flex;gap:.5rem;flex-wrap:wrap">${TIPOS_ATRASO.map(t => `<span class="chip chip-neutral">${t} <i class="fas fa-times" style="opacity:.4"></i></span>`).join('')}
+                <button class="btn-ghost" style="padding:.15rem .6rem;font-size:.72rem" onclick="toastDemo('Tipo de atraso adicionado (demo).')"><i class="fas fa-plus"></i></button></div>
+            <div class="section-label">Motivos de atraso</div>
+            <div style="display:flex;gap:.5rem;flex-wrap:wrap">${MOTIVOS.map(m => `<span class="chip chip-neutral">${m} <i class="fas fa-times" style="opacity:.4"></i></span>`).join('')}
+                <button class="btn-ghost" style="padding:.15rem .6rem;font-size:.72rem" onclick="toastDemo('Motivo adicionado (demo).')"><i class="fas fa-plus"></i></button></div>`;
+    }
+
+    /* ---------- Trilha de auditoria ---------- */
+    const AUDIT = [
+        { quando: '16/07/2026 13:00', quem: 'rotina-pcm', acao: 'Carga SAP: 12 novas, 34 atualizadas (Dt.real fim), 5.330 duplicatas, 2 ignoradas.', novo: false },
+        { quando: '14/07/2026 15:22', quem: 'Equipe Innova (Operação)', acao: 'Ordem 2032107840: Motivo atraso "—" → "Aguardando evidências Subcontratada"; evidência anexada.', novo: false },
+        { quando: '14/07/2026 08:00', quem: 'rotina-pcm', acao: 'Carga SAP: 9 novas, 76 atualizadas (Dt.real fim), 5.253 duplicatas, 0 ignoradas.', novo: false },
+        { quando: '13/07/2026 10:05', quem: 'PCM · planejamento', acao: 'De-para atualizado: TAUAUTC1 → Combate a Incêndio (SDCI).', novo: false },
+    ];
+    window.abrirAuditoria = function () {
+        document.getElementById('logModalBody').innerHTML = AUDIT.map(l => `
+            <div class="log-item">
+                <div class="log-dot ${l.novo ? 'new' : ''}"></div>
+                <div><div>${l.acao}</div><div class="log-meta">${l.quando} · ${l.quem}</div></div>
+            </div>`).join('');
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('logModal')).show();
+    };
+
+    /* ---------- Utilitários ---------- */
+    function agora() {
+        return new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace(',', '');
+    }
+    function usuarioDemo() {
+        return { admin: 'Você (Administrador PCM)', operacao: 'Você (Operação)', gestao: 'Você (Gestão)' }[state.role];
+    }
+    function toast(msg, icone = 'fa-check-circle', erro = false) {
+        const el = document.createElement('div');
+        el.className = 'co-toast' + (erro ? ' erro' : '');
+        el.innerHTML = `<i class="fas ${icone}"></i><span>${msg}</span>`;
+        document.getElementById('coToasts').appendChild(el);
+        setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity .3s'; setTimeout(() => el.remove(), 300); }, 3800);
+    }
+    window.toastDemo = msg => toast(msg);
+    window.exportar = formato => toast(`Demo: exportação para ${formato} disponível na versão final.`, 'fa-file-export');
+
+    /* ---------- Perfis / abas ---------- */
+    function aplicarRole() {
+        const role = ROLES[state.role];
+        document.getElementById('roleHint').innerHTML = `<i class="fas fa-user-shield"></i> ${role.hint}`;
+        document.getElementById('btnImportar').style.display = role.importa ? '' : 'none';
+        let ativoVisivel = false;
+        document.querySelectorAll('#coTabs .co-tab').forEach(btn => {
+            const visivel = role.tabs.includes(btn.dataset.tab);
+            btn.style.display = visivel ? '' : 'none';
+            if (visivel && btn.classList.contains('active')) ativoVisivel = true;
+        });
+        if (!ativoVisivel) trocarAba(role.tabs[0]);
+        renderOrdens();
+    }
+    function trocarAba(tab) {
+        document.querySelectorAll('#coTabs .co-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+        ['dashboard', 'ordens', 'cps', 'cargas', 'param'].forEach(t => {
+            document.getElementById('tab-' + t).style.display = t === tab ? '' : 'none';
+        });
+    }
+
+    /* ---------- Boot ---------- */
+    function renderDashboard() {
+        renderKpis();
+        renderCharts();
+        renderDiscTable();
+        renderTipoTable();
+        renderSlaMes();
+    }
+
+    // selects de filtros
+    MESES.forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = m; opt.textContent = 'Mês: ' + mesLabel(m);
+        document.getElementById('fMes').appendChild(opt);
+    });
+    DISCIPLINAS.forEach(d => {
+        [['fDisc', 'Disciplina: '], ['oDisc', '']].forEach(([id, pref]) => {
+            const opt = document.createElement('option');
+            opt.value = d; opt.textContent = pref + d;
+            document.getElementById(id).appendChild(opt);
+        });
+    });
+    MOTIVOS.forEach(m => {
+        const opt = document.createElement('option');
+        opt.textContent = m;
+        document.getElementById('loteMotivo').appendChild(opt);
+    });
+
+    ['fMes', 'fDisc', 'fTipo'].forEach(id => document.getElementById(id).addEventListener('change', renderDashboard));
+    ['oBusca', 'oDisc', 'oSit', 'oTipo', 'oStatus'].forEach(id => document.getElementById(id).addEventListener('input', renderOrdens));
+    document.getElementById('loteTodos').addEventListener('change', e => {
+        if (e.target.checked) ordensFiltradas().forEach(o => state.selecao.add(o.ordem));
+        else state.selecao.clear();
+        renderOrdens();
+    });
+    document.querySelectorAll('#coTabs .co-tab').forEach(btn => btn.addEventListener('click', () => trocarAba(btn.dataset.tab)));
+    document.querySelectorAll('#roleSwitch button').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('#roleSwitch button').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            state.role = btn.dataset.role;
+            aplicarRole();
+            toast(`Simulando perfil: ${ROLES[state.role].label}.`, 'fa-user-shield');
+        });
+    });
+
+    document.getElementById('tabCountOrdens').textContent = fmt.format(5351);
+    renderDashboard();
+    renderOrdens();
+    renderCps();
+    renderCargas();
+    renderParam();
+    aplicarRole();
+})();
+</script>
+{% endblock %}

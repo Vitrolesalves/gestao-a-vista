@@ -1,0 +1,240 @@
+{
+  "index_patterns": ["gestao-a-vista-*"],
+  "settings": {
+    "number_of_shards": 1,
+    "number_of_replicas": 0,
+    "index.refresh_interval": "5s",
+    "index.max_result_window": 50000
+  },
+  "mappings": {
+    "properties": {
+      "@timestamp": {
+        "type": "date"
+      },
+      "timestamp": {
+        "type": "date"
+      },
+      "processed_at": {
+        "type": "date"
+      },
+      "service": {
+        "type": "keyword"
+      },
+      "environment": {
+        "type": "keyword"
+      },
+      "type": {
+        "type": "keyword"
+      },
+      "level": {
+        "type": "keyword"
+      },
+      "levelname": {
+        "type": "keyword"
+      },
+      "alert_level": {
+        "type": "keyword"
+      },
+      "module": {
+        "type": "keyword"
+      },
+      "funcName": {
+        "type": "keyword"
+      },
+      "lineno": {
+        "type": "integer"
+      },
+      "message": {
+        "type": "text",
+        "analyzer": "standard",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "user": {
+        "type": "keyword"
+      },
+      "user_id": {
+        "type": "keyword"
+      },
+      "action": {
+        "type": "keyword"
+      },
+      "resource": {
+        "type": "keyword"
+      },
+      "result": {
+        "type": "keyword"
+      },
+      "method": {
+        "type": "keyword"
+      },
+      "path": {
+        "type": "keyword"
+      },
+      "status_code": {
+        "type": "integer"
+      },
+      "response": {
+        "type": "integer"
+      },
+      "duration": {
+        "type": "float"
+      },
+      "responsetime": {
+        "type": "float"
+      },
+      "query_duration": {
+        "type": "float"
+      },
+      "bytes": {
+        "type": "long"
+      },
+      "client_ip": {
+        "type": "ip"
+      },
+      "remote_addr": {
+        "type": "ip"
+      },
+      "clientip": {
+        "type": "ip"
+      },
+      "user_agent": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "referrer": {
+        "type": "keyword"
+      },
+      "request": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "verb": {
+        "type": "keyword"
+      },
+      "httpversion": {
+        "type": "keyword"
+      },
+      "tags": {
+        "type": "keyword"
+      },
+      "compliance": {
+        "type": "boolean"
+      },
+      "exception": {
+        "type": "text"
+      },
+      "exception_type": {
+        "type": "keyword"
+      },
+      "error_type": {
+        "type": "keyword"
+      },
+      "error_message": {
+        "type": "text"
+      },
+      "memory_usage": {
+        "type": "float"
+      },
+      "cpu_percent": {
+        "type": "float"
+      },
+      "queries_count": {
+        "type": "integer"
+      },
+      "business_event": {
+        "type": "keyword"
+      },
+      "metric_type": {
+        "type": "keyword"
+      },
+      "event_type": {
+        "type": "keyword"
+      },
+      "security_message": {
+        "type": "text"
+      },
+      "audit_message": {
+        "type": "text"
+      },
+      "pg_message": {
+        "type": "text"
+      },
+      "pid": {
+        "type": "keyword"
+      },
+      "database": {
+        "type": "keyword"
+      },
+      "session_key": {
+        "type": "keyword"
+      },
+      "version": {
+        "type": "keyword"
+      },
+      "geoip": {
+        "properties": {
+          "location": {
+            "type": "geo_point"
+          },
+          "country_name": {
+            "type": "keyword"
+          },
+          "country_code2": {
+            "type": "keyword"
+          },
+          "country_code3": {
+            "type": "keyword"
+          },
+          "region_name": {
+            "type": "keyword"
+          },
+          "region_code": {
+            "type": "keyword"
+          },
+          "city_name": {
+            "type": "keyword"
+          },
+          "postal_code": {
+            "type": "keyword"
+          },
+          "latitude": {
+            "type": "float"
+          },
+          "longitude": {
+            "type": "float"
+          },
+          "dma_code": {
+            "type": "integer"
+          },
+          "area_code": {
+            "type": "integer"
+          },
+          "timezone": {
+            "type": "keyword"
+          },
+          "continent_code": {
+            "type": "keyword"
+          },
+          "ip": {
+            "type": "ip"
+          }
+        }
+      }
+    }
+  }
+}

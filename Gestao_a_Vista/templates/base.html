@@ -1,0 +1,1391 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Gestão à Vista{% endblock %}</title>
+    <meta name="application-name" content="Gestão à Vista">
+    <meta name="description" content="Sistema de Gestão da Qualidade - Gestão à Vista">
+    <meta name="theme-color" content="#1e3a5f">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Gestão Qualidade">
+    <link rel="manifest" href="{% static 'manifest.json' %}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{% static 'img/icon-192x192.png' %}">
+    <link rel="icon" type="image/png" sizes="512x512" href="{% static 'img/icon-512x512.png' %}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{% static 'img/icon-192x192.png' %}">
+    <link rel="shortcut icon" href="{% static 'img/logo.png' %}">
+
+    <!-- Figtree: clean, structured, distinctly corporate without being generic -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/date-fns@3.6.0/cdn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/date-fns@3.6.0/locale/pt-BR/cdn.min.js"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <style>
+        /* ── Tokens ─────────────────────────────────────── */
+        :root {
+            --f: 'Figtree', system-ui, sans-serif;
+
+            /* Brand navy — extraído diretamente da imagem de login */
+            --navy: #1a2a45;
+            --navy-dark: #111e33;
+            --navy-mid: #1e3558;
+            --navy-light: #2a4570;
+            --navy-faint: #e8f0f9;
+
+            /* Accent blue */
+            --blue: #2563eb;
+            --blue-light: #3b82f6;
+            --blue-faint: #eff6ff;
+            --blue-ring: rgba(37, 99, 235, 0.2);
+
+            /* Greens / warnings / danger */
+            --green: #16a34a;
+            --green-faint: #f0fdf4;
+            --amber: #d97706;
+            --amber-faint: #fffbeb;
+            --red: #dc2626;
+            --red-faint: #fef2f2;
+            --sky: #0ea5e9;
+
+            /* Grays */
+            --gray-50: #f8fafc;
+            --gray-100: #f1f5f9;
+            --gray-150: #eaeff5;
+            --gray-200: #e2e8f0;
+            --gray-300: #cbd5e1;
+            --gray-400: #94a3b8;
+            --gray-500: #64748b;
+            --gray-600: #475569;
+            --gray-700: #334155;
+            --gray-800: #1e293b;
+            --gray-900: #0f172a;
+
+            /* Layout */
+            --sidebar-w: 15.5rem;
+            --sidebar-ic: 3.5rem;
+            --topbar-h: 3.5rem;
+            --sidebar-bg: linear-gradient(175deg, #1a2a45 0%, #1e3558 60%, #162035 100%);
+
+            /* Radii */
+            --r-sm: 4px;
+            --r: 6px;
+            --r-md: 8px;
+            --r-lg: 12px;
+            --r-xl: 16px;
+
+            /* Shadows */
+            --shadow-xs: 0 1px 2px rgba(0, 0, 0, .05);
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, .07), 0 1px 2px rgba(0, 0, 0, .04);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, .07), 0 2px 4px rgba(0, 0, 0, .04);
+            --shadow-lg: 0 8px 24px rgba(0, 0, 0, .09), 0 3px 8px rgba(0, 0, 0, .05);
+        }
+
+        /* ── Reset ──────────────────────────────────────── */
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+        }
+
+        html {
+            font-size: 14px;
+        }
+
+        body {
+            font-family: var(--f);
+            background: var(--gray-150);
+            color: var(--gray-700);
+            -webkit-font-smoothing: antialiased;
+            min-height: 100vh;
+        }
+
+        /* ── Shell ──────────────────────────────────────── */
+        .shell {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* ══════════════════════════════════════════════════
+           SIDEBAR
+        ═══════════════════════════════════════════════════ */
+        .sidebar {
+            width: var(--sidebar-w);
+            background: var(--sidebar-bg);
+            border-right: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            z-index: 200;
+            display: flex;
+            flex-direction: column;
+            transition: width .25s ease;
+            overflow: hidden;
+            box-shadow: 3px 0 16px rgba(0, 0, 0, .18);
+        }
+
+        .sidebar.collapsed {
+            width: var(--sidebar-ic);
+        }
+
+        /* Brand strip at the top of the sidebar */
+        .sidebar-brand {
+            height: var(--topbar-h);
+            background: rgba(0, 0, 0, .2);
+            border-bottom: 1px solid rgba(255, 255, 255, .08);
+            display: flex;
+            align-items: center;
+            gap: .625rem;
+            padding: 0 1rem;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+
+        .brand-icon {
+            width: 1.75rem;
+            height: 1.75rem;
+            background: rgba(255, 255, 255, .15);
+            border: 1px solid rgba(255, 255, 255, .2);
+            border-radius: var(--r-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .brand-icon svg {
+            width: 1rem;
+            height: 1rem;
+            color: #fff;
+        }
+
+        .brand-label {
+            overflow: hidden;
+            transition: opacity .2s, transform .2s;
+        }
+
+        .sidebar.collapsed .brand-label {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateX(-6px);
+        }
+
+        .brand-name {
+            font-size: .8125rem;
+            font-weight: 700;
+            color: #fff;
+            line-height: 1.2;
+            white-space: nowrap;
+            letter-spacing: -.01em;
+        }
+
+        .brand-sub {
+            font-size: .625rem;
+            font-weight: 400;
+            color: rgba(255, 255, 255, .55);
+            white-space: nowrap;
+            letter-spacing: .04em;
+            text-transform: uppercase;
+            margin-top: 1px;
+        }
+
+        /* Nav scroll area */
+        .sidebar-nav {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: .75rem .5rem;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, .12) transparent;
+        }
+
+        .sidebar-nav::-webkit-scrollbar {
+            width: 3px;
+        }
+
+        .sidebar-nav::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, .12);
+            border-radius: 99px;
+        }
+
+        /* Section label */
+        .nav-section {
+            font-size: .625rem;
+            font-weight: 700;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, .3);
+            padding: .25rem .625rem;
+            margin-top: .5rem;
+            margin-bottom: .25rem;
+            white-space: nowrap;
+            overflow: hidden;
+            transition: opacity .15s, margin .15s;
+        }
+
+        .sidebar.collapsed .nav-section {
+            opacity: 0;
+            margin-top: -1.25rem;
+            pointer-events: none;
+        }
+
+        /* Nav item */
+        .nav-item {
+            position: relative;
+            margin-bottom: 1px;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+            padding: .5rem .625rem;
+            border-radius: var(--r);
+            color: rgba(255, 255, 255, .65);
+            font-size: .8125rem;
+            font-weight: 500;
+            text-decoration: none;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            width: 100%;
+            text-align: left;
+            font-family: var(--f);
+            white-space: nowrap;
+            overflow: hidden;
+            transition: background .12s, color .12s;
+            position: relative;
+        }
+
+        .nav-link:hover {
+            background: rgba(255, 255, 255, .08);
+            color: rgba(255, 255, 255, .95);
+        }
+
+        /* Active: left accent bar + highlight */
+        .nav-link.active {
+            background: rgba(255, 255, 255, .12);
+            color: #fff;
+            font-weight: 600;
+        }
+
+        .nav-link.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 3px;
+            height: 65%;
+            background: #60a5fa;
+            border-radius: 0 3px 3px 0;
+        }
+
+        .sidebar.collapsed .nav-link {
+            justify-content: center;
+            padding: .5rem;
+        }
+
+        .nav-icon {
+            width: 1.0625rem;
+            height: 1.0625rem;
+            flex-shrink: 0;
+            opacity: .6;
+            transition: opacity .12s;
+        }
+
+        .nav-link:hover .nav-icon,
+        .nav-link.active .nav-icon {
+            opacity: 1;
+        }
+
+        .nav-text {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            transition: opacity .15s, width .15s;
+        }
+
+        .sidebar.collapsed .nav-text {
+            opacity: 0;
+            width: 0;
+            pointer-events: none;
+        }
+
+        .nav-chevron {
+            width: .8125rem;
+            height: .8125rem;
+            flex-shrink: 0;
+            color: rgba(255, 255, 255, .3);
+            transition: transform .18s ease;
+            margin-left: auto;
+        }
+
+        .sidebar.collapsed .nav-chevron {
+            display: none;
+        }
+
+        .nav-link.expanded .nav-chevron {
+            transform: rotate(90deg);
+        }
+
+        /* Sub-nav */
+        .nav-sub {
+            margin-left: 1.625rem;
+            padding-left: .625rem;
+            border-left: 1.5px solid rgba(255, 255, 255, .12);
+            margin-top: 1px;
+            padding-top: 2px;
+            padding-bottom: 2px;
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+        }
+
+        .sidebar.collapsed .nav-sub {
+            display: none;
+        }
+
+        .nav-sub-link {
+            display: flex;
+            align-items: center;
+            gap: .4375rem;
+            padding: .375rem .5rem;
+            border-radius: var(--r-sm);
+            color: rgba(255, 255, 255, .5);
+            font-size: .75rem;
+            font-weight: 500;
+            font-family: var(--f);
+            text-decoration: none;
+            transition: background .12s, color .12s;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        .nav-sub-link:hover {
+            background: rgba(255, 255, 255, .07);
+            color: rgba(255, 255, 255, .9);
+        }
+
+        .nav-sub-link.active {
+            color: #93c5fd;
+            font-weight: 600;
+        }
+
+        .nav-sub-icon {
+            width: .875rem;
+            height: .875rem;
+            flex-shrink: 0;
+            opacity: .65;
+        }
+
+        .nav-sub-link:hover .nav-sub-icon,
+        .nav-sub-link.active .nav-sub-icon {
+            opacity: 1;
+        }
+
+        /* Tooltip (collapsed state) */
+        .nav-tip {
+            position: fixed;
+            left: calc(var(--sidebar-ic) + .5rem);
+            background: var(--gray-900);
+            color: #fff;
+            font-family: var(--f);
+            font-size: .75rem;
+            font-weight: 500;
+            padding: .3125rem .6875rem;
+            border-radius: var(--r-sm);
+            white-space: nowrap;
+            pointer-events: none;
+            opacity: 0;
+            visibility: hidden;
+            z-index: 9999;
+            box-shadow: var(--shadow-md);
+            transition: opacity .12s, visibility .12s;
+        }
+
+        .sidebar.collapsed .nav-item:hover .nav-tip {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* ══════════════════════════════════════════════════
+           MAIN AREA
+        ═══════════════════════════════════════════════════ */
+        .main {
+            flex: 1;
+            min-width: 0;
+            margin-left: var(--sidebar-w);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            transition: margin-left .25s ease;
+        }
+
+        .main.collapsed {
+            margin-left: var(--sidebar-ic);
+        }
+
+        .main.embed-mode {
+            margin-left: 0 !important;
+        }
+
+        /* ── Top bar ────────────────────────────────────── */
+        .topbar {
+            height: var(--topbar-h);
+            background: #1a2a45;
+            border-bottom: 1px solid rgba(255, 255, 255, .07);
+            display: flex;
+            align-items: center;
+            padding: 0 1.25rem;
+            gap: 1rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            flex-shrink: 0;
+        }
+
+        .topbar-toggle {
+            width: 2rem;
+            height: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, .1);
+            border: 1px solid rgba(255, 255, 255, .12);
+            border-radius: var(--r-sm);
+            color: rgba(255, 255, 255, .85);
+            cursor: pointer;
+            transition: background .12s, color .12s;
+            flex-shrink: 0;
+        }
+
+        .topbar-toggle:hover {
+            background: rgba(255, 255, 255, .18);
+            color: #fff;
+        }
+
+        .topbar-toggle svg {
+            width: .9375rem;
+            height: .9375rem;
+        }
+
+        .topbar-title {
+            font-size: .9375rem;
+            font-weight: 600;
+            color: #fff;
+            letter-spacing: -.015em;
+            flex: 1;
+        }
+
+        /* Breadcrumb strip below topbar */
+        .breadcrumb-bar {
+            background: var(--navy-dark);
+            height: 2rem;
+            display: flex;
+            align-items: center;
+            padding: 0 1.25rem;
+            gap: .375rem;
+            border-bottom: 1px solid rgba(255, 255, 255, .07);
+        }
+
+        .breadcrumb-item {
+            font-size: .6875rem;
+            font-weight: 500;
+            color: rgba(255, 255, 255, .45);
+            letter-spacing: .02em;
+        }
+
+        .breadcrumb-sep {
+            color: rgba(255, 255, 255, .2);
+            font-size: .625rem;
+        }
+
+        .breadcrumb-item.current {
+            color: rgba(255, 255, 255, .75);
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: .625rem;
+            margin-left: auto;
+        }
+
+        /* User chip */
+        .user-chip {
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+            padding: .25rem .625rem .25rem .25rem;
+            background: rgba(255, 255, 255, .1);
+            border: 1px solid rgba(255, 255, 255, .12);
+            border-radius: 99px;
+        }
+
+        .user-avatar {
+            width: 1.625rem;
+            height: 1.625rem;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, .2);
+            border: 1px solid rgba(255, 255, 255, .25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: .625rem;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: .05em;
+            flex-shrink: 0;
+        }
+
+        .user-name {
+            font-size: .75rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, .9);
+            max-width: 9rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Logout button */
+        .btn-exit {
+            display: inline-flex;
+            align-items: center;
+            gap: .3125rem;
+            padding: .3125rem .75rem;
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, .2);
+            border-radius: var(--r-sm);
+            color: rgba(255, 255, 255, .75);
+            font-family: var(--f);
+            font-size: .6875rem;
+            font-weight: 600;
+            letter-spacing: .03em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: background .12s, border-color .12s, color .12s;
+        }
+
+        .btn-exit:hover {
+            background: rgba(220, 38, 38, .25);
+            border-color: rgba(220, 38, 38, .4);
+            color: #fca5a5;
+        }
+
+        .btn-exit svg {
+            width: .8125rem;
+            height: .8125rem;
+        }
+
+        /* ── Page body ──────────────────────────────────── */
+        .page-body {
+            flex: 1;
+            padding: 1.5rem;
+        }
+
+        /* ── Messages ───────────────────────────────────── */
+        .msg-stack {
+            margin-bottom: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: .5rem;
+        }
+
+        .msg {
+            display: flex;
+            align-items: center;
+            gap: .625rem;
+            padding: .75rem 1rem;
+            border-radius: var(--r-md);
+            font-size: .8125rem;
+            font-weight: 500;
+            border: 1px solid transparent;
+            animation: msgIn .2s ease;
+        }
+
+        .msg.success {
+            background: var(--green-faint);
+            border-color: rgba(22, 163, 74, .2);
+            color: #14532d;
+        }
+
+        .msg.error {
+            background: var(--red-faint);
+            border-color: rgba(220, 38, 38, .2);
+            color: #7f1d1d;
+        }
+
+        .msg.warning {
+            background: var(--amber-faint);
+            border-color: rgba(217, 119, 6, .2);
+            color: #78350f;
+        }
+
+        .msg.info {
+            background: var(--blue-faint);
+            border-color: rgba(37, 99, 235, .2);
+            color: #1e3a8a;
+        }
+
+        /* ── Footer ─────────────────────────────────────── */
+        .app-footer {
+            background: linear-gradient(90deg, #111e33 0%, #1a2a45 100%);
+            border-top: 1px solid rgba(255, 255, 255, .07);
+            padding: .875rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .app-footer p {
+            margin: 0;
+            font-size: .6875rem;
+            color: rgba(255, 255, 255, .3);
+            letter-spacing: .03em;
+        }
+
+        /* ── Mobile overlay ─────────────────────────────── */
+        .m-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, .45);
+            z-index: 199;
+            backdrop-filter: blur(2px);
+        }
+
+        /* ── Animations ─────────────────────────────────── */
+        @keyframes msgIn {
+            from {
+                opacity: 0;
+                transform: translateY(-4px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .page-in {
+            animation: fadeUp .3s ease both;
+        }
+
+        /* ── Responsive ─────────────────────────────────── */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform .25s ease, width .25s ease;
+                width: var(--sidebar-w) !important;
+            }
+
+            .sidebar.mobile-open {
+                transform: translateX(0);
+            }
+
+            .main {
+                margin-left: 0 !important;
+            }
+
+            .topbar-desktop {
+                display: none !important;
+            }
+
+            .topbar-mobile {
+                display: flex !important;
+            }
+        }
+
+        @media (min-width: 769px) {
+            .topbar-mobile {
+                display: none !important;
+            }
+
+            .topbar-desktop {
+                display: flex !important;
+            }
+        }
+    </style>
+
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body x-data="{
+    collapsed: false,
+    mobileOpen: false,
+    geradores: {% if request.resolver_match.url_name in 'qr_generator,etiquetas_generator' %}true{% else %}false{% endif %},
+    acompanhamento: {% if request.resolver_match.url_name in 'desativacao_cr,controle_chips,implantacoes_opsvista,implantacoes_fluxo,desmobilizacoes_fluxo' %}true{% else %}false{% endif %},
+    gestaoReservas: {% if request.resolver_match.url_name in 'gestao_salas,reserva_salas,calendario_reservas' %}true{% else %}false{% endif %},
+    torre: {% if request.resolver_match.url_name in 'torre_controle,auditoria_torre' %}true{% else %}false{% endif %},
+    projetos: {% if request.resolver_match.url_name in 'planner,explorer' %}true{% else %}false{% endif %},
+    psico: {% if request.resolver_match.url_name in 'psicossocial,psicossocial_sra' %}true{% else %}false{% endif %}
+}">
+
+    <div class="shell">
+
+        <!-- ══ SIDEBAR ══════════════════════════════════════════════ -->
+        {% if not request.GET.embed %}
+        <aside class="sidebar" :class="{ 'collapsed': collapsed, 'mobile-open': mobileOpen }">
+
+            <!-- Brand strip -->
+            <div class="sidebar-brand">
+                <div class="brand-icon">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                </div>
+                <div class="brand-label">
+                    <div class="brand-name">Gestão à Vista</div>
+                    <div class="brand-sub">Qualidade &amp; Operações</div>
+                </div>
+            </div>
+
+            <!-- Navigation -->
+            <nav class="sidebar-nav">
+                <div class="nav-section">Menu</div>
+
+                <!-- Home -->
+                <div class="nav-item">
+                    <a href="{% url 'gestao_a_vista:home' %}"
+                        class="nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}">
+                        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                        </svg>
+                        <span class="nav-text">Home</span>
+                    </a>
+                    <div class="nav-tip">Home</div>
+                </div>
+
+                {% if user_has_permissions.controle_acessos %}
+                <div class="nav-item">
+                    <a href="{% url 'gestao_a_vista:controle_acessos' %}"
+                        class="nav-link {% if request.resolver_match.url_name == 'controle_acessos' %}active{% endif %}">
+                        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                        <span class="nav-text">Controle de Usuários</span>
+                    </a>
+                    <div class="nav-tip">Controle de Usuários</div>
+                </div>
+                {% endif %}
+
+                {% if request.user.is_global_admin %}
+                <div class="nav-item">
+                    <a href="{% url 'gestao_a_vista:gerenciar_regionais' %}"
+                        class="nav-link {% if request.resolver_match.url_name == 'gerenciar_regionais' %}active{% endif %}">
+                        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2"
+                                d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2"
+                                d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        <span class="nav-text">Gerenciar Regionais</span>
+                    </a>
+                    <div class="nav-tip">Gerenciar Regionais</div>
+                </div>
+                {% endif %}
+
+                {% if user_has_permissions.dashboard %}
+                <div class="nav-item">
+                    <a href="{% url 'gestao_a_vista:dashboard' %}"
+                        class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                        <span class="nav-text">Dashboards</span>
+                    </a>
+                    <div class="nav-tip">Dashboards</div>
+                </div>
+                {% endif %}
+
+                {% if user_has_permissions.financeiro %}
+                <div class="nav-item">
+                    <a href="{% url 'gestao_a_vista:financeiro' %}"
+                        class="nav-link {% if request.resolver_match.url_name == 'financeiro' %}active{% endif %}">
+                        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span class="nav-text">Financeiro</span>
+                    </a>
+                    <div class="nav-tip">Financeiro</div>
+                </div>
+                {% endif %}
+
+                {% if user_has_permissions.monitoramento %}
+                <div class="nav-item">
+                    <a href="{% url 'gestao_a_vista:monitoramento' %}"
+                        class="nav-link {% if request.resolver_match.url_name == 'monitoramento' %}active{% endif %}">
+                        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span class="nav-text">Monitoramento</span>
+                    </a>
+                    <div class="nav-tip">Monitoramento</div>
+                </div>
+                {% endif %}
+
+                {% if user_has_permissions.gestao_salas or user_has_permissions.reserva_salas or user_has_permissions.calendario_reservas %}
+                <div class="nav-item">
+                    <button @click="if(!collapsed) gestaoReservas = !gestaoReservas"
+                        class="nav-link {% if request.resolver_match.url_name in 'gestao_salas,reserva_salas,calendario_reservas' %}active{% endif %}"
+                        :class="{ 'expanded': gestaoReservas && !collapsed }">
+                        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                        <span class="nav-text">Gestão de Reservas</span>
+                        <svg class="nav-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </button>
+                    <div class="nav-tip">Gestão de Reservas</div>
+                    <div x-show="gestaoReservas && !collapsed" x-transition:enter="transition ease-out duration-150"
+                        x-transition:enter-start="opacity-0 -translate-y-1"
+                        x-transition:enter-end="opacity-100 translate-y-0" class="nav-sub">
+                        {% if user_has_permissions.gestao_salas %}
+                        <a href="{% url 'gestao_a_vista:gestao_salas' %}"
+                            class="nav-sub-link {% if request.resolver_match.url_name == 'gestao_salas' %}active{% endif %}">
+                            <svg class="nav-sub-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                            </svg>
+                            <span>Gestão de Salas</span>
+                        </a>
+                        {% endif %}
+                        {% if user_has_permissions.reserva_salas %}
+                        <a href="{% url 'gestao_a_vista:selecionar_unidade' %}"
+                            class="nav-sub-link {% if request.resolver_match.url_name == 'reserva_salas' %}active{% endif %}">
+                            <svg class="nav-sub-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span>Reserva de Salas</span>
+                        </a>
+                        {% endif %}
+                        {% if user_has_permissions.calendario_reservas %}
+                        <a href="{% url 'gestao_a_vista:calendario_reservas' %}"
+                            class="nav-sub-link {% if request.resolver_match.url_name == 'calendario_reservas' %}active{% endif %}">
+                            <svg class="nav-sub-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <span>Calendário de Reservas</span>
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if user_has_permissions.planner or user_has_permissions.explorer %}
+                <div class="nav-item">
+                    <button @click="if(!collapsed) projetos = !projetos"
+                        class="nav-link {% if request.resolver_match.url_name in 'planner,explorer' %}active{% endif %}"
+                        :class="{ 'expanded': projetos && !collapsed }">
+                        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                        </svg>
+                        <span class="nav-text">Projetos</span>
+                        <svg class="nav-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </button>
+                    <div class="nav-tip">Projetos</div>
+                    <div x-show="projetos && !collapsed" x-transition:enter="transition ease-out duration-150"
+                        x-transition:enter-start="opacity-0 -translate-y-1"
+                        x-transition:enter-end="opacity-100 translate-y-0" class="nav-sub">
+                        {% if user_has_permissions.planner %}
+                        <a href="{% url 'gestao_a_vista:planner' %}"
+                            class="nav-sub-link {% if request.resolver_match.url_name == 'planner' %}active{% endif %}">
+                            <svg class="nav-sub-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                            </svg>
+                            <span>Planner</span>
+                        </a>
+                        {% endif %}
+                        {% if user_has_permissions.explorer %}
+                        <a href="{% url 'gestao_a_vista:explorer' %}"
+                            class="nav-sub-link {% if request.resolver_match.url_name == 'explorer' %}active{% endif %}">
+                            <svg class="nav-sub-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                            </svg>
+                            <span>Arquivos</span>
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if user_has_permissions.torre_controle %}
+                <div class="nav-item">
+                    <button @click="if(!collapsed) torre = !torre"
+                        class="nav-link {% if request.resolver_match.url_name in 'torre_controle,auditoria_torre' %}active{% endif %}"
+                        :class="{ 'expanded': torre && !collapsed }">
+                        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
+                        </svg>
+                        <span class="nav-text">Torre de Controle</span>
+                        <svg class="nav-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </button>
+                    <div class="nav-tip">Torre de Controle</div>
+                    <div x-show="torre && !collapsed" x-transition:enter="transition ease-out duration-150"
+                        x-transition:enter-start="opacity-0 -translate-y-1"
+                        x-transition:enter-end="opacity-100 translate-y-0" class="nav-sub">
+                        <a href="{% url 'gestao_a_vista:torre_controle' %}"
+                            class="nav-sub-link {% if request.resolver_match.url_name == 'torre_controle' %}active{% endif %}">
+                            <svg class="nav-sub-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                            </svg>
+                            <span>Livro de Ocorrências</span>
+                        </a>
+                        <a href="{% url 'gestao_a_vista:auditoria_torre' %}"
+                            class="nav-sub-link {% if request.resolver_match.url_name == 'auditoria_torre' %}active{% endif %}">
+                            <svg class="nav-sub-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                            </svg>
+                            <span>Auditor de Ronda</span>
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if user_has_permissions.relatorios %}
+                <div class="nav-item">
+                    <a href="{% url 'gestao_a_vista:relatorios' %}" class="nav-link">
+                        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <span class="nav-text">Relatórios</span>
+                    </a>
+                    <div class="nav-tip">Relatórios</div>
+                </div>
+                {% endif %}
+
+                {% if user_has_permissions.gestao_qualidade %}
+                <div class="nav-item">
+                    <a href="{% url 'gestao_a_vista:gestao_qualidade' %}"
+                        class="nav-link {% if request.resolver_match.url_name == 'gestao_qualidade' %}active{% endif %}">
+                        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                        </svg>
+                        <span class="nav-text">Gestão da Qualidade</span>
+                    </a>
+                    <div class="nav-tip">Gestão da Qualidade</div>
+                </div>
+                {% endif %}
+
+                {% if user_has_permissions.controle_ordens %}
+                <div class="nav-item">
+                    <a href="{% url 'gestao_a_vista:controle_ordens' %}"
+                        class="nav-link {% if request.resolver_match.url_name == 'controle_ordens' %}active{% endif %}">
+                        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        <span class="nav-text">Gestão de Ordens (PCM)</span>
+                    </a>
+                    <div class="nav-tip">Gestão de Ordens (PCM)</div>
+                </div>
+                {% endif %}
+
+                {% if user_has_permissions.calendario_2026 %}
+                <div class="nav-item">
+                    <a href="{% url 'gestao_a_vista:calendario_2026' %}"
+                        class="nav-link {% if request.resolver_match.url_name == 'calendario_2026' %}active{% endif %}">
+                        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <span class="nav-text">Calendário 2026</span>
+                    </a>
+                    <div class="nav-tip">Calendário 2026</div>
+                </div>
+                {% endif %}
+
+                {% if user_has_permissions.psicossocial %}
+                <div class="nav-item">
+                    <button @click="if(!collapsed) psico = !psico"
+                        class="nav-link {% if request.resolver_match.url_name in 'psicossocial,psicossocial_sra' %}active{% endif %}"
+                        :class="{ 'expanded': psico && !collapsed }">
+                        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3M9 12h.01M9 16h.01m3-3h3m-3 3h3" />
+                        </svg>
+                        <span class="nav-text">Psico NR1</span>
+                        <svg class="nav-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </button>
+                    <div class="nav-tip">Psico NR1</div>
+                    <div x-show="psico && !collapsed" x-transition:enter="transition ease-out duration-150"
+                        x-transition:enter-start="opacity-0 -translate-y-1"
+                        x-transition:enter-end="opacity-100 translate-y-0" class="nav-sub">
+                        <a href="{% url 'gestao_a_vista:psicossocial' %}"
+                            class="nav-sub-link {% if request.resolver_match.url_name == 'psicossocial' %}active{% endif %}">
+                            <svg class="nav-sub-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2" />
+                            </svg>
+                            <span>Avaliação Psicossocial</span>
+                        </a>
+                        <a href="{% url 'gestao_a_vista:psicossocial_sra' %}"
+                            class="nav-sub-link {% if request.resolver_match.url_name == 'psicossocial_sra' %}active{% endif %}">
+                            <svg class="nav-sub-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
+                            <span>Base Layout 1</span>
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if user_has_permissions.qr_generator or user_has_permissions.etiquetas_generator %}
+                <div class="nav-item">
+                    <button @click="if(!collapsed) geradores = !geradores"
+                        class="nav-link {% if request.resolver_match.url_name in 'qr_generator,etiquetas_generator' %}active{% endif %}"
+                        :class="{ 'expanded': geradores && !collapsed }">
+                        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                        </svg>
+                        <span class="nav-text">Geradores</span>
+                        <svg class="nav-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </button>
+                    <div class="nav-tip">Geradores</div>
+                    <div x-show="geradores && !collapsed" x-transition:enter="transition ease-out duration-150"
+                        x-transition:enter-start="opacity-0 -translate-y-1"
+                        x-transition:enter-end="opacity-100 translate-y-0" class="nav-sub">
+                        {% if user_has_permissions.qr_generator %}
+                        <a href="{% url 'gestao_a_vista:qr_generator' %}"
+                            class="nav-sub-link {% if request.resolver_match.url_name == 'qr_generator' %}active{% endif %}">
+                            <svg class="nav-sub-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                            </svg>
+                            <span>Gerador QR Code</span>
+                        </a>
+                        {% endif %}
+                        {% if user_has_permissions.etiquetas_generator %}
+                        <a href="{% url 'gestao_a_vista:etiquetas_generator' %}"
+                            class="nav-sub-link {% if request.resolver_match.url_name == 'etiquetas_generator' %}active{% endif %}">
+                            <svg class="nav-sub-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                            </svg>
+                            <span>Gerador de Etiquetas</span>
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if user_has_permissions.desativacao_cr or user_has_permissions.controle_chips or user_has_permissions.implantacoes_opsvista or user_has_permissions.implantacoes_fluxo or user_has_permissions.desmobilizacoes_fluxo %}
+                <div class="nav-item">
+                    <button @click="if(!collapsed) acompanhamento = !acompanhamento"
+                        class="nav-link {% if request.resolver_match.url_name in 'desativacao_cr,controle_chips,implantacoes_opsvista,implantacoes_fluxo,desmobilizacoes_fluxo' %}active{% endif %}"
+                        :class="{ 'expanded': acompanhamento && !collapsed }">
+                        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <span class="nav-text">Acompanhamento</span>
+                        <svg class="nav-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </button>
+                    <div class="nav-tip">Acompanhamento</div>
+                    <div x-show="acompanhamento && !collapsed" x-transition:enter="transition ease-out duration-150"
+                        x-transition:enter-start="opacity-0 -translate-y-1"
+                        x-transition:enter-end="opacity-100 translate-y-0" class="nav-sub">
+                        {% if user_has_permissions.desativacao_cr %}
+                        <a href="{% url 'gestao_a_vista:desativacao_cr' %}"
+                            class="nav-sub-link {% if request.resolver_match.url_name == 'desativacao_cr' %}active{% endif %}">
+                            <svg class="nav-sub-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <span>Desativação de CR</span>
+                        </a>
+                        {% endif %}
+                        {% if user_has_permissions.controle_chips %}
+                        <a href="{% url 'gestao_a_vista:controle_chips' %}"
+                            class="nav-sub-link {% if request.resolver_match.url_name == 'controle_chips' %}active{% endif %}">
+                            <svg class="nav-sub-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                            </svg>
+                            <span>Controle de Chips</span>
+                        </a>
+                        {% endif %}
+                        {% if user_has_permissions.implantacoes_opsvista %}
+                        <a href="{% url 'gestao_a_vista:implantacoes_opsvista' %}"
+                            class="nav-sub-link {% if request.resolver_match.url_name == 'implantacoes_opsvista' %}active{% endif %}">
+                            <svg class="nav-sub-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
+                            </svg>
+                            <span>Implantações Sistêmicas</span>
+                        </a>
+                        {% endif %}
+                        {% if user_has_permissions.implantacoes_fluxo %}
+                        <a href="{% url 'gestao_a_vista:implantacoes_fluxo' %}"
+                            class="nav-sub-link {% if request.resolver_match.url_name == 'implantacoes_fluxo' %}active{% endif %}">
+                            <svg class="nav-sub-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2" />
+                            </svg>
+                            <span>Fluxo de Implantações</span>
+                        </a>
+                        {% endif %}
+                        {% if user_has_permissions.desmobilizacoes_fluxo %}
+                        <a href="{% url 'gestao_a_vista:desmobilizacoes_fluxo' %}"
+                            class="nav-sub-link {% if request.resolver_match.url_name == 'desmobilizacoes_fluxo' %}active{% endif %}">
+                            <svg class="nav-sub-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            <span>Fluxo de Desmobilização</span>
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if user_has_permissions.cmo_efetivo %}
+                <div class="nav-item">
+                    <a href="{% url 'gestao_a_vista:cmo_efetivo' %}"
+                        class="nav-link {% if request.resolver_match.url_name == 'cmo_efetivo' %}active{% endif %}">
+                        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span class="nav-text">CMO</span>
+                    </a>
+                    <div class="nav-tip">CMO — Conformidade de Efetivo</div>
+                </div>
+                {% endif %}
+
+                {% if user_has_permissions.links_importantes %}
+                <div class="nav-item">
+                    <a href="{% url 'gestao_a_vista:links_importantes' %}"
+                        class="nav-link {% if request.resolver_match.url_name == 'links_importantes' %}active{% endif %}">
+                        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                        </svg>
+                        <span class="nav-text">Links Importantes</span>
+                    </a>
+                    <div class="nav-tip">Links Importantes — Fácil Acesso</div>
+                </div>
+                {% endif %}
+
+                <!-- Ajuda — manter SEMPRE como ÚLTIMO item do menu -->
+                <div class="nav-item">
+                    <a href="{% url 'gestao_a_vista:ajuda' %}"
+                        class="nav-link {% if request.resolver_match.url_name == 'ajuda' %}active{% endif %}">
+                        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span class="nav-text">Ajuda</span>
+                    </a>
+                    <div class="nav-tip">Ajuda — Tour pelo sistema</div>
+                </div>
+
+            </nav>
+        </aside>
+        {% endif %}
+
+        <!-- ══ MAIN ═════════════════════════════════════════════════ -->
+        <div class="main {% if request.GET.embed %}embed-mode{% endif %}" :class="{ 'collapsed': collapsed }">
+
+            {% if not request.GET.embed %}
+            <!-- Top bar -->
+            <header class="topbar">
+                <!-- Desktop collapse toggle -->
+                <button @click="collapsed = !collapsed" class="topbar-toggle topbar-desktop" title="Recolher menu">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 6h16M4 12h16M4 18h7" />
+                    </svg>
+                </button>
+                <!-- Mobile open toggle -->
+                <button @click="mobileOpen = !mobileOpen" class="topbar-toggle topbar-mobile" title="Abrir menu">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
+
+                <span class="topbar-title">{% block page_title %}Gestão à Vista{% endblock %}</span>
+
+                <div class="topbar-right">
+                    {% if user.is_authenticated and user.is_global_admin %}
+                    <div class="me-3 d-flex align-items-center gap-2">
+                        <span class="text-white text-xs opacity-75 font-semibold">Filtro Regional:</span>
+                        <select
+                            onchange="window.location.href='{% url 'gestao_a_vista:alterar_regional_ativa' %}?regional_id=' + this.value"
+                            class="form-select form-select-sm py-1 px-2 border-0 bg-white bg-opacity-10 text-white rounded font-medium text-xs cursor-pointer focus:ring-1 focus:ring-blue-500"
+                            style="width: auto; min-width: 120px; font-size: 11px;">
+                            <option value="GLOBAL" class="text-slate-800" {% if not request.session.active_regional %}selected{% endif %}>Todas as Regionais</option>
+                            {% for reg in global_regionais_dropdown %}
+                            <option value="{{ reg.id }}" class="text-slate-800" {% if request.session.active_regional == reg.db_slug %}selected{% endif %}>{{ reg.nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% endif %}
+
+                    {% if user.is_authenticated %}
+                    <div class="user-chip">
+                        <div class="user-avatar">
+                            {{ user.role|default:user.username|slice:":2"|upper }}
+                        </div>
+                        <span class="user-name">
+                            {{ user.role|default:user.username }}
+                            {% if user.regional %}
+                            ({{ user.regional.estado }})
+                            {% elif user.is_global_admin %}
+                            (Global)
+                            {% endif %}
+                        </span>
+                    </div>
+                    {% endif %}
+
+                    <form method="post" action="{% url 'gestao_a_vista:logout' %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-exit">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                            </svg>
+                            Sair
+                        </button>
+                    </form>
+                </div>
+            </header>
+            {% endif %}
+
+            <!-- Page content -->
+            <main class="page-body page-in">
+                {% if messages %}
+                <div class="msg-stack">
+                    {% for message in messages %}
+                    <div
+                        class="msg {% if message.tags == 'error' %}error{% elif message.tags == 'warning' %}warning{% elif message.tags == 'info' %}info{% else %}success{% endif %}">
+                        {{ message }}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% block content %}{% endblock %}
+            </main>
+
+            {% if not request.GET.embed %}
+            <footer class="app-footer">
+                <p>&copy; Projetos &amp; TI — Regional Centro Oeste &nbsp;·&nbsp; 2025 &nbsp;·&nbsp; Todos os direitos
+                    reservados</p>
+            </footer>
+            {% endif %}
+        </div>
+
+    </div>
+
+    <!-- Mobile overlay -->
+    <div x-show="mobileOpen" @click="mobileOpen = false" class="m-overlay"
+        x-transition:enter="transition-opacity ease-linear duration-200" x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100" x-transition:leave="transition-opacity ease-linear duration-200"
+        x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
+    </div>
+
+    {% block modals %}{% endblock %}
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{% static 'js/notifications.min.js' %}"></script>
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function () {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => {
+                        setInterval(() => reg.update(), 3600000);
+                        reg.addEventListener('updatefound', () => {
+                            const w = reg.installing;
+                            w.addEventListener('statechange', () => {
+                                if (w.state === 'installed' && navigator.serviceWorker.controller) {
+                                    if (confirm('Nova versão disponível! Deseja atualizar?')) {
+                                        w.postMessage({ type: 'SKIP_WAITING' });
+                                        window.location.reload();
+                                    }
+                                }
+                            });
+                        });
+                    }).catch(e => console.log('[PWA] Erro:', e));
+
+                let refreshing = false;
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    if (refreshing) return;
+                    refreshing = true;
+                    window.location.reload();
+                });
+            });
+        }
+        window.addEventListener('online', () => typeof showNotification === 'function' && showNotification('Conexão restaurada!', 'success'));
+        window.addEventListener('offline', () => typeof showNotification === 'function' && showNotification('Você está offline.', 'warning'));
+        window.clearPWACache = () => navigator.serviceWorker?.controller?.postMessage({ type: 'CLEAR_CACHE' });
+    </script>
+
+    {% include 'partials/tutorial_primeiro_acesso_modal.html' %}
+
+    {% block extra_js %}{% endblock %}
+</body>
+
+</html>

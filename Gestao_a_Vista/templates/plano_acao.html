@@ -1,0 +1,339 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block page_title %}Gestão à Vista{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* --- Estilos Gerais do Cabeçalho Padrão --- */
+    .planner-container {
+        padding: 1.5rem;
+        background-color: #f8f9fa;
+        min-height: calc(100vh - 60px);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .planner-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    /* Título e Ícone Padrão */
+    .planner-title {
+        background: linear-gradient(to right, #0F172A, #1e40af);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-size: 28px;
+        font-weight: bold;
+        margin: 0;
+        text-transform: uppercase;
+    }
+    
+    .planner-icon {
+        width: 32px;
+        height: 32px;
+        background: #0F172A;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 16px;
+    }
+
+    .planner-subtitle {
+        color: #6c757d;
+        margin: 0;
+        font-size: 0.9rem;
+    }
+
+    /* Botão Principal com Degradê */
+    .btn-gradient {
+        background: linear-gradient(to right, #0F172A, #1e40af);
+        color: white;
+        border: none;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-gradient:hover {
+        transform: scale(1.05);
+        box-shadow: 0 4px 10px rgba(15, 23, 42, 0.3) !important;
+        color: white;
+    }
+
+    .modal { z-index: 1055 !important; }
+    .modal-backdrop { z-index: 1050 !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="planner-container">
+    
+    <div class="planner-header">
+        <div>
+            <div class="d-flex align-items-center gap-3 mb-1">
+                <div class="planner-icon">
+                    <i class="fas fa-tasks"></i>
+                </div>
+                <h1 class="planner-title">Planos de Ação</h1>
+            </div>
+            <p class="planner-subtitle">Gestão e acompanhamento de Não Conformidades (Torre de Controle)</p>
+        </div>
+        
+        <div class="d-flex gap-2">
+            <a href="{% url 'gestao_a_vista:torre_controle' %}" class="btn btn-white bg-white border shadow-sm text-secondary">
+                <i class="fas fa-arrow-left me-1"></i> Voltar à Torre
+            </a>
+            </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm border-bottom border-warning border-4" style="cursor: pointer;" onclick="window.location.href='?status=em_andamento'">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted fw-bold mb-1">Em Andamento</h6>
+                        <h3 class="fw-bold text-dark mb-0">{{ em_andamento_count }}</h3>
+                    </div>
+                    <div class="bg-warning bg-opacity-10 p-3 rounded-circle">
+                        <i class="fas fa-tools text-warning fs-4"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm border-bottom border-danger border-4" style="cursor: pointer;" onclick="window.location.href='?status=aguardando_aprovacao'">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted fw-bold mb-1">Aguardando Aprovação</h6>
+                        <h3 class="fw-bold text-dark mb-0">{{ aguardando_count }}</h3>
+                    </div>
+                    <div class="bg-danger bg-opacity-10 p-3 rounded-circle">
+                        <i class="fas fa-hourglass-half text-danger fs-4"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm border-bottom border-success border-4" style="cursor: pointer;" onclick="window.location.href='?status=aprovado'">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted fw-bold mb-1">Aprovados</h6>
+                        <h3 class="fw-bold text-dark mb-0">{{ aprovados_count }}</h3>
+                    </div>
+                    <div class="bg-success bg-opacity-10 p-3 rounded-circle">
+                        <i class="fas fa-check-double text-success fs-4"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-2">
+                <div class="col-md-4">
+                    <input type="text" name="search" class="form-control" placeholder="Buscar por CR ou Item..." value="{{ search_term }}">
+                </div>
+                <div class="col-md-3">
+                    <select name="status" class="form-select">
+                        <option value="todos" {% if status_filter == 'todos' %}selected{% endif %}>Todos os Status</option>
+                        <option value="em_andamento" {% if status_filter == 'em_andamento' %}selected{% endif %}>Em Andamento</option>
+                        <option value="aguardando_aprovacao" {% if status_filter == 'aguardando_aprovacao' %}selected{% endif %}>Aguardando Aprovação</option>
+                        <option value="aprovado" {% if status_filter == 'aprovado' %}selected{% endif %}>Aprovados pelo Coordenador</option>
+                        <option value="rejeitado" {% if status_filter == 'rejeitado' %}selected{% endif %}>Rejeitados</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-dark w-100"><i class="fas fa-filter me-1"></i> Filtrar</button>
+                </div>
+                <div class="col-md-3 text-end">
+                    <a href="{% url 'gestao_a_vista:planos_acao' %}" class="btn btn-outline-secondary w-100">Limpar Filtros</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        {% for plano in planos %}
+        <div class="col-12">
+            <div class="card border-0 shadow-sm border-start 
+                {% if plano.status == 'aguardando_aprovacao' %} border-danger 
+                {% elif plano.status == 'em_andamento' %} border-warning 
+                {% elif plano.status == 'rejeitado' %} border-secondary 
+                {% else %} border-success bg-light {% endif %} border-4">
+                
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        {% if plano.status == 'aguardando_aprovacao' %}
+                            <span class="badge bg-danger mb-2"><i class="fas fa-hourglass-half me-1"></i> Aguardando Aprovação</span>
+                        {% elif plano.status == 'em_andamento' %}
+                            <span class="badge bg-warning text-dark mb-2"><i class="fas fa-tools me-1"></i> Em Andamento</span>
+                        {% elif plano.status == 'rejeitado' %}
+                            <span class="badge bg-secondary mb-2"><i class="fas fa-times me-1"></i> Rejeitado pelo Coordenador</span>
+                        {% else %}
+                            <span class="badge bg-success mb-2"><i class="fas fa-check-double me-1"></i> Aprovado pelo Coordenador</span>
+                        {% endif %}
+
+                        {% if plano.is_regulatory %}
+                            <span class="badge" style="background-color: #1e293b; color: #f8f9fa; margin-bottom: 0.5rem; margin-left: 0.25rem;"><i class="fas fa-balance-scale me-1"></i> Regulatório</span>
+                        {% endif %}
+
+                        <h5 class="fw-bold mb-1">{{ plano.item }}</h5>
+                        <p class="text-muted mb-0 small"><i class="fas fa-building me-1"></i> {{ plano.colaborador_cr }}</p>
+                        <p class="mb-0 mt-2 text-dark small"><strong>Descrição:</strong> {{ plano.descricao }}</p>
+                    </div>
+                    <div class="text-end">
+                        <p class="text-muted small fw-bold mb-2"><i class="far fa-calendar-alt me-1"></i> {{ plano.created_at|date:"d/m/Y H:i" }}</p>
+                        <button class="btn btn-sm btn-light border text-primary" title="Editar" 
+                            onclick="abrirModalEditar({{ plano.id }}, '{{ plano.item|escapejs }}', '{{ plano.descricao|escapejs }}', '{{ plano.status }}')">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-light border text-danger" title="Excluir" 
+                            onclick="abrirModalExcluir({{ plano.id }}, '{{ plano.item|escapejs }}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-5">
+            <i class="fas fa-clipboard-check text-muted fa-3x mb-3"></i>
+            <h5 class="text-muted">Nenhum plano de ação ativo encontrado.</h5>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="modal fade" id="modalEditar" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold text-dark" id="editItemNome">Editar Plano de Ação</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formEditarPlano">
+                    <input type="hidden" id="editPlanoId">
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">Status do Plano</label>
+                        <select class="form-select" id="editStatus">
+                            <option value="em_andamento">Em Andamento</option>
+                            <option value="aguardando_aprovacao">Aguardando Aprovação</option>
+                            <option value="aprovado">Aprovado pelo Coordenador</option>
+                            <option value="rejeitado">Rejeitado pelo Coordenador</option>
+                            <option value="concluido" class="fw-bold text-success">Concluído (Mover para o Histórico)</option>
+                        </select>
+                        <small class="text-muted d-block mt-1">Se marcar como concluído, ele sairá desta lista.</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">Descrição / Ação</label>
+                        <textarea class="form-control" id="editDescricao" rows="4" required></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary fw-bold" onclick="salvarEdicao()"><i class="fas fa-save me-1"></i> Salvar Alterações</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalExcluir" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-danger">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title fw-bold"><i class="fas fa-exclamation-triangle me-2"></i> Confirmar Exclusão</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <p class="fs-5 mb-1">Tem certeza que deseja excluir o plano:</p>
+                <h5 class="fw-bold text-dark" id="excluirItemNome"></h5>
+                <p class="text-muted small mt-3 mb-0">Esta ação não pode ser desfeita.</p>
+                <input type="hidden" id="excluirPlanoId">
+            </div>
+            <div class="modal-footer justify-content-center bg-light">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger fw-bold" onclick="confirmarExclusao()"><i class="fas fa-trash me-1"></i> Sim, Excluir</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // ----- LÓGICA DE EDIÇÃO -----
+    let editModal = null;
+    function abrirModalEditar(id, item, descricao, status) {
+        document.getElementById('editPlanoId').value = id;
+        document.getElementById('editItemNome').innerText = "Editar: " + item;
+        document.getElementById('editDescricao').value = descricao;
+        document.getElementById('editStatus').value = status;
+        
+        if (!editModal) editModal = new bootstrap.Modal(document.getElementById('modalEditar'));
+        editModal.show();
+    }
+
+    function salvarEdicao() {
+        const id = document.getElementById('editPlanoId').value;
+        const descricao = document.getElementById('editDescricao').value;
+        const status = document.getElementById('editStatus').value;
+        
+        fetch(`/torre-controle/planos-acao/editar/${id}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ descricao: descricao, status: status })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.reload(); 
+            } else {
+                alert("Erro ao editar: " + data.error);
+            }
+        });
+    }
+
+    // ----- LÓGICA DE EXCLUSÃO -----
+    let deleteModal = null;
+    function abrirModalExcluir(id, item) {
+        document.getElementById('excluirPlanoId').value = id;
+        document.getElementById('excluirItemNome').innerText = item;
+        
+        if (!deleteModal) deleteModal = new bootstrap.Modal(document.getElementById('modalExcluir'));
+        deleteModal.show();
+    }
+
+    function confirmarExclusao() {
+        const id = document.getElementById('excluirPlanoId').value;
+        
+        fetch(`/torre-controle/planos-acao/excluir/${id}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert("Erro ao excluir: " + data.error);
+            }
+        });
+    }
+</script>
+{% endblock %}

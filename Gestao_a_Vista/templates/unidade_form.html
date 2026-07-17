@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if object %}Editar{% else %}Nova{% endif %} Unidade{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h4 class="mb-0 fw-bold" style="color: #1e293b;">
+                        <i class="fas fa-building me-2"></i> 
+                        {% if object %}Editar Unidade: {{ object.nome }}{% else %}Criar Nova Unidade{% endif %}
+                    </h4>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="id_nome" class="form-label fw-bold">Nome da Unidade <span class="text-danger">*</span></label>
+                            <input type="text" name="nome" id="id_nome" class="form-control form-control-lg" value="{{ form.nome.value|default:'' }}" placeholder="Ex: Matriz, Filial São Paulo, etc." required>
+                            {% if form.nome.errors %}
+                                <div class="text-danger small mt-1">{{ form.nome.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-4 form-check form-switch mt-4 bg-light p-3 rounded border">
+                            <input class="form-check-input ms-1" type="checkbox" name="ativa" id="id_ativa" {% if form.ativa.value or not object %}checked{% endif %} style="width: 2.5em; height: 1.25em;">
+                            <label class="form-check-label ms-3 mt-1 fw-bold text-primary" for="id_ativa">Unidade Ativa no Sistema</label>
+                            <div class="form-text ms-3">Se desmarcado, esta unidade não aparecerá na tela de reservas de salas.</div>
+                        </div>
+
+                        <hr class="my-4">
+                        
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{% url 'gestao_a_vista:unidade_listar' %}" class="btn btn-secondary fw-bold">Cancelar</a>
+                            <button type="submit" class="btn btn-primary px-4 fw-bold" style="background: #1e40af; border: none;">
+                                <i class="fas fa-save me-1"></i> Salvar Unidade
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,280 @@
+version: '3.8'
+
+services:
+  # Database
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-gestao_vista}
+      POSTGRES_USER: ${POSTGRES_USER:-gestao_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backups:/backups
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-gestao_user} -d ${POSTGRES_DB:-gestao_vista}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - gestao_network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Redis
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "--no-auth-warning", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - gestao_network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Web application
+  web:
+    build:
+      context: .
+      target: production
+    volumes:
+      - static_volume:/app/static
+      - media_volume:/app/media
+      - ./logs:/app/logs
+    environment:
+      - DEBUG=0
+      - DATABASE_URL=postgres://${POSTGRES_USER:-gestao_user}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-gestao_vista}
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - SECRET_KEY=${SECRET_KEY}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS:-localhost,127.0.0.1}
+      - DJANGO_SETTINGS_MODULE=config.settings
+      - SENTRY_DSN=${SENTRY_DSN}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - gestao_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  # Nginx
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx-prod.conf:/etc/nginx/nginx.conf
+      - static_volume:/app/static:ro
+      - media_volume:/app/media:ro
+      - ./docker/ssl:/etc/nginx/ssl:ro
+      - ./logs/nginx:/var/log/nginx
+    depends_on:
+      - web
+    restart: unless-stopped
+    networks:
+      - gestao_network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Celery worker
+  celery:
+    build:
+      context: .
+      target: production
+    volumes:
+      - media_volume:/app/media
+      - ./logs:/app/logs
+    environment:
+      - DEBUG=0
+      - DATABASE_URL=postgres://${POSTGRES_USER:-gestao_user}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-gestao_vista}
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - SECRET_KEY=${SECRET_KEY}
+      - DJANGO_SETTINGS_MODULE=config.settings
+      - SENTRY_DSN=${SENTRY_DSN}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: celery -A config worker -l info --concurrency=4
+    restart: unless-stopped
+    networks:
+      - gestao_network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Celery beat
+  celery-beat:
+    build:
+      context: .
+      target: production
+    volumes:
+      - ./logs:/app/logs
+    environment:
+      - DEBUG=0
+      - DATABASE_URL=postgres://${POSTGRES_USER:-gestao_user}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-gestao_vista}
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - SECRET_KEY=${SECRET_KEY}
+      - DJANGO_SETTINGS_MODULE=config.settings
+      - SENTRY_DSN=${SENTRY_DSN}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: celery -A config beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    restart: unless-stopped
+    networks:
+      - gestao_network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Monitoring - Prometheus
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./docker/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
+    networks:
+      - gestao_network
+    profiles:
+      - monitoring
+
+  # Monitoring - Grafana
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./docker/grafana/provisioning:/etc/grafana/provisioning
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    restart: unless-stopped
+    networks:
+      - gestao_network
+    profiles:
+      - monitoring
+
+  # Log aggregation - ELK Stack
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.8.0
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - xpack.security.enabled=false
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+    restart: unless-stopped
+    networks:
+      - gestao_network
+    profiles:
+      - logging
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.8.0
+    volumes:
+      - ./docker/logstash/pipeline:/usr/share/logstash/pipeline
+      - ./logs:/logs:ro
+    depends_on:
+      - elasticsearch
+    restart: unless-stopped
+    networks:
+      - gestao_network
+    profiles:
+      - logging
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.8.0
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    depends_on:
+      - elasticsearch
+    restart: unless-stopped
+    networks:
+      - gestao_network
+    profiles:
+      - logging
+
+  # Backup service
+  backup:
+    image: postgres:15-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data:ro
+      - ./backups:/backups
+      - ./docker/backup.sh:/backup.sh
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-gestao_vista}
+      - POSTGRES_USER=${POSTGRES_USER:-gestao_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    command: /backup.sh
+    depends_on:
+      - db
+    restart: "no"
+    networks:
+      - gestao_network
+    profiles:
+      - backup
+
+volumes:
+  postgres_data:
+  redis_data:
+  static_volume:
+  media_volume:
+  prometheus_data:
+  grafana_data:
+  elasticsearch_data:
+
+networks:
+  gestao_network:
+    driver: bridge

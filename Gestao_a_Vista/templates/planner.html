@@ -1,0 +1,338 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<style>
+    :root {
+        --crm-ink: #0f172a;
+        --crm-muted: #64748b;
+        --crm-border: #e2e8f0;
+        --crm-bg: #f8fafc;
+    }
+    .crm-container { min-height: calc(100vh - 60px); padding: 1.25rem; background: radial-gradient(circle at top left, rgba(37,99,235,.09), transparent 30rem), var(--crm-bg); }
+    .crm-header { display:flex; justify-content:space-between; align-items:flex-start; gap:1rem; margin-bottom:1.25rem; }
+    .crm-title { margin:0; font-weight:900; color:var(--crm-ink); letter-spacing:-.04em; font-size:clamp(1.8rem,3vw,3.1rem); }
+    .crm-subtitle { color:var(--crm-muted); margin:0; }
+    .btn-crm { background: linear-gradient(135deg,#0f172a,#2563eb); color:#fff; border:0; box-shadow:0 12px 30px rgba(37,99,235,.25); }
+    .btn-crm:hover { color:#fff; transform:translateY(-1px); }
+    .crm-framework { display:grid; grid-template-columns: repeat(auto-fit,minmax(240px,1fr)); gap:.85rem; margin-bottom:1rem; }
+    .crm-framework-card { background:#fff; border:1px solid var(--crm-border); border-radius:20px; padding:1rem; box-shadow:0 14px 34px rgba(15,23,42,.07); position:relative; overflow:hidden; }
+    .crm-framework-card:before { content:""; position:absolute; inset:0 auto 0 0; width:5px; background:linear-gradient(180deg,#2563eb,#16a34a); }
+    .crm-framework-card small { color:var(--crm-muted); text-transform:uppercase; letter-spacing:.08em; font-weight:900; }
+    .crm-framework-card strong { display:block; color:var(--crm-ink); font-size:1.05rem; margin:.25rem 0; }
+    .crm-framework-card p { margin:0; color:#475569; font-size:.86rem; }
+    .crm-metrics { display:grid; grid-template-columns: repeat(auto-fit,minmax(160px,1fr)); gap:.85rem; margin-bottom:1rem; }
+    .crm-metric { background:rgba(255,255,255,.88); border:1px solid var(--crm-border); border-radius:18px; padding:1rem; box-shadow:0 10px 25px rgba(15,23,42,.05); }
+    .crm-metric small { color:var(--crm-muted); text-transform:uppercase; letter-spacing:.08em; font-weight:800; }
+    .crm-metric strong { display:block; font-size:1.75rem; color:var(--crm-ink); }
+    .active-filters-bar { display:flex; gap:.5rem; flex-wrap:wrap; margin-bottom:1rem; }
+    .filter-chip { background:#dbeafe; color:#1d4ed8; border:1px solid #bfdbfe; border-radius:999px; padding:.4rem .7rem; font-size:.85rem; font-weight:700; }
+    .filter-chip i { margin-left:.4rem; cursor:pointer; }
+    .kanban-wrapper { display:flex; gap:1rem; overflow-x:auto; padding-bottom:1rem; align-items:flex-start; }
+    .kanban-column { min-width:330px; max-width:330px; background:rgba(255,255,255,.7); border:1px solid var(--crm-border); border-radius:22px; overflow:hidden; box-shadow:0 18px 40px rgba(15,23,42,.07); }
+    .kanban-column-header { padding:1rem; background:#fff; border-bottom:1px solid var(--crm-border); display:flex; justify-content:space-between; align-items:center; }
+    .kanban-column-title { display:flex; align-items:center; gap:.55rem; font-weight:900; color:var(--crm-ink); }
+    .kanban-column-dot { width:11px; height:11px; border-radius:50%; display:inline-block; }
+    .kanban-column-count { background:#f1f5f9; color:#334155; border-radius:999px; padding:.2rem .65rem; font-weight:900; }
+    .kanban-items-container { min-height:220px; padding:1rem; max-height:calc(100vh - 290px); overflow-y:auto; }
+    .kanban-card { background:#fff; border:1px solid var(--crm-border); border-left:5px solid #94a3b8; border-radius:18px; padding:1rem; margin-bottom:.9rem; cursor:pointer; box-shadow:0 10px 22px rgba(15,23,42,.06); transition:.18s ease; position:relative; }
+    .kanban-card:hover { transform:translateY(-2px); box-shadow:0 16px 30px rgba(15,23,42,.12); }
+    .priority-Crítica { border-left-color:#7f1d1d; } .priority-Alto { border-left-color:#dc2626; } .priority-Médio { border-left-color:#f59e0b; } .priority-Baixo { border-left-color:#16a34a; }
+    .card-actions { position:absolute; right:.75rem; top:.75rem; opacity:0; transition:.18s; } .kanban-card:hover .card-actions { opacity:1; }
+    .tag { display:inline-flex; align-items:center; gap:.25rem; font-size:.68rem; font-weight:900; letter-spacing:.05em; text-transform:uppercase; border-radius:999px; padding:.25rem .55rem; }
+    .tag-service { background:#eff6ff; color:#1d4ed8; } .tag-priority { background:#fff7ed; color:#c2410c; } .tag-5w2h { background:#ecfdf5; color:#047857; }
+    .card-title { font-size:1rem; font-weight:900; color:var(--crm-ink); line-height:1.25; padding-right:1.4rem; }
+    .card-client { color:#334155; font-weight:800; margin-top:.15rem; }
+    .card-desc { color:var(--crm-muted); font-size:.84rem; margin:.6rem 0; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+    .card-meta { display:grid; gap:.35rem; color:#475569; font-size:.78rem; margin:.7rem 0; }
+    .card-footer { border-top:1px dashed var(--crm-border); padding-top:.75rem; display:flex; justify-content:space-between; align-items:center; gap:.5rem; color:#64748b; font-size:.78rem; }
+    .user-pill { background:#0f172a; color:white; border-radius:999px; padding:.24rem .55rem; font-size:.72rem; font-weight:800; }
+    .sortable-ghost { opacity:.45; border:2px dashed #94a3b8; }
+    .view-toggle { background:#fff; border:1px solid var(--crm-border); border-radius:999px; padding:.25rem; display:inline-flex; gap:.25rem; box-shadow:0 10px 24px rgba(15,23,42,.06); }
+    .view-toggle button { border:0; background:transparent; border-radius:999px; padding:.45rem .85rem; font-weight:800; color:#475569; }
+    .view-toggle button.active { background:#0f172a; color:#fff; }
+    .crm-grid-panel { display:none; background:#fff; border:1px solid var(--crm-border); border-radius:22px; box-shadow:0 18px 40px rgba(15,23,42,.07); overflow:hidden; }
+    .crm-grid-panel.active { display:block; }
+    .kanban-wrapper.hidden { display:none; }
+    .pipeline-row { display:grid; grid-template-columns:70px 1fr 110px 90px 44px; gap:.5rem; align-items:center; }
+    .crm-modal-overlay { display:none; position:fixed; inset:0; z-index:20000; background:rgba(15,23,42,.55); backdrop-filter: blur(3px); overflow-y:auto; padding:3rem 1rem; }
+    .crm-modal-overlay.active { display:flex; justify-content:center; align-items:flex-start; }
+    .crm-modal-box { width:min(1040px,100%); background:#fff; border-radius:22px; box-shadow:0 30px 70px rgba(0,0,0,.25); overflow:hidden; }
+    .section-title { font-size:.78rem; text-transform:uppercase; letter-spacing:.08em; color:#2563eb; font-weight:900; margin:1rem 0 .6rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="crm-container">
+    <div class="crm-header">
+        <div>
+            <h1 class="crm-title"><i class="fas fa-chart-line me-2 text-primary"></i>Gestão de Projetos e Demandas 5W2H</h1>
+            <p class="crm-subtitle">Kanban operacional para implantação, acompanhamento, ocorrências e desenvolvimento de sistemas com CRM e 5W2H integrados.</p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap justify-content-end">
+            <div class="view-toggle me-1"><button type="button" id="btnViewKanban" class="active" onclick="setCRMView('kanban')"><i class="fas fa-columns me-1"></i>Kanban</button><button type="button" id="btnViewGrid" onclick="setCRMView('grid')"><i class="fas fa-table me-1"></i>Grid</button></div>
+            <button class="btn btn-white bg-white border shadow-sm" data-bs-toggle="modal" data-bs-target="#modalTodosProjetos"><i class="fas fa-filter me-1"></i>Filtros</button>
+            <button class="btn btn-outline-dark bg-white shadow-sm" data-bs-toggle="modal" data-bs-target="#modalPipeline"><i class="fas fa-sliders me-1"></i>Pipeline</button>
+            <button class="btn btn-outline-primary bg-white shadow-sm" data-bs-toggle="modal" data-bs-target="#modalNovoTipoServico"><i class="fas fa-tag me-1"></i>Nova Categoria</button>
+            <button class="btn btn-crm px-4" data-bs-toggle="modal" data-bs-target="#modalNovoProjeto"><i class="fas fa-plus me-1"></i>Nova Demanda</button>
+        </div>
+    </div>
+
+    <div id="active-filters-display" class="active-filters-bar" style="display:none"></div>
+
+    <div class="crm-framework">
+        <div class="crm-framework-card">
+            <small><i class="fas fa-circle-nodes me-1 text-primary"></i>Visão 360º</small>
+            <strong>Cliente, demanda, histórico e valor em um só lugar</strong>
+            <p>Consolida contato, unidade, saúde do relacionamento, próximas interações, anexos, comentários e 5W2H.</p>
+        </div>
+        <div class="crm-framework-card">
+            <small><i class="fas fa-gears me-1 text-warning"></i>CRM Operacional</small>
+            <strong>Automação do funil e suporte diário</strong>
+            <p>Etapas padronizadas, SLA, prioridade, responsáveis, checklist, progresso e relatório automático na conclusão.</p>
+        </div>
+        <div class="crm-framework-card">
+            <small><i class="fas fa-users-gear me-1 text-success"></i>CRM Colaborativo</small>
+            <strong>Comunicação entre departamentos</strong>
+            <p>Registra áreas envolvidas, stakeholders, papéis, dependências e resumo compartilhado para todos trabalharem alinhados.</p>
+        </div>
+    </div>
+
+    <div class="crm-metrics">
+        {% for column in crm_columns %}
+        <div class="crm-metric">
+            <small><i class="fas {{ column.icon }} me-1" style="color:{{ column.color }}"></i>{{ column.status }}</small>
+            <strong id="stats-{{ column.key }}">{{ column.count }}</strong>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="kanban-wrapper" id="kanbanView">
+        {% for column in crm_columns %}
+        <div class="kanban-column" data-stage-id="{{ column.stage_id }}" data-status-id="{{ column.status }}" id="col-{{ column.key }}">
+            <div class="kanban-column-header">
+                <div class="kanban-column-title"><span class="kanban-column-dot" style="background:{{ column.color }}"></span>{{ column.status }}</div>
+                <span class="kanban-column-count" id="badge-{{ column.key }}">{{ column.count }}</span>
+            </div>
+            <div class="kanban-items-container" id="kanban-{{ column.key }}">
+                {% for projeto in column.projects %}
+                <div class="kanban-card priority-{{ projeto.prioridade }}" data-project-id="{{ projeto.id }}" onclick="editarProjeto('{{ projeto.id }}')">
+                    <div class="card-actions d-flex gap-1">{% if projeto.status == 'Concluído' %}<button class="btn btn-sm btn-link text-success p-0" title="Baixar relatório" onclick="event.stopPropagation(); baixarRelatorio('{{ projeto.id }}')"><i class="fas fa-file-pdf"></i></button>{% endif %}<button class="btn btn-sm btn-link text-danger p-0" onclick="event.stopPropagation(); excluirProjeto('{{ projeto.id }}')"><i class="fas fa-trash-alt"></i></button></div>
+                    <div class="d-flex gap-1 flex-wrap mb-2">
+                        {% if projeto.tipo_servico %}<span class="tag tag-service">{{ projeto.tipo_servico.nome }}</span>{% endif %}
+                        <span class="tag tag-service">{{ projeto.etapa.nome|default:projeto.status }}</span>
+                        <span class="tag tag-priority">{{ projeto.prioridade }}</span>
+                        <span class="tag tag-priority">Impacto: {{ projeto.impacto }}</span>
+                        {% if projeto.w2h_what or projeto.w2h_how %}<span class="tag tag-5w2h">5W2H</span>{% endif %}
+                    </div>
+                    <div class="card-title">{{ projeto.nome }}</div>
+                    <div class="card-client"><i class="fas fa-building me-1 text-primary"></i>{{ projeto.cliente|default:"Cliente não informado" }}</div>
+                    <div class="card-desc">
+                        {% if projeto.status == 'Triagem' and projeto.triagem_diagnostico %}
+                            <b>Triagem:</b> {{ projeto.triagem_diagnostico }}
+                        {% elif projeto.status == 'Planejamento 5W2H' and projeto.planejamento_entregaveis %}
+                            <b>Planejamento:</b> {{ projeto.planejamento_entregaveis }}
+                        {% elif projeto.status == 'Em Execução' and projeto.execucao_andamento %}
+                            <b>Execução:</b> {{ projeto.execucao_andamento }}
+                        {% elif projeto.status == 'Validação / Testes' and projeto.validacao_resultado %}
+                            <b>Validação:</b> {{ projeto.validacao_resultado }}
+                        {% else %}
+                            {{ projeto.observacao|default:projeto.proxima_acao|default:"Sem observações." }}
+                        {% endif %}
+                    </div>
+                    <div class="card-meta">
+                        {% if projeto.contato %}<span><i class="fas fa-user me-1"></i>{{ projeto.contato }}</span>{% endif %}
+                        {% if projeto.telefone %}<span><i class="fas fa-phone me-1"></i>{{ projeto.telefone }}</span>{% endif %}
+                        <span><i class="fas fa-layer-group me-1"></i>Tipo: {{ projeto.get_tipo_demanda_display }}</span>
+                        {% if projeto.solicitante %}<span><i class="fas fa-user-pen me-1"></i>Solicitante: {{ projeto.solicitante }}</span>{% endif %}
+                        {% if projeto.responsavel_tecnico %}<span><i class="fas fa-screwdriver-wrench me-1"></i>Técnico: {{ projeto.responsavel_tecnico }}</span>{% endif %}
+                        {% if projeto.modulo_sistema %}<span><i class="fas fa-cube me-1"></i>{{ projeto.modulo_sistema }}{% if projeto.ambiente %} · {{ projeto.get_ambiente_display }}{% endif %}</span>{% endif %}
+                        {% if projeto.sla %}<span><i class="fas fa-stopwatch me-1"></i>SLA: {{ projeto.sla }}</span>{% endif %}
+                        {% if projeto.valor_estimado %}<span><i class="fas fa-dollar-sign me-1"></i>R$ {{ projeto.valor_estimado }} · {{ projeto.probabilidade }}%</span>{% endif %}
+                        {% if projeto.saude_relacionamento %}<span><i class="fas fa-heart-pulse me-1"></i>Saúde: {{ projeto.saude_relacionamento }}</span>{% endif %}
+                        {% if projeto.departamentos_envolvidos %}<span><i class="fas fa-people-group me-1"></i>{{ projeto.departamentos_envolvidos }}</span>{% endif %}
+                        {% if projeto.proxima_interacao %}<span><i class="fas fa-calendar-check me-1"></i>Próxima interação: {{ projeto.proxima_interacao|date:"d/m/Y" }}</span>{% endif %}
+                        {% if projeto.proxima_acao %}<span><i class="fas fa-forward me-1"></i>{{ projeto.proxima_acao }}</span>{% endif %}
+                        <span><i class="fas fa-chart-simple me-1"></i>{{ projeto.percentual_progresso }}% concluído</span>
+                        {% if projeto.anexos.count %}<span><i class="fas fa-paperclip me-1"></i>{{ projeto.anexos.count }} anexo(s) / evidência(s)</span>{% endif %}
+                    </div>
+                    <div class="card-footer">
+                        <span><i class="far fa-calendar-alt me-1"></i>{{ projeto.data_conclusao|date:"d/m/Y" }}</span>
+                        <div class="d-flex align-items-center gap-1">
+                            {% if projeto.projeto_responsaveis.exists %}
+                                {% for resp in projeto.projeto_responsaveis.all|slice:":1" %}<span class="user-pill">{{ resp.responsavel.first_name|default:resp.responsavel.username }}</span>{% endfor %}
+                                {% if projeto.projeto_responsaveis.count > 1 %}<span class="badge bg-light text-secondary border rounded-pill">+{{ projeto.projeto_responsaveis.count|add:"-1" }}</span>{% endif %}
+                            {% else %}<span>Sem resp.</span>{% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center text-muted small py-4">Sem demandas nesta etapa.</div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="crm-grid-panel" id="gridView">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light"><tr><th>Demanda</th><th>Cliente</th><th>Etapa</th><th>Prioridade</th><th>Tipo</th><th>Responsáveis</th><th>Prazo</th><th>Progresso</th><th></th></tr></thead>
+                <tbody>
+                    {% for projeto in projetos %}
+                    <tr data-project-id="{{ projeto.id }}">
+                        <td><strong>{{ projeto.nome }}</strong><div class="small text-muted">{{ projeto.proxima_acao|default:projeto.observacao|truncatechars:90 }}</div></td>
+                        <td>{{ projeto.cliente|default:"-" }}</td>
+                        <td><span class="badge rounded-pill" style="background:{{ projeto.etapa.cor|default:'#64748b' }}">{{ projeto.etapa.nome|default:projeto.status }}</span></td>
+                        <td>{{ projeto.prioridade }}</td>
+                        <td>{{ projeto.get_tipo_demanda_display }}</td>
+                        <td>{% for resp in projeto.projeto_responsaveis.all|slice:":2" %}<span class="user-pill me-1">{{ resp.responsavel.first_name|default:resp.responsavel.username }}</span>{% empty %}<span class="text-muted">-</span>{% endfor %}</td>
+                        <td>{{ projeto.data_conclusao|date:"d/m/Y" }}</td>
+                        <td><div class="progress" style="height:8px"><div class="progress-bar" style="width:{{ projeto.percentual_progresso }}%"></div></div><small>{{ projeto.percentual_progresso }}%</small></td>
+                        <td class="text-end"><button class="btn btn-sm btn-outline-primary" onclick="editarProjeto('{{ projeto.id }}')"><i class="fas fa-pen"></i></button></td>
+                    </tr>
+                    {% empty %}<tr><td colspan="9" class="text-center text-muted py-4">Nenhuma demanda encontrada.</td></tr>{% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% if paginator.num_pages > 1 %}
+    <nav class="d-flex justify-content-between align-items-center mt-3 mb-2 flex-wrap gap-2">
+        <span class="text-muted small">Página {{ page_obj.number }} de {{ paginator.num_pages }} · {{ paginator.count }} demanda(s) no total</span>
+        <div class="btn-group">
+            <button type="button" class="btn btn-sm btn-outline-secondary" {% if not page_obj.has_previous %}disabled{% endif %} onclick="irParaPagina({{ page_obj.previous_page_number|default:1 }})"><i class="fas fa-chevron-left"></i> Anterior</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" {% if not page_obj.has_next %}disabled{% endif %} onclick="irParaPagina({{ page_obj.next_page_number|default:paginator.num_pages }})">Próxima <i class="fas fa-chevron-right"></i></button>
+        </div>
+    </nav>
+    {% endif %}
+</div>
+
+<div class="modal fade" id="modalTodosProjetos" tabindex="-1">
+    <div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header"><h5 class="modal-title fw-bold">Filtros do CRM</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body p-4">
+        <div class="row g-3">
+            <div class="col-md-6"><label class="form-label small">Buscar por demanda, cliente, solicitante, contato, sistema, e-mail ou telefone</label><input type="text" class="form-control" id="filter_nome" value="{{ filtros.nome }}" placeholder="Buscar..."></div>
+            <div class="col-md-3"><label class="form-label small">Responsável</label><select class="form-select" id="filter_responsavel"><option value="">Todos</option>{% for u in usuarios %}<option value="{{ u.id }}" {% if filtros.responsavel|stringformat:"s" == u.id|stringformat:"s" %}selected{% endif %}>{{ u.name|default:u.username }}</option>{% endfor %}</select></div>
+            <div class="col-md-3"><label class="form-label small">Prioridade</label><select class="form-select" id="filter_prioridade"><option value="all">Todas</option><option value="Alto" {% if filtros.prioridade == 'Alto' %}selected{% endif %}>Alta</option><option value="Médio" {% if filtros.prioridade == 'Médio' %}selected{% endif %}>Média</option><option value="Baixo" {% if filtros.prioridade == 'Baixo' %}selected{% endif %}>Baixa</option></select></div>
+            <div class="col-md-4"><label class="form-label small">Categoria</label><select class="form-select" id="filter_tipo"><option value="all">Todas</option>{% for tipo in tipos_servico %}<option value="{{ tipo.nome }}" {% if filtros.tipo == tipo.nome %}selected{% endif %}>{{ tipo.nome }}</option>{% endfor %}</select></div>
+            <div class="col-md-4"><label class="form-label small">Tipo da demanda</label><select class="form-select" id="filter_tipo_demanda"><option value="all">Todos</option>{% for value,label in tipo_demanda_choices %}<option value="{{ value }}" {% if filtros.tipo_demanda == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+            <div class="col-md-4"><label class="form-label small">Etapa do pipeline</label><select class="form-select" id="filter_etapa"><option value="all">Todas</option>{% for stage in pipeline_stages %}<option value="{{ stage.id }}" {% if filtros.etapa|stringformat:"s" == stage.id|stringformat:"s" %}selected{% endif %}>{{ stage.nome }}</option>{% endfor %}</select></div>
+        </div>
+        <div class="text-end mt-4"><button class="btn btn-outline-secondary me-2" onclick="limparFiltros()">Limpar</button><button class="btn btn-primary" onclick="aplicarFiltros()">Aplicar</button></div>
+    </div></div></div>
+</div>
+
+<div class="modal fade" id="modalNovoProjeto" tabindex="-1">
+    <div class="modal-dialog modal-xl"><div class="modal-content"><div class="modal-header"><h5 class="modal-title fw-bold">Nova Demanda</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body p-4">
+        <form id="formNovoProjeto">{% include 'planner_crm_form_fields.html' with mode='new' %}</form>
+    </div><div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button><button type="button" class="btn btn-primary" onclick="salvarProjeto()">Salvar</button></div></div></div>
+</div>
+
+<div class="crm-modal-overlay" id="overlayEditarProjeto" onclick="if(event.target===this) fecharEditarProjeto()"><div class="crm-modal-box">
+    <div class="modal-header"><h5 class="modal-title fw-bold">Editar Demanda</h5><button type="button" class="btn-close" onclick="fecharEditarProjeto()"></button></div>
+    <div class="modal-body p-4"><form id="formEditarProjeto"><input type="hidden" name="project_id">{% include 'planner_crm_form_fields.html' with mode='edit' %}</form></div>
+    <div class="modal-footer"><button type="button" id="btnRelatorioEditar" class="btn btn-success d-none" onclick="baixarRelatorioDoFormulario()"><i class="fas fa-file-pdf me-1"></i>Baixar Relatório</button><button type="button" class="btn btn-outline-secondary" onclick="fecharEditarProjeto()">Cancelar</button><button type="button" class="btn btn-primary" onclick="atualizarProjeto()">Salvar Alterações</button></div>
+</div></div>
+
+<div class="modal fade" id="modalNovoTipoServico" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title fw-bold">Nova Categoria</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="formNovoTipoServico"><input type="text" class="form-control" name="nome" placeholder="Ex: Prospecção, Renovação, Upsell" required></form></div><div class="modal-footer"><button type="button" class="btn btn-primary" onclick="salvarTipoServico()">Salvar</button></div></div></div></div>
+
+<div class="modal fade" id="modalPipeline" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header"><h5 class="modal-title fw-bold">Pipeline personalizável de etapas</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body">
+    <div class="alert alert-info small">Edite nome, cor e ordem das etapas. Cards podem ser arrastados no Kanban entre estas etapas.</div>
+    <div id="pipelineRows" class="d-flex flex-column gap-2">
+        {% for stage in pipeline_stages %}
+        <div class="pipeline-row" data-stage-id="{{ stage.id }}">
+            <input type="number" class="form-control form-control-sm stage-order" value="{{ stage.ordem }}">
+            <input type="text" class="form-control form-control-sm stage-name" value="{{ stage.nome }}">
+            <input type="color" class="form-control form-control-color stage-color" value="{{ stage.cor }}">
+            <button type="button" class="btn btn-sm btn-outline-primary" onclick="salvarPipelineStage('{{ stage.id }}')">Salvar</button>
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="excluirPipelineStage('{{ stage.id }}')"><i class="fas fa-trash"></i></button>
+        </div>
+        {% endfor %}
+    </div>
+    <hr>
+    <div class="pipeline-row">
+        <input type="number" class="form-control form-control-sm" id="newStageOrder" value="999" disabled>
+        <input type="text" class="form-control form-control-sm" id="newStageName" placeholder="Nova etapa: Ex. Homologação cliente">
+        <input type="color" class="form-control form-control-color" id="newStageColor" value="#2563eb">
+        <button type="button" class="btn btn-sm btn-success" onclick="criarPipelineStage()">Adicionar</button>
+        <span></span>
+    </div>
+</div></div></div></div>
+
+<select id="usuarios-template" style="display:none"><option value="">Selecione...</option>{% for usuario in usuarios %}<option value="{{ usuario.id }}">{{ usuario.name|default:usuario.username }}</option>{% endfor %}</select>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const URL_PLANNER = '{% url "gestao_a_vista:planner" %}';
+const CSRF_TOKEN = '{{ csrf_token }}';
+const CRM_COLUMNS = [{% for column in crm_columns %}{ id:'kanban-{{ column.key }}', badge:'badge-{{ column.key }}', card:'stats-{{ column.key }}', stageId:'{{ column.stage_id }}' }{% if not forloop.last %},{% endif %}{% endfor %}];
+let newProjectFiles = [], editProjectNewFiles = [], editProjectExistingAttachments = [], editProjectRemovedAttachmentIds = [];
+function moneyToDecimal(value){ return (value || '').toString().replace(/\./g,'').replace(',', '.'); }
+function renderActiveFilters(){ const params=new URLSearchParams(window.location.search), c=document.getElementById('active-filters-display'); const labels={filter_nome:'Busca',filter_responsavel:'Responsável',filter_prioridade:'Prioridade',filter_tipo:'Categoria',filter_tipo_demanda:'Tipo',filter_etapa:'Etapa'}; let has=false; c.innerHTML=''; params.forEach((v,k)=>{ if(v && v!=='all' && labels[k]){ has=true; const chip=document.createElement('span'); chip.className='filter-chip'; chip.innerHTML=`${labels[k]}: ${v}<i class="fas fa-times" onclick="removeFilter('${k}')"></i>`; c.appendChild(chip); }}); c.style.display=has?'flex':'none'; }
+function removeFilter(key){ const url=new URL(window.location.href); url.searchParams.delete(key); window.location.href=url.toString(); }
+function aplicarFiltros(){ const url=new URL(window.location.href); ['filter_nome','filter_responsavel','filter_prioridade','filter_tipo','filter_tipo_demanda','filter_etapa'].forEach(id=>url.searchParams.set(id,document.getElementById(id).value)); url.searchParams.delete('page'); window.location.href=url.toString(); }
+function irParaPagina(n){ const url=new URL(window.location.href); url.searchParams.set('page', n); window.location.href=url.toString(); }
+function refreshCounters(){ fetch(`${URL_PLANNER}?action=get_counters`).then(r=>r.json()).then(d=>{ if(d.status!=='success') return; Object.keys(d.counters).forEach(key=>{ if(key==='total') return; const val=d.counters[key]; ['stats-','badge-'].forEach(prefix=>{ const el=document.getElementById(prefix+key); if(el) el.innerText=val; }); }); }).catch(()=>{}); }
+function limparFiltros(){ window.location.href=window.location.pathname; }
+function addResponsavel(containerId='responsaveis-container'){ const div=document.createElement('div'); div.className='d-flex gap-2'; div.innerHTML=`<select class="form-select form-select-sm">${document.getElementById('usuarios-template').innerHTML}</select><button type="button" class="btn btn-sm btn-outline-danger" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>`; document.getElementById(containerId).appendChild(div); }
+function addResponsavelEdit(){ addResponsavel('edit-responsaveis-container'); }
+function addChecklistItem(containerId='checklist-container'){ const div=document.createElement('div'); div.className='d-flex gap-2 align-items-center'; div.innerHTML='<input type="checkbox" class="form-check-input"><input type="text" class="form-control form-control-sm" placeholder="Ação do checklist..."><button type="button" class="btn btn-sm btn-outline-danger" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>'; document.getElementById(containerId).appendChild(div); }
+function addChecklistItemEdit(){ addChecklistItem('edit-checklist-container'); }
+function getResponsaveis(id){ return JSON.stringify(Array.from(document.querySelectorAll(`#${id} select`)).map(s=>({id:s.value})).filter(x=>x.id)); }
+function getChecklist(id){ return JSON.stringify(Array.from(document.querySelectorAll(`#${id} div`)).map(d=>({text:d.querySelector('input[type=text]').value, completed:d.querySelector('input[type=checkbox]').checked})).filter(x=>x.text)); }
+function appendCommonData(data, mode){ const prefix=mode==='edit'?'edit-':''; ['valor_estimado','w2h_how_much'].forEach(name=>{ const input=document.querySelector(`#form${mode==='edit'?'Editar':'Novo'}Projeto [name=${name}]`); if(input) data.set(name, moneyToDecimal(input.value)); }); data.append('responsaveis', getResponsaveis(prefix+'responsaveis-container')); data.append('checklist_items', getChecklist(prefix+'checklist-container')); }
+function baixarRelatorio(id){ window.open(`${URL_PLANNER}?action=download_report&project_id=${id}`, '_blank'); }
+function baixarRelatorioDoFormulario(){ const id=document.querySelector('#formEditarProjeto [name=project_id]').value; if(id) baixarRelatorio(id); }
+function updateProjectStage(id,stageId){ const data=new FormData(); data.append('action','update_project_stage'); data.append('project_id',id); data.append('stage_id',stageId); data.append('csrfmiddlewaretoken',CSRF_TOKEN); fetch(URL_PLANNER,{method:'POST',body:data}).then(r=>r.json()).then(d=>{ if(d.status!=='success'){ Swal.fire('Erro', d.message || 'Não foi possível alterar a etapa.', 'error'); location.reload(); return; } if(d.report_url){ Swal.fire({title:'Demanda concluída',text:'O relatório de conclusão já está disponível para baixar.',icon:'success',showCancelButton:true,confirmButtonText:'Baixar relatório',cancelButtonText:'Continuar'}).then(res=>{ if(res.isConfirmed) window.open(d.report_url,'_blank'); location.reload(); }); } }); }
+function salvarProjeto(){ const form=document.getElementById('formNovoProjeto'); if(!form.checkValidity()){ form.reportValidity(); return; } const data=new FormData(form); data.append('action','create_project'); data.append('csrfmiddlewaretoken',CSRF_TOKEN); appendCommonData(data,'new'); newProjectFiles.forEach(f=>data.append('arquivos',f)); fetch(URL_PLANNER,{method:'POST',body:data}).then(r=>r.json()).then(d=>d.status==='success'?location.reload():Swal.fire('Erro',d.message,'error')); }
+function editarProjeto(id){ editProjectNewFiles=[]; editProjectExistingAttachments=[]; editProjectRemovedAttachmentIds=[]; fetch(`${URL_PLANNER}?action=get_project&project_id=${id}`).then(r=>r.json()).then(d=>{ if(d.status!=='success') return Swal.fire('Erro',d.message,'error'); const p=d.project, form=document.getElementById('formEditarProjeto'); Object.keys(p).forEach(k=>{ const el=form.querySelector(`[name=${k}]`); if(!el) return; if(el.type === 'checkbox') el.checked = !!p[k]; else el.value=p[k] ?? ''; }); form.querySelector('[name=project_id]').value=id; const rc=document.getElementById('edit-responsaveis-container'); rc.innerHTML=''; p.responsaveis.forEach(r=>{ addResponsavelEdit(); rc.lastElementChild.querySelector('select').value=r.id; }); const cc=document.getElementById('edit-checklist-container'); cc.innerHTML=''; p.checklist_items.forEach(c=>{ addChecklistItemEdit(); cc.lastElementChild.querySelector('input[type=text]').value=c.text; cc.lastElementChild.querySelector('input[type=checkbox]').checked=c.completed; }); editProjectExistingAttachments=p.attachments||[]; renderEditProjectFiles(); const reportBtn=document.getElementById('btnRelatorioEditar'); if(reportBtn) reportBtn.classList.toggle('d-none', p.status !== 'Concluído'); document.getElementById('overlayEditarProjeto').classList.add('active'); document.body.style.overflow='hidden'; }); }
+function fecharEditarProjeto(){ document.getElementById('overlayEditarProjeto').classList.remove('active'); document.body.style.overflow=''; }
+function atualizarProjeto(){ const form=document.getElementById('formEditarProjeto'); const data=new FormData(form); data.append('action','update_project'); data.append('csrfmiddlewaretoken',CSRF_TOKEN); appendCommonData(data,'edit'); editProjectNewFiles.forEach(f=>data.append('arquivos',f)); data.append('removed_attachments', JSON.stringify(editProjectRemovedAttachmentIds)); fetch(URL_PLANNER,{method:'POST',body:data}).then(r=>r.json()).then(d=>d.status==='success'?location.reload():Swal.fire('Erro',d.message,'error')); }
+function excluirProjeto(id){ Swal.fire({title:'Excluir demanda?',text:'Esta ação não pode ser desfeita.',icon:'warning',showCancelButton:true,confirmButtonText:'Sim, excluir',cancelButtonText:'Cancelar'}).then(res=>{ if(!res.isConfirmed) return; const data=new FormData(); data.append('action','delete_project'); data.append('project_id',id); data.append('csrfmiddlewaretoken',CSRF_TOKEN); fetch(URL_PLANNER,{method:'POST',body:data}).then(r=>r.json()).then(d=>{ if(d.status==='success'){ document.querySelector(`.kanban-card[data-project-id="${id}"]`)?.remove(); document.querySelector(`tr[data-project-id="${id}"]`)?.remove(); refreshCounters(); } else Swal.fire('Erro',d.message,'error'); }); }); }
+function salvarTipoServico(){ const form=document.getElementById('formNovoTipoServico'), data=new FormData(form); data.append('action','create_service_type'); data.append('csrfmiddlewaretoken',CSRF_TOKEN); fetch(URL_PLANNER,{method:'POST',body:data}).then(()=>location.reload()); }
+function handleNewProjectFileSelected(input){ for(const f of input.files) newProjectFiles.push(f); input.value=''; renderNewProjectFiles(); }
+function handleEditProjectFileSelected(input){ for(const f of input.files) editProjectNewFiles.push(f); input.value=''; renderEditProjectFiles(); }
+function renderNewProjectFiles(){ const c=document.getElementById('attachments-container'); if(!c) return; c.innerHTML=newProjectFiles.map((f,i)=>{ const url=URL.createObjectURL(f); return `<div class="d-flex justify-content-between align-items-center p-2 bg-light border rounded"><span><i class="fas fa-paperclip me-1"></i>${f.name}</span><span><a class="btn btn-sm btn-outline-primary me-1" href="${url}" target="_blank"><i class="fas fa-eye"></i> Visualizar</a><button type="button" class="btn btn-sm btn-link text-danger" onclick="newProjectFiles.splice(${i},1);renderNewProjectFiles()"><i class="fas fa-times"></i></button></span></div>`; }).join(''); }
+function renderEditProjectFiles(){ const c=document.getElementById('edit-attachments-container'); if(!c) return; c.innerHTML=''; editProjectExistingAttachments.forEach(a=>{ if(!editProjectRemovedAttachmentIds.includes(a.id)) c.insertAdjacentHTML('beforeend',`<div class="d-flex justify-content-between align-items-center p-2 bg-light border rounded"><span><i class="fas fa-paperclip me-1"></i>${a.nome}</span><span><a class="btn btn-sm btn-outline-primary me-1" href="${a.url}" target="_blank"><i class="fas fa-eye"></i> Visualizar</a><a class="btn btn-sm btn-outline-secondary me-1" href="${a.url}" download><i class="fas fa-download"></i></a><button type="button" class="btn btn-sm btn-link text-danger" onclick="editProjectRemovedAttachmentIds.push('${a.id}');renderEditProjectFiles()"><i class="fas fa-times"></i></button></span></div>`); }); editProjectNewFiles.forEach((f,i)=>{ const url=URL.createObjectURL(f); c.insertAdjacentHTML('beforeend',`<div class="d-flex justify-content-between align-items-center p-2 bg-light border rounded"><span><i class="fas fa-paperclip me-1"></i>${f.name} <span class="badge bg-info">Novo</span></span><span><a class="btn btn-sm btn-outline-primary me-1" href="${url}" target="_blank"><i class="fas fa-eye"></i> Visualizar</a><button type="button" class="btn btn-sm btn-link text-danger" onclick="editProjectNewFiles.splice(${i},1);renderEditProjectFiles()"><i class="fas fa-times"></i></button></span></div>`); }); }
+
+const SERVER_VIEW_MODE = '{{ view_mode }}';
+function applyViewUI(view){ const kanban=document.getElementById('kanbanView'), grid=document.getElementById('gridView'); document.getElementById('btnViewKanban').classList.toggle('active', view==='kanban'); document.getElementById('btnViewGrid').classList.toggle('active', view==='grid'); kanban.classList.toggle('hidden', view==='grid'); grid.classList.toggle('active', view==='grid'); }
+function setCRMView(view){
+    localStorage.setItem('crmView', view);
+    if(view===SERVER_VIEW_MODE){ applyViewUI(view); return; }
+    // A view "grid"/"kanban" só é montada pelo servidor sob demanda (evita
+    // renderizar as duas de uma vez) -- trocar de aba recarrega a página
+    // com ?view=, igual ao resto das ações do Planner (filtros, salvar etc.).
+    const url=new URL(window.location.href);
+    url.searchParams.set('view', view);
+    url.searchParams.delete('page');
+    window.location.href=url.toString();
+}
+function criarPipelineStage(){ const nome=document.getElementById('newStageName').value.trim(); if(!nome) return Swal.fire('Atenção','Informe o nome da etapa.','warning'); const data=new FormData(); data.append('action','create_pipeline_stage'); data.append('nome',nome); data.append('cor',document.getElementById('newStageColor').value); data.append('csrfmiddlewaretoken',CSRF_TOKEN); fetch(URL_PLANNER,{method:'POST',body:data}).then(r=>r.json()).then(d=>d.status==='success'?location.reload():Swal.fire('Erro',d.message,'error')); }
+function salvarPipelineStage(id){ const row=document.querySelector(`[data-stage-id="${id}"]`); const data=new FormData(); data.append('action','update_pipeline_stage'); data.append('stage_id',id); data.append('nome',row.querySelector('.stage-name').value); data.append('cor',row.querySelector('.stage-color').value); data.append('ordem',row.querySelector('.stage-order').value); data.append('csrfmiddlewaretoken',CSRF_TOKEN); fetch(URL_PLANNER,{method:'POST',body:data}).then(r=>r.json()).then(d=>d.status==='success'?location.reload():Swal.fire('Erro',d.message,'error')); }
+function excluirPipelineStage(id){ Swal.fire({title:'Excluir etapa?',text:'Só será permitido se ela não tiver demandas.',icon:'warning',showCancelButton:true,confirmButtonText:'Excluir'}).then(res=>{ if(!res.isConfirmed) return; const data=new FormData(); data.append('action','delete_pipeline_stage'); data.append('stage_id',id); data.append('csrfmiddlewaretoken',CSRF_TOKEN); fetch(URL_PLANNER,{method:'POST',body:data}).then(r=>r.json()).then(d=>d.status==='success'?location.reload():Swal.fire('Erro',d.message,'error')); }); }
+document.addEventListener('DOMContentLoaded',()=>{
+    document.querySelectorAll('.modal').forEach(m=>document.body.appendChild(m));
+    renderActiveFilters();
+    // Respeita a última visão escolhida pelo usuário (localStorage) quando a
+    // URL não especifica ?view= -- como agora só a visão ativa é montada no
+    // servidor, isso exige um redirect (uma vez) em vez de um toggle local.
+    const urlParams=new URLSearchParams(window.location.search);
+    const storedView=localStorage.getItem('crmView');
+    if(!urlParams.has('view') && storedView && storedView!==SERVER_VIEW_MODE){
+        const url=new URL(window.location.href);
+        url.searchParams.set('view', storedView);
+        window.location.replace(url.toString());
+        return;
+    }
+    applyViewUI(SERVER_VIEW_MODE);
+    localStorage.setItem('crmView', SERVER_VIEW_MODE);
+    document.querySelectorAll('.kanban-items-container').forEach(container=>new Sortable(container,{group:'crm',animation:160,ghostClass:'sortable-ghost',onEnd:evt=>{ const stageId=evt.to.closest('.kanban-column').dataset.stageId; const oldStageId=evt.from.closest('.kanban-column').dataset.stageId; if(stageId!==oldStageId) updateProjectStage(evt.item.dataset.projectId,stageId); }}));
+    addResponsavel();
+});
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') fecharEditarProjeto(); });
+</script>
+{% endblock %}

@@ -1,0 +1,830 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+    /* Componentes Card modernos inspirados no Lovable */
+    .card {
+        border-radius: 0.5rem;
+        border: 1px solid #e2e8f0;
+        background: white;
+        color: #0f172a;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    }
+    
+    .card-header {
+        display: flex;
+        flex-direction: column;
+        gap: 0.375rem;
+        padding: 1.5rem;
+    }
+    
+    .card-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        line-height: 1;
+        letter-spacing: -0.025em;
+    }
+    
+    .card-content {
+        padding: 1.5rem;
+        padding-top: 0;
+    }
+    
+    /* Botões modernos */
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        white-space: nowrap;
+        border-radius: 0.375rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: all 0.2s;
+        border: none;
+        cursor: pointer;
+        gap: 0.5rem;
+    }
+    
+    .btn-primary {
+        background-color: #0f172a;
+        color: white;
+        padding: 0.5rem 1rem;
+    }
+    
+    .btn-primary:hover {
+        background-color: #1e293b;
+    }
+    
+    .btn-secondary {
+        background-color: #f1f5f9;
+        color: #334155;
+        padding: 0.5rem 1rem;
+        border: 1px solid #e2e8f0;
+    }
+    
+    .btn-secondary:hover {
+        background-color: #e2e8f0;
+    }
+    
+    .btn-sm {
+        padding: 0.375rem 0.75rem;
+        font-size: 0.75rem;
+    }
+    
+    .btn-lg {
+        padding: 0.75rem 1.5rem;
+        font-size: 1rem;
+    }
+    
+    /* Inputs modernos */
+    .form-input {
+        display: flex;
+        height: 2.5rem;
+        width: 100%;
+        border-radius: 0.375rem;
+        border: 1px solid #d1d5db;
+        background-color: white;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.875rem;
+        transition: all 0.2s;
+    }
+    
+    .form-input:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+    }
+    
+    .form-textarea {
+        min-height: 4rem;
+        resize: vertical;
+    }
+    
+    /* Switch moderno */
+    .switch {
+        position: relative;
+        display: inline-block;
+        width: 44px;
+        height: 24px;
+    }
+    
+    .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+    
+    .switch-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #cbd5e1;
+        transition: 0.2s;
+        border-radius: 24px;
+    }
+    
+    .switch-slider:before {
+        position: absolute;
+        content: "";
+        height: 20px;
+        width: 20px;
+        left: 2px;
+        bottom: 2px;
+        background-color: white;
+        transition: 0.2s;
+        border-radius: 50%;
+    }
+    
+    .switch input:checked + .switch-slider {
+        background-color: #3b82f6;
+    }
+    
+    .switch input:checked + .switch-slider:before {
+        transform: translateX(20px);
+    }
+    
+     /* Preview canvas */
+     .preview-canvas {
+         width: 182px;
+         height: 100px;
+         border: none;  /* Borda será desenhada no canvas */
+         border-radius: 0.375rem;
+         background: white;
+     }
+    
+    /* Tabela moderna */
+    .table-container {
+        border-radius: 0.5rem;
+        border: 1px solid #e2e8f0;
+        overflow: hidden;
+    }
+    
+    .table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .table th {
+        background-color: #f8fafc;
+        padding: 0.75rem;
+        text-align: left;
+        font-weight: 500;
+        font-size: 0.875rem;
+        color: #374151;
+        border-bottom: 1px solid #e2e8f0;
+    }
+    
+    .table td {
+        padding: 0.75rem;
+        border-bottom: 1px solid #f1f5f9;
+    }
+    
+    .table tr:last-child td {
+        border-bottom: none;
+    }
+    
+    /* Ícones */
+    .icon {
+        width: 1rem;
+        height: 1rem;
+        stroke-width: 2;
+    }
+    
+    .icon-lg {
+        width: 1.5rem;
+        height: 1.5rem;
+    }
+    
+    .icon-xl {
+        width: 2rem;
+        height: 2rem;
+    }
+    
+    /* Estados vazios */
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: #64748b;
+    }
+    
+    .empty-state .icon {
+        width: 4rem;
+        height: 4rem;
+        margin: 0 auto 1rem;
+        color: #cbd5e1;
+    }
+    
+    /* Responsividade */
+    @media (max-width: 768px) {
+        .card-header {
+            padding: 1rem;
+        }
+        
+        .card-content {
+            padding: 1rem;
+            padding-top: 0;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+        }
+        
+        .form-input {
+            min-width: 120px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6 h-screen flex flex-col">
+    <div>
+        <h1 class="text-3xl font-bold text-slate-800 flex items-center gap-3">
+            <svg class="icon-xl text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                      d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+            </svg>
+            Gerador de Etiquetas
+        </h1>
+        <p class="text-slate-600 mt-2">
+            Configure e gere etiquetas personalizadas para equipamentos
+        </p>
+    </div>
+
+    <!-- Frame Superior - Tabela de Configurações -->
+    <div class="flex-1 min-h-0">
+        <div class="card h-full flex flex-col">
+            <div class="card-header flex-shrink-0">
+                <div class="flex items-center justify-between">
+                    <h2 class="card-title text-lg">
+                        Etiquetas Configuradas (<span id="etiquetasCount">1</span>)
+                    </h2>
+                    <button onclick="adicionarEtiqueta()" class="btn btn-primary btn-sm">
+                        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                        Adicionar
+                    </button>
+                </div>
+            </div>
+            <div class="card-content flex-1 min-h-0">
+                <div class="h-full overflow-auto">
+                    <div class="table-container">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 100px;">Data</th>
+                                    <th>Gerente</th>
+                                    <th>Responsável</th>
+                                    <th>CR</th>
+                                    <th>Patrimônio</th>
+                                    <th>IMEI</th>
+                                    <th>Anotações</th>
+                                    <th style="width: 50px;">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="etiquetasTableBody">
+                                <!-- Template para linha da tabela -->
+                                <tr id="etiquetaRowTemplate" class="hidden">
+                                    <td>
+                                        <input type="date" class="form-input" style="min-width: 120px;">
+                                    </td>
+                                    <td>
+                                        <input type="text" placeholder="Gerente" class="form-input" style="min-width: 120px;">
+                                    </td>
+                                    <td>
+                                        <input type="text" placeholder="Responsável" class="form-input" style="min-width: 120px;">
+                                    </td>
+                                    <td>
+                                        <input type="text" placeholder="CR" class="form-input" style="min-width: 80px;">
+                                    </td>
+                                    <td>
+                                        <input type="text" placeholder="Patrimônio" class="form-input" style="min-width: 100px;">
+                                    </td>
+                                    <td>
+                                        <input type="text" placeholder="IMEI" class="form-input" style="min-width: 120px;">
+                                    </td>
+                                    <td>
+                                        <textarea placeholder="Observações" rows="2" class="form-input form-textarea" style="min-width: 150px;"></textarea>
+                                    </td>
+                                    <td>
+                                        <button onclick="removerEtiqueta(this)" class="btn btn-secondary btn-sm text-red-600 hover:text-red-800" style="padding: 0.25rem;">
+                                            <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                            </svg>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Frame Inferior - Preview e Geração -->
+    <div class="flex-shrink-0">
+        <div class="card">
+            <div class="card-header">
+                <div class="flex items-center justify-between">
+                    <h2 class="card-title">Preview e Geração</h2>
+                    <div class="flex items-center space-x-2">
+                        <label class="switch">
+                            <input type="checkbox" id="previewMode">
+                            <span class="switch-slider"></span>
+                        </label>
+                        <label for="previewMode" class="text-sm font-medium">
+                            Preview
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="card-content">
+                <div id="previewContainer" class="hidden space-y-4">
+                    <p class="text-sm text-slate-600 mb-4">
+                        <span id="etiquetasPreviewCount">0</span> etiqueta(s) configurada(s) - Layout: 6x16 (96 etiquetas por página A4) - Formato A4348 (31x17mm) - Saída: PDF
+                    </p>
+                    
+                    <div class="space-y-4 max-h-64 overflow-y-auto">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2" id="previewGrid">
+                            <!-- Preview items will be added here -->
+                        </div>
+                    </div>
+                </div>
+
+                <div id="emptyState" class="empty-state">
+                    <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                              d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                    </svg>
+                    <p class="mb-2 font-medium">Preencha pelo menos um campo para gerar as etiquetas</p>
+                    <div class="text-sm space-y-1">
+                        <p>• Informe pelo menos o gerente, responsável ou CR</p>
+                        <p>• Adicione mais etiquetas conforme necessário</p>
+                        <p>• Formato: A4348 - 31x17mm - 96 etiquetas por folha</p>
+                        <p>• Saída: Arquivo PDF para impressão</p>
+                    </div>
+                </div>
+
+                <button onclick="gerarPDF()" 
+                        id="btnGerarPDF"
+                        class="btn btn-primary btn-lg w-full mt-4 hidden disabled:opacity-50 disabled:cursor-not-allowed">
+                    <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span id="btnTexto">Gerar PDF (0 etiquetas)</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Adicionar primeira etiqueta
+    adicionarEtiqueta();
+
+    // Setup do preview mode
+    const previewModeCheckbox = document.getElementById('previewMode');
+    if (previewModeCheckbox) {
+        previewModeCheckbox.addEventListener('change', function(e) {
+            const previewContainer = document.getElementById('previewContainer');
+            if (previewContainer) {
+                const isVisible = e.target.checked;
+                previewContainer.classList.toggle('hidden', !isVisible);
+                if (isVisible) {
+                    atualizarPreview();
+                }
+            }
+        });
+    }
+
+    // Observar mudanças nos campos
+    observarMudancas();
+});
+
+// Alias para compatibilidade
+function adicionarLinha() {
+    adicionarEtiqueta();
+}
+
+function adicionarEtiqueta() {
+    const template = document.getElementById('etiquetaRowTemplate');
+    const tbody = document.getElementById('etiquetasTableBody');
+    
+    if (!template || !tbody) {
+        return;
+    }
+    
+    const novaLinha = template.cloneNode(true);
+    
+    novaLinha.id = 'etiqueta-' + Date.now();
+    novaLinha.classList.remove('hidden');
+    
+    // Definir data atual
+    const dataInput = novaLinha.querySelector('input[type="date"]');
+    if (dataInput) {
+        dataInput.valueAsDate = new Date();
+    }
+    
+    // Adicionar event listeners para todos os campos da nova linha
+    const campos = novaLinha.querySelectorAll('input, textarea');
+    campos.forEach(campo => {
+        campo.addEventListener('input', () => {
+            verificarBotaoGerar();
+            const previewMode = document.getElementById('previewMode');
+            if (previewMode && previewMode.checked) {
+                atualizarPreview();
+            }
+        });
+    });
+    
+    tbody.appendChild(novaLinha);
+    atualizarContador();
+    verificarBotaoGerar();
+}
+
+function removerEtiqueta(button) {
+    const tbody = document.getElementById('etiquetasTableBody');
+    const linhasVisiveis = Array.from(tbody.children).filter(tr => !tr.classList.contains('hidden'));
+    
+    if (linhasVisiveis.length > 1) { // Manter pelo menos uma linha visível
+        button.closest('tr').remove();
+        atualizarContador();
+        verificarBotaoGerar();
+        if (document.getElementById('previewMode').checked) {
+            atualizarPreview();
+        }
+    }
+}
+
+function atualizarContador() {
+    const tbody = document.getElementById('etiquetasTableBody');
+    const linhasVisiveis = Array.from(tbody.children).filter(tr => !tr.classList.contains('hidden'));
+    const count = linhasVisiveis.length;
+    
+    const etiquetasCount = document.getElementById('etiquetasCount');
+    const etiquetasPreviewCount = document.getElementById('etiquetasPreviewCount');
+    
+    if (etiquetasCount) {
+        etiquetasCount.textContent = count;
+    }
+    if (etiquetasPreviewCount) {
+        etiquetasPreviewCount.textContent = count;
+    }
+}
+
+function verificarBotaoGerar() {
+    const etiquetas = coletarDadosEtiquetas();
+    const btnGerar = document.getElementById('btnGerarPDF');
+    const emptyState = document.getElementById('emptyState');
+    
+    const temDados = etiquetas.some(e => e.gerente || e.responsavel || e.cr);
+    
+    btnGerar.classList.toggle('hidden', !temDados);
+    emptyState.classList.toggle('hidden', temDados);
+    
+    // Atualizar texto do botão
+    const btnTexto = document.getElementById('btnTexto');
+    if (btnTexto) {
+        btnTexto.textContent = `Gerar PDF (${etiquetas.length} etiqueta${etiquetas.length > 1 ? 's' : ''})`;
+    }
+}
+
+function coletarDadosEtiquetas() {
+    const linhas = Array.from(document.getElementById('etiquetasTableBody').children)
+        .filter(tr => !tr.classList.contains('hidden'));
+    
+    return linhas.map(linha => ({
+        data: linha.querySelector('input[type="date"]').value,
+        gerente: linha.querySelector('input[placeholder="Gerente"]').value,
+        responsavel: linha.querySelector('input[placeholder="Responsável"]').value,
+        cr: linha.querySelector('input[placeholder="CR"]').value,
+        patrimonio: linha.querySelector('input[placeholder="Patrimônio"]').value,
+        imei: linha.querySelector('input[placeholder="IMEI"]').value,
+        anotacoes: linha.querySelector('textarea').value
+    }));
+}
+
+function observarMudancas() {
+    const tbody = document.getElementById('etiquetasTableBody');
+    
+    if (!tbody) {
+        return;
+    }
+    
+    // Usar event delegation para capturar mudanças em qualquer campo
+    tbody.addEventListener('input', function(e) {
+        const target = e.target;
+        if (target.matches('input, textarea')) {
+            verificarBotaoGerar();
+            const previewMode = document.getElementById('previewMode');
+            if (previewMode && previewMode.checked) {
+                atualizarPreview();
+            }
+        }
+    });
+
+    // Observar mudanças estruturais (adição/remoção de linhas)
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.type === 'childList') {
+                atualizarContador();
+                verificarBotaoGerar();
+                const previewMode = document.getElementById('previewMode');
+                if (previewMode && previewMode.checked) {
+                    atualizarPreview();
+                }
+            }
+        });
+    });
+
+    observer.observe(tbody, {
+        childList: true,
+        subtree: true
+    });
+}
+
+function formatarData(data) {
+    if (!data) return '';
+    return new Date(data).toLocaleDateString('pt-BR');
+}
+
+function drawEtiqueta(ctx, etiqueta, x, y) {
+    // Dimensões em pixels (300 DPI): 31mm = 365px, 17mm = 200px
+    const width = 365;
+    const height = 200;
+    
+    // Desenhar borda da etiqueta (igual ao PDF)
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x, y, width, height);
+    
+    // Texto com fontes maiores
+    ctx.fillStyle = 'black';
+    ctx.font = 'bold 28px Arial';  // Aumentado de 20px para 28px
+    
+    const padding = 8;  // Aumentado para 8 (igual ao backend)
+    let currentX = x + padding;
+    let currentY = y + padding + 30;  // Aumentado de 22 para 30
+    const lineHeight = 28;  // Aumentado de 24 para 28
+    
+    // Data
+    if (etiqueta.data) {
+        ctx.fillText(`Data: ${formatarData(etiqueta.data)}`, currentX, currentY);
+        currentY += lineHeight;
+    }
+    
+    // CR
+    if (etiqueta.cr) {
+        ctx.font = '26px Arial';  // Aumentado de 20px para 26px
+        ctx.fillText(`CR: ${etiqueta.cr}`, currentX, currentY);
+        currentY += lineHeight;
+    }
+    
+    // Patrimônio
+    if (etiqueta.patrimonio) {
+        ctx.font = '26px Arial';  // Aumentado de 20px para 26px
+        ctx.fillText(`Pat: ${etiqueta.patrimonio.substring(0, 15)}`, currentX, currentY);  // Reduzido caracteres para acomodar fonte maior
+        currentY += lineHeight;
+    }
+    
+    // Gerente
+    if (etiqueta.gerente) {
+        ctx.font = '24px Arial';  // Aumentado de 20px para 24px
+        ctx.fillText(`Ger: ${etiqueta.gerente.substring(0, 20)}`, currentX, currentY);  // Reduzido caracteres
+        currentY += lineHeight - 2;
+    }
+    
+    // Responsável
+    if (etiqueta.responsavel) {
+        ctx.font = '24px Arial';  // Aumentado de 20px para 24px
+        ctx.fillText(`Resp: ${etiqueta.responsavel.substring(0, 18)}`, currentX, currentY);  // Reduzido caracteres
+        currentY += lineHeight - 2;
+    }
+    
+    // IMEI
+    if (etiqueta.imei) {
+        ctx.font = '24px Arial';  // Aumentado de 20px para 24px
+        const imeiStr = etiqueta.imei.substring(0, 20);  // Reduzido caracteres
+        ctx.fillText(`IMEI: ${imeiStr}`, currentX, currentY);
+        currentY += lineHeight - 3;
+    }
+    
+    // Anotações
+    if (etiqueta.anotacoes && currentY < y + height - 25) {  // Ajustado limite
+        ctx.font = '22px Arial';  // Aumentado de 20px para 22px
+        const anotacoes = etiqueta.anotacoes.substring(0, 18);  // Reduzido caracteres
+        ctx.fillText(`Obs: ${anotacoes}`, currentX, currentY);
+    }
+}
+
+function atualizarPreview() {
+    const etiquetas = coletarDadosEtiquetas();
+    const grid = document.getElementById('previewGrid');
+    const container = grid.parentElement;
+    
+    // Limpar previews anteriores
+    grid.innerHTML = '';
+    const mensagemMais = container.querySelector('p.text-center');
+    if (mensagemMais) {
+        mensagemMais.remove();
+    }
+    
+     // Adicionar novos previews com canvas
+     etiquetas.slice(0, 8).forEach((etiqueta, idx) => {
+         const preview = document.createElement('div');
+         preview.className = 'rounded p-1 bg-white';  // Removida classe 'border'
+        
+        const canvas = document.createElement('canvas');
+        canvas.className = 'preview-canvas';
+        canvas.width = 365;
+        canvas.height = 200;
+        canvas.style.width = '182px';
+        canvas.style.height = '100px';
+        
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+            drawEtiqueta(ctx, etiqueta, 0, 0);
+        }
+        
+        preview.appendChild(canvas);
+        grid.appendChild(preview);
+    });
+    
+    // Adicionar mensagem de mais etiquetas se necessário
+    if (etiquetas.length > 8) {
+        const mais = document.createElement('p');
+        mais.className = 'text-center text-sm text-slate-500';
+        mais.textContent = `... e mais ${etiquetas.length - 8} etiqueta(s)`;
+        container.appendChild(mais);
+    }
+}
+
+function gerarPDF() {
+    const etiquetas = coletarDadosEtiquetas();
+    const btnGerarPDF = document.getElementById('btnGerarPDF');
+    const btnTexto = document.getElementById('btnTexto');
+    
+    if (etiquetas.length === 0) {
+        showToast('Por favor, adicione pelo menos uma etiqueta para gerar o PDF.', 'warning');
+        return;
+    }
+
+    btnGerarPDF.disabled = true;
+    btnTexto.textContent = `Gerando PDF (${etiquetas.length} etiqueta${etiquetas.length > 1 ? 's' : ''})...`;
+
+    fetch('{% url "gestao_a_vista:etiquetas_generator" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({ etiquetas })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Criar link para download
+            const link = document.createElement('a');
+            
+            if (data.type === 'pdf' && data.pdf) {
+                // Download como PDF
+                link.href = 'data:application/pdf;base64,' + data.pdf;
+                link.download = `etiquetas-A4348-${new Date().toISOString().split('T')[0]}.pdf`;
+            } else if (data.image) {
+                // Fallback para PNG (compatibilidade)
+                link.href = 'data:image/png;base64,' + data.image;
+                link.download = `etiquetas-A4348-${new Date().toISOString().split('T')[0]}.png`;
+            } else {
+                throw new Error('Formato de arquivo não suportado');
+            }
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            // Mostrar mensagem de sucesso
+            const formato = data.type === 'pdf' ? 'PDF' : 'PNG';
+            showToast(`Etiquetas geradas com sucesso em formato ${formato}!`, 'success');
+        } else {
+            throw new Error(data.error || 'Erro ao gerar etiquetas');
+        }
+    })
+    .catch(error => {
+        showToast('Erro: ' + error.message, 'error');
+    })
+    .finally(() => {
+        btnGerarPDF.disabled = false;
+        btnTexto.textContent = `Gerar PDF (${etiquetas.length} etiqueta${etiquetas.length > 1 ? 's' : ''})`;
+    });
+}
+
+// Sistema de Toast moderno inspirado no Lovable
+function showToast(message, type = 'info') {
+    // Remover toasts existentes
+    const existingToasts = document.querySelectorAll('.toast');
+    existingToasts.forEach(toast => toast.remove());
+    
+    // Criar container de toast se não existir
+    let toastContainer = document.getElementById('toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.id = 'toast-container';
+        toastContainer.style.cssText = `
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 9999;
+            pointer-events: none;
+        `;
+        document.body.appendChild(toastContainer);
+    }
+    
+    // Criar toast
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    
+    // Definir cores por tipo
+    const colors = {
+        success: { bg: '#10b981', border: '#059669' },
+        error: { bg: '#ef4444', border: '#dc2626' },
+        warning: { bg: '#f59e0b', border: '#d97706' },
+        info: { bg: '#3b82f6', border: '#2563eb' }
+    };
+    
+    const color = colors[type] || colors.info;
+    
+    toast.style.cssText = `
+        background-color: ${color.bg};
+        color: white;
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+        border-left: 4px solid ${color.border};
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        margin-bottom: 0.5rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        pointer-events: auto;
+        transform: translateX(100%);
+        transition: transform 0.3s ease-in-out;
+        max-width: 400px;
+        word-wrap: break-word;
+    `;
+    
+    // Ícones por tipo
+    const icons = {
+        success: '✓',
+        error: '✕',
+        warning: '⚠',
+        info: 'ℹ'
+    };
+    
+    toast.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span style="font-weight: bold; font-size: 1rem;">${icons[type] || icons.info}</span>
+            <span>${message}</span>
+        </div>
+    `;
+    
+    toastContainer.appendChild(toast);
+    
+    // Animar entrada
+    setTimeout(() => {
+        toast.style.transform = 'translateX(0)';
+    }, 10);
+    
+    // Auto remover após 4 segundos
+    setTimeout(() => {
+        toast.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.remove();
+            }
+        }, 300);
+    }, 4000);
+    
+    // Permitir clique para fechar
+    toast.addEventListener('click', () => {
+        toast.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.remove();
+            }
+        }, 300);
+    });
+}
+
+// Fallback para compatibilidade com código existente
+function showNotification(message, type) {
+    showToast(message, type);
+}
+</script>
+{% endblock %} 

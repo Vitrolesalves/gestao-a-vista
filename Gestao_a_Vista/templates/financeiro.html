@@ -1,0 +1,2097 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Painel Financeiro - Gestão à Vista{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Premium Dashboard Variables */
+    :root {
+        --finance-primary: #1A2A45;
+        --finance-secondary: #2A4570;
+        --finance-dark: #111E33;
+        --finance-light: #F8FAFC;
+        --finance-success: #10B981;
+        --finance-warning: #F59E0B;
+        --finance-danger: #EF4444;
+        --finance-brown: #C2410C;
+        --border-color: #E2E8F0;
+    }
+
+    .finance-title {
+        background: linear-gradient(to right, var(--finance-primary), var(--finance-secondary));
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-size: 26px;
+        font-weight: bold;
+        margin: 0;
+        text-transform: uppercase;
+    }
+
+    .finance-icon {
+        width: 32px;
+        height: 32px;
+        background: var(--finance-primary);
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 16px;
+    }
+
+    /* Filter Sidebar */
+    .filter-card {
+        background: white;
+        border-radius: 0.6rem;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+        border: 1px solid var(--border-color);
+        position: sticky;
+        top: 20px;
+    }
+
+    .filter-card-header {
+        background: #F8FAFC;
+        border-bottom: 1px solid var(--border-color);
+        padding: 1rem 1.25rem;
+        font-weight: 700;
+        color: #1E293B;
+        font-size: 0.95rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .filter-card-body {
+        padding: 1.25rem;
+        max-height: calc(100vh - 160px);
+        overflow-y: auto;
+    }
+
+    /* Select elements */
+    .filter-select {
+        width: 100%;
+        min-height: 100px;
+        border: 1px solid #CBD5E1;
+        border-radius: 0.375rem;
+        font-size: 0.825rem;
+        padding: 0.35rem;
+        background: white;
+    }
+
+    /* Custom Premium Multiselect Dropdown */
+    .custom-multiselect-wrapper {
+        position: relative;
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+
+    .custom-multiselect-button {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        min-height: 38px;
+        padding: 0.375rem 0.75rem;
+        background-color: #fff;
+        border: 1px solid #CBD5E1;
+        border-radius: 0.375rem;
+        cursor: pointer;
+        font-size: 0.825rem;
+        color: #334155;
+        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    }
+
+    .custom-multiselect-button:hover {
+        border-color: var(--finance-secondary);
+    }
+
+    .custom-multiselect-text {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 90%;
+    }
+
+    .custom-multiselect-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        z-index: 1050;
+        display: none;
+        width: 100%;
+        max-height: 300px;
+        margin-top: 0.25rem;
+        background-color: #fff;
+        border: 1px solid #CBD5E1;
+        border-radius: 0.375rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+    }
+
+    .custom-multiselect-dropdown.show {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .custom-multiselect-search-container {
+        padding: 0.5rem;
+        border-bottom: 1px solid #E2E8F0;
+        background-color: #F8FAFC;
+    }
+
+    .custom-multiselect-search {
+        font-size: 0.8rem;
+        border-radius: 0.25rem;
+    }
+
+    .custom-multiselect-actions {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.4rem 0.75rem;
+        font-size: 0.75rem;
+        border-bottom: 1px solid #E2E8F0;
+        background-color: #F8FAFC;
+    }
+
+    .custom-multiselect-actions button {
+        font-size: 0.725rem;
+        font-weight: 600;
+    }
+
+    .custom-multiselect-options {
+        flex: 1;
+        overflow-y: auto;
+        padding: 0.35rem 0;
+        max-height: 200px;
+    }
+
+    .custom-multiselect-option {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        width: 100%;
+        padding: 0.4rem 0.75rem;
+        margin: 0;
+        font-size: 0.8rem;
+        color: #334155;
+        cursor: pointer;
+        transition: background-color 0.15s ease;
+        user-select: none;
+    }
+
+    .custom-multiselect-option:hover {
+        background-color: #F1F5F9;
+    }
+
+    .custom-multiselect-option input[type="checkbox"] {
+        cursor: pointer;
+        width: 14px;
+        height: 14px;
+        border-radius: 0.25rem;
+        border: 1px solid #CBD5E1;
+    }
+
+    .filter-label {
+        font-size: 0.775rem;
+        font-weight: 700;
+        color: #475569;
+        text-transform: uppercase;
+        margin-bottom: 0.35rem;
+        display: block;
+    }
+
+    /* KPI Grid */
+    .finance-stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1.25rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .finance-stat-card {
+        background: white;
+        border-radius: 0.5rem;
+        padding: 1.25rem;
+        border-left: 4px solid var(--finance-primary);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        transition: all 0.25s ease;
+    }
+
+    .finance-stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+    }
+
+    .finance-stat-card.success { border-left-color: var(--finance-success); }
+    .finance-stat-card.warning { border-left-color: var(--finance-warning); }
+    .finance-stat-card.danger { border-left-color: var(--finance-danger); }
+    .finance-stat-card.info { border-left-color: var(--finance-secondary); }
+
+    .finance-stat-info h3 {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #64748B;
+        text-transform: uppercase;
+        margin: 0 0 0.35rem 0;
+        letter-spacing: 0.03em;
+    }
+
+    .finance-stat-number {
+        font-size: 1.45rem;
+        font-weight: 700;
+        color: #1E293B;
+        margin: 0;
+    }
+
+    .finance-stat-icon {
+        width: 2.75rem;
+        height: 2.75rem;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+    }
+
+    .finance-stat-card.info .finance-stat-icon { background: rgba(42, 69, 112, 0.1); color: var(--finance-secondary); }
+    .finance-stat-card.success .finance-stat-icon { background: rgba(16, 185, 129, 0.1); color: var(--finance-success); }
+    .finance-stat-card.warning .finance-stat-icon { background: rgba(245, 158, 11, 0.1); color: var(--finance-warning); }
+    .finance-stat-card.danger .finance-stat-icon { background: rgba(239, 68, 68, 0.1); color: var(--finance-danger); }
+
+    /* Risk Chips Row */
+    .risk-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .risk-chip {
+        border: 1px solid var(--border-color);
+        border-left: 5px solid var(--risk-color);
+        border-radius: 6px;
+        padding: 0.65rem 0.85rem;
+        background: white;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .risk-chip strong {
+        font-size: 1.2rem;
+        color: #1E293B;
+    }
+
+    .risk-chip span {
+        color: #64748B;
+        font-size: 0.775rem;
+        font-weight: 600;
+    }
+
+    /* Tabs Panel */
+    .finance-card {
+        background: white;
+        border-radius: 0.6rem;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+        border: 1px solid var(--border-color);
+        overflow: hidden;
+    }
+
+    .finance-tabs-nav {
+        background: #F8FAFC;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        gap: 0.25rem;
+        padding: 0.5rem 0.75rem 0;
+    }
+
+    .finance-tab-btn {
+        background: transparent;
+        border: 1px solid transparent;
+        border-bottom: none;
+        padding: 0.6rem 1.1rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #64748B;
+        border-top-left-radius: 0.25rem;
+        border-top-right-radius: 0.25rem;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .finance-tab-btn:hover {
+        color: var(--finance-primary);
+        background: rgba(226, 232, 240, 0.5);
+    }
+
+    .finance-tab-btn.active {
+        background: white;
+        border-color: var(--border-color);
+        color: var(--finance-primary);
+        font-weight: 700;
+        margin-bottom: -1px;
+    }
+
+    .finance-tab-content {
+        padding: 1.5rem;
+        display: none;
+    }
+
+    .finance-tab-content.active {
+        display: block;
+    }
+
+    /* Sub-tabs */
+    .sub-tabs-nav {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1.25rem;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 0.5rem;
+    }
+
+    .sub-tab-btn {
+        background: transparent;
+        border: none;
+        padding: 0.4rem 0.80rem;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #64748B;
+        cursor: pointer;
+        border-radius: 0.25rem;
+        transition: all 0.2s;
+    }
+
+    .sub-tab-btn:hover {
+        background: #F1F5F9;
+        color: var(--finance-primary);
+    }
+
+    .sub-tab-btn.active {
+        background: var(--finance-secondary);
+        color: white;
+    }
+
+    .sub-tab-content {
+        display: none;
+    }
+
+    .sub-tab-content.active {
+        display: block;
+    }
+
+    /* Custom Tables */
+    .table-responsive {
+        overflow-x: auto;
+    }
+
+    .finance-table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+    }
+
+    .finance-table th {
+        background: #F8FAFC;
+        padding: 0.75rem 0.85rem;
+        font-size: 0.725rem;
+        font-weight: 700;
+        color: #64748B;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        border-bottom: 2px solid var(--border-color);
+    }
+
+    .finance-table td {
+        padding: 0.75rem 0.85rem;
+        font-size: 0.8rem;
+        color: #334155;
+        border-bottom: 1px solid var(--border-color);
+        vertical-align: middle;
+    }
+
+    .finance-table tr:hover {
+        background: #F8FAFC;
+    }
+
+    /* Chat styling */
+    .chat-container {
+        display: flex;
+        flex-direction: column;
+        height: 520px;
+        background: #F8FAFC;
+        border: 1px solid var(--border-color);
+        border-radius: 0.5rem;
+        overflow: hidden;
+    }
+
+    .chat-messages {
+        flex: 1;
+        padding: 1.25rem;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .chat-message {
+        max-width: 80%;
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+        font-size: 0.85rem;
+        line-height: 1.45;
+        white-space: pre-wrap;
+    }
+
+    .chat-message.assistant {
+        background: white;
+        border: 1px solid var(--border-color);
+        color: #1E293B;
+        align-self: flex-start;
+        border-top-left-radius: 0;
+    }
+
+    .chat-message.user {
+        background: var(--finance-secondary);
+        color: white;
+        align-self: flex-end;
+        border-top-right-radius: 0;
+    }
+
+    .thinking-bubble {
+        background: #F1F5F9 !important;
+        border: 1px dashed #CBD5E1 !important;
+        color: #475569 !important;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        font-style: italic;
+    }
+
+    .loading-dots {
+        animation: blink 1.4s infinite both;
+        font-weight: bold;
+    }
+
+    @keyframes blink {
+        0% { opacity: .2; }
+        20% { opacity: 1; }
+        100% { opacity: .2; }
+    }
+
+    .chat-input-area {
+        background: white;
+        border-top: 1px solid var(--border-color);
+        padding: 0.75rem 1rem;
+        display: flex;
+        gap: 0.75rem;
+    }
+
+    .chat-input {
+        flex: 1;
+        border: 1px solid #CBD5E1;
+        border-radius: 0.375rem;
+        padding: 0.5rem 0.85rem;
+        font-size: 0.85rem;
+    }
+
+    .chat-input:focus {
+        outline: none;
+        border-color: var(--finance-secondary);
+    }
+
+    .chat-presets {
+        display: flex;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        background: #F1F5F9;
+        flex-wrap: wrap;
+        border-top: 1px solid var(--border-color);
+    }
+
+    .preset-btn {
+        background: white;
+        border: 1px solid #CBD5E1;
+        padding: 0.35rem 0.65rem;
+        font-size: 0.75rem;
+        border-radius: 0.25rem;
+        cursor: pointer;
+        color: #475569;
+        font-weight: 500;
+        transition: all 0.2s;
+    }
+
+    .preset-btn:hover {
+        background: var(--finance-primary);
+        color: white;
+        border-color: var(--finance-primary);
+    }
+
+    /* Email template preview container */
+    .email-preview-card {
+        border: 1px solid var(--border-color);
+        border-radius: 0.5rem;
+        height: 380px;
+        background: white;
+        overflow-y: auto;
+        padding: 1.5rem;
+    }
+
+    /* File uploader wrapper */
+    .dropzone-wrapper {
+        border: 2px dashed #CBD5E1;
+        background: #F8FAFC;
+        border-radius: 0.5rem;
+        padding: 2rem;
+        text-align: center;
+        cursor: pointer;
+        color: #64748B;
+        transition: all 0.2s;
+    }
+
+    .dropzone-wrapper:hover {
+        border-color: var(--finance-secondary);
+        background: rgba(42, 69, 112, 0.03);
+    }
+
+    /* Custom form elements */
+    .finance-input, .finance-select {
+        width: 100%;
+        padding: 0.5rem 0.75rem;
+        border: 1px solid #CBD5E1;
+        border-radius: 0.375rem;
+        font-size: 0.85rem;
+    }
+
+    /* Loading Overlay */
+    .global-loader {
+        position: fixed;
+        inset: 0;
+        background: rgba(255, 255, 255, 0.8);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        display: none;
+    }
+
+    .spinner {
+        width: 48px;
+        height: 48px;
+        border: 5px solid #CBD5E1;
+        border-top-color: var(--finance-primary);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: 1rem;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Loading overlay -->
+<div class="global-loader" id="globalLoader">
+    <div class="spinner"></div>
+    <h5 class="fw-bold text-slate-800" id="loaderMessage">Carregando painel financeiro...</h5>
+</div>
+
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div class="d-flex align-items-center gap-3">
+            <div class="finance-icon"><i class="fas fa-wallet"></i></div>
+            <h1 class="finance-title">Painel Financeiro</h1>
+        </div>
+        <div>
+            <span class="badge bg-secondary px-3 py-2 fs-7">{{ nome_carteira }}</span>
+        </div>
+    </div>
+
+    <!-- Main Grid -->
+    <div class="row g-4">
+        <!-- Sidebar filters (3/12 cols) -->
+        <div class="col-lg-3">
+            <div class="filter-card">
+                <div class="filter-card-header">
+                    <i class="fas fa-filter text-primary"></i> Filtros de Acompanhamento
+                </div>
+                <div class="filter-card-body d-flex flex-column gap-3">
+                    <div>
+                        <label class="filter-label">Mês</label>
+                        <select class="filter-select" id="filter-meses" multiple onchange="onFilterChange()"></select>
+                    </div>
+                    <div>
+                        <label class="filter-label">Classificação Alerta</label>
+                        <select class="filter-select" id="filter-alertas" multiple onchange="onFilterChange()">
+                            <option value="sem_orcamento">Sem orçamento</option>
+                            <option value="estourado">Estourado</option>
+                            <option value="critico">Crítico</option>
+                            <option value="atencao">Atenção</option>
+                            <option value="sem_alerta">Sem Alerta</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="filter-label">PEC</label>
+                        <select class="filter-select" id="filter-pecs" multiple onchange="onFilterChange()"></select>
+                    </div>
+                    <div>
+                        <label class="filter-label">CC. SUP</label>
+                        <select class="filter-select" id="filter-cc-sups" multiple onchange="onFilterChange()"></select>
+                    </div>
+                    <div>
+                        <label class="filter-label">Conta Contábil</label>
+                        <select class="filter-select" id="filter-contas" multiple onchange="onFilterChange()"></select>
+                    </div>
+                    <div>
+                        <label class="filter-label">Fornecedor</label>
+                        <select class="filter-select" id="filter-fornecedores" multiple onchange="onFilterChange()"></select>
+                    </div>
+                    <button class="btn btn-outline-secondary btn-sm mt-2 w-100" onclick="clearFilters()">
+                        <i class="fas fa-sync-alt"></i> Limpar Filtros
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard Workspace (9/12 cols) -->
+        <div class="col-lg-9">
+            <!-- Stats cards grid -->
+            <div class="finance-stats-grid">
+                <div class="finance-stat-card info">
+                    <div class="finance-stat-info">
+                        <h3>Receita Orçada</h3>
+                        <p class="finance-stat-number" id="kpi-receita-orcada">R$ 0,00</p>
+                    </div>
+                    <div class="finance-stat-icon"><i class="fas fa-hand-holding-usd"></i></div>
+                </div>
+                <div class="finance-stat-card danger">
+                    <div class="finance-stat-info">
+                        <h3>Orçamento Custos</h3>
+                        <p class="finance-stat-number" id="kpi-orcamento-custos">R$ 0,00</p>
+                    </div>
+                    <div class="finance-stat-icon"><i class="fas fa-calculator"></i></div>
+                </div>
+                <div class="finance-stat-card success">
+                    <div class="finance-stat-info">
+                        <h3>Margem Orçada</h3>
+                        <p class="finance-stat-number" id="kpi-margem-orcada">R$ 0,00</p>
+                    </div>
+                    <div class="finance-stat-icon"><i class="fas fa-percentage"></i></div>
+                </div>
+                <div class="finance-stat-card info">
+                    <div class="finance-stat-info">
+                        <h3>Compras Realizadas</h3>
+                        <p class="finance-stat-number" id="kpi-realizado-custos">R$ 0,00</p>
+                    </div>
+                    <div class="finance-stat-icon"><i class="fas fa-shopping-cart"></i></div>
+                </div>
+            </div>
+
+            <div class="finance-stats-grid">
+                <div class="finance-stat-card info">
+                    <div class="finance-stat-info">
+                        <h3>Saldo Orçamento</h3>
+                        <p class="finance-stat-number" id="kpi-saldo-custos">R$ 0,00</p>
+                    </div>
+                </div>
+                <div class="finance-stat-card warning">
+                    <div class="finance-stat-info">
+                        <h3>Excesso Total</h3>
+                        <p class="finance-stat-number" id="kpi-excesso-total">R$ 0,00</p>
+                    </div>
+                </div>
+                <div class="finance-stat-card danger">
+                    <div class="finance-stat-info">
+                        <h3>Alertas Ativos</h3>
+                        <p class="finance-stat-number" id="kpi-alertas-total">0</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Risk chips row -->
+            <div class="risk-row">
+                <div class="risk-chip" style="--risk-color: var(--finance-brown)">
+                    <span>Sem Orçamento</span>
+                    <strong id="chip-sem-orcamento">0</strong>
+                </div>
+                <div class="risk-chip" style="--risk-color: var(--finance-danger)">
+                    <span>Estourado</span>
+                    <strong id="chip-estourado">0</strong>
+                </div>
+                <div class="risk-chip" style="--risk-color: var(--finance-brown)">
+                    <span>Crítico</span>
+                    <strong id="chip-critico">0</strong>
+                </div>
+                <div class="risk-chip" style="--risk-color: var(--finance-warning)">
+                    <span>Atenção</span>
+                    <strong id="chip-atencao">0</strong>
+                </div>
+            </div>
+
+            <!-- Main view card tabs -->
+            <div class="finance-card">
+                <div class="finance-tabs-nav">
+                    <button class="finance-tab-btn active" onclick="switchTab('dashboard')">Acompanhamento</button>
+                    <button class="finance-tab-btn" onclick="switchTab('fechamento')">Fechamento</button>
+                    <button class="finance-tab-btn" onclick="switchTab('chat')">IA Financeira</button>
+                    <button class="finance-tab-btn" onclick="switchTab('email')">E-mail</button>
+                    <button class="finance-tab-btn" onclick="switchTab('upload')">Gerenciar Planilhas</button>
+                </div>
+
+                <!-- Tab: Dashboard (Acompanhamento) -->
+                <div class="finance-tab-content active" id="tab-dashboard">
+                    <div class="sub-tabs-nav">
+                        <button class="sub-tab-btn active" onclick="switchSubTab('dashboard', 'overview')">Visão Geral</button>
+                        <button class="sub-tab-btn" onclick="switchSubTab('dashboard', 'alerts')">Alertas</button>
+                        <button class="sub-tab-btn" onclick="switchSubTab('dashboard', 'nobudget')">Sem Orçamento</button>
+                        <button class="sub-tab-btn" onclick="switchSubTab('dashboard', 'detail')">Base Detalhada</button>
+                    </div>
+
+                    <!-- Subtab: Visão Geral (charts) -->
+                    <div class="sub-tab-content active" id="subtab-dashboard-overview">
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <div class="card p-3 border">
+                                    <h6 class="fw-bold mb-3">Distribuição dos Alertas</h6>
+                                    <div style="height: 250px; position: relative;">
+                                        <canvas id="chartAlertDistribution"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card p-3 border">
+                                    <h6 class="fw-bold mb-3">Orçado x Compras por Mês</h6>
+                                    <div style="height: 250px; position: relative;">
+                                        <canvas id="chartBudgetVsSpent"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="card p-3 border">
+                                    <h6 class="fw-bold mb-3">Maiores Excessos Identificados</h6>
+                                    <div style="height: 300px; position: relative;">
+                                        <canvas id="chartTopExcesses"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Subtab: Alertas -->
+                    <div class="sub-tab-content" id="subtab-dashboard-alerts">
+                        <div class="sub-tabs-nav bg-light p-2 rounded mb-3">
+                            <button class="sub-tab-btn active" onclick="switchAlertSubTab('blown')">Contas Estouradas</button>
+                            <button class="sub-tab-btn" onclick="switchAlertSubTab('nearlimit')">Perto do Limite</button>
+                        </div>
+                        <div id="alert-subtab-blown" class="alert-subtab-content">
+                            <div class="table-responsive">
+                                <table class="finance-table" id="table-blown">
+                                    <thead>
+                                        <tr>
+                                            <th>Mês</th>
+                                            <th>PEC</th>
+                                            <th>CC. SUP</th>
+                                            <th>Conta</th>
+                                            <th>Orçado</th>
+                                            <th>Comprado</th>
+                                            <th>Excesso</th>
+                                            <th>Fornecedores</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div id="alert-subtab-nearlimit" class="alert-subtab-content" style="display: none;">
+                            <div class="table-responsive">
+                                <table class="finance-table" id="table-nearlimit">
+                                    <thead>
+                                        <tr>
+                                            <th>Alerta</th>
+                                            <th>Mês</th>
+                                            <th>PEC</th>
+                                            <th>CC. SUP</th>
+                                            <th>Conta</th>
+                                            <th>Orçado</th>
+                                            <th>Comprado</th>
+                                            <th>Consumo %</th>
+                                            <th>Fornecedores</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Subtab: Sem Orçamento -->
+                    <div class="sub-tab-content" id="subtab-dashboard-nobudget">
+                        <div class="alert alert-info py-2 fs-7 mb-3">
+                            Abaixo estão listadas as compras localizadas que não possuem correspondência direta na tabela orçada do BI.
+                        </div>
+                        <div class="table-responsive">
+                            <table class="finance-table" id="table-nobudget">
+                                <thead>
+                                    <tr>
+                                        <th>Mês</th>
+                                        <th>PEC</th>
+                                        <th>CC. SUP</th>
+                                        <th>Conta</th>
+                                        <th>Valor Comprado</th>
+                                        <th>Fornecedores</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Subtab: Base detalhada -->
+                    <div class="sub-tab-content" id="subtab-dashboard-detail">
+                        <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                            <table class="finance-table" id="table-detail">
+                                <thead>
+                                    <tr>
+                                        <th>Alerta</th>
+                                        <th>Mês</th>
+                                        <th>PEC</th>
+                                        <th>CC. SUP</th>
+                                        <th>Conta</th>
+                                        <th>Orçado</th>
+                                        <th>Comprado</th>
+                                        <th>Saldo</th>
+                                        <th>Excesso</th>
+                                        <th>Consumo %</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: Fechamento -->
+                <div class="finance-tab-content" id="tab-fechamento">
+                    <div class="alert alert-warning py-2 fs-7 mb-4">
+                        <i class="fas fa-info-circle"></i> Dados de fechamento oficial consolidados por mês de acordo com a base de planilhas.
+                    </div>
+                    <!-- Closing stats summary -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-3">
+                            <div class="p-3 border rounded bg-light text-center">
+                                <h6 class="fs-8 text-uppercase fw-bold text-slate-600 mb-1">Orçado Fechamento</h6>
+                                <h4 class="fw-bold text-slate-800" id="close-kpi-orcado">R$ 0,00</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="p-3 border rounded bg-light text-center">
+                                <h6 class="fs-8 text-uppercase fw-bold text-slate-600 mb-1">Realizado Oficial</h6>
+                                <h4 class="fw-bold text-slate-800" id="close-kpi-realizado">R$ 0,00</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="p-3 border rounded bg-light text-center">
+                                <h6 class="fs-8 text-uppercase fw-bold text-slate-600 mb-1">Comprado Exportado</h6>
+                                <h4 class="fw-bold text-slate-800" id="close-kpi-comprado">R$ 0,00</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="p-3 border rounded bg-light text-center">
+                                <h6 class="fs-8 text-uppercase fw-bold text-slate-600 mb-1">Diferença Realizado x Compras</h6>
+                                <h4 class="fw-bold text-slate-800" id="close-kpi-diferenca">R$ 0,00</h4>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="sub-tabs-nav">
+                        <button class="sub-tab-btn active" onclick="switchSubTab('fechamento', 'blown')">Estouradas</button>
+                        <button class="sub-tab-btn" onclick="switchSubTab('fechamento', 'diff')">Diferenças Importantes</button>
+                        <button class="sub-tab-btn" onclick="switchSubTab('fechamento', 'onlyre')">Apenas no RE X OR</button>
+                        <button class="sub-tab-btn" onclick="switchSubTab('fechamento', 'detail')">Base Detalhada</button>
+                    </div>
+
+                    <!-- Closing subtabs -->
+                    <div class="sub-tab-content active" id="subtab-fechamento-blown">
+                        <div class="table-responsive">
+                            <table class="finance-table" id="table-closing-blown">
+                                <thead>
+                                    <tr>
+                                        <th>Mês</th>
+                                        <th>PEC</th>
+                                        <th>CC. SUP</th>
+                                        <th>Conta</th>
+                                        <th>Orçado</th>
+                                        <th>Realizado Fechado</th>
+                                        <th>Excesso</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="sub-tab-content" id="subtab-fechamento-diff">
+                        <div class="table-responsive">
+                            <table class="finance-table" id="table-closing-diff">
+                                <thead>
+                                    <tr>
+                                        <th>Mês</th>
+                                        <th>PEC</th>
+                                        <th>CC. SUP</th>
+                                        <th>Conta</th>
+                                        <th>Comprado Exportado</th>
+                                        <th>Realizado Fechado</th>
+                                        <th>Diferença</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="sub-tab-content" id="subtab-fechamento-onlyre">
+                        <div class="table-responsive">
+                            <table class="finance-table" id="table-closing-onlyre">
+                                <thead>
+                                    <tr>
+                                        <th>Mês</th>
+                                        <th>PEC</th>
+                                        <th>CC. SUP</th>
+                                        <th>Conta</th>
+                                        <th>Realizado Fechado</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="sub-tab-content" id="subtab-fechamento-detail">
+                        <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                            <table class="finance-table" id="table-closing-detail">
+                                <thead>
+                                    <tr>
+                                        <th>Mês</th>
+                                        <th>PEC</th>
+                                        <th>CC. SUP</th>
+                                        <th>Conta</th>
+                                        <th>Orçado</th>
+                                        <th>Comprado Exportado</th>
+                                        <th>Realizado Fechado</th>
+                                        <th>Consumo %</th>
+                                        <th>Diferença</th>
+                                        <th>Origem</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: Chat -->
+                <div class="finance-tab-content" id="tab-chat">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-bold mb-0"><i class="fas fa-robot text-primary"></i> Assistente IA Financeiro</h6>
+                        <div class="d-flex gap-3 align-items-center">
+                            <label class="fs-8 fw-semibold text-slate-500 mb-0">Modo de Análise:</label>
+                            <select class="form-select form-select-sm" id="chat-answer-mode" style="width: 170px;">
+                                <option value="auto">Automático</option>
+                                <option value="daily">Acompanhamento Diário</option>
+                                <option value="closing">Fechamento Mensal</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Chat UI -->
+                    <div class="chat-container">
+                        <div class="chat-messages" id="chatMessages">
+                            <div class="chat-message assistant">
+                                Olá! Sou o assistente financeiro do Gestão à Vista. Estou pronto para analisar a carteira atual, responder sobre os desvios, verificar contas estouradas, compras sem orçamento e ajudar no fechamento. Como posso ajudar você hoje?
+                            </div>
+                        </div>
+                        <div class="chat-presets">
+                            <button class="preset-btn" onclick="sendPresetPrompt('Faça um resumo executivo curto')">Resumo Executivo</button>
+                            <button class="preset-btn" onclick="sendPresetPrompt('Quais contas precisam de atenção?')">Contas em Atenção</button>
+                            <button class="preset-btn" onclick="sendPresetPrompt('Quais contas estouraram no fechamento?')">Estouros de Fechamento</button>
+                            <button class="preset-btn" onclick="sendPresetPrompt('Quais apareceram só no RE X OR?')">Somente no RE X OR</button>
+                            <button class="preset-btn btn-outline-danger ms-auto bg-transparent border-0 text-danger" onclick="clearChat()">Limpar Chat</button>
+                        </div>
+                        <div class="chat-input-area">
+                            <input type="text" class="chat-input" id="chatInput" placeholder="Envie sua pergunta aqui..." onkeypress="handleChatKey(event)">
+                            <button class="btn btn-primary btn-sm px-3" onclick="submitChatPrompt()"><i class="fas fa-paper-plane"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: Email -->
+                <div class="finance-tab-content" id="tab-email">
+                    <h6 class="fw-bold mb-3"><i class="fas fa-envelope text-primary"></i> Rascunho de E-mail de Alerta</h6>
+                    
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fs-8 fw-semibold">Destinatário</label>
+                            <input type="text" class="finance-input" id="email-to" value="{{ destinatario_padrao }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fs-8 fw-semibold">Assunto</label>
+                            <input type="text" class="finance-input" id="email-subject" value="Alerta Financeiro - Acompanhamento Financeiro">
+                        </div>
+                    </div>
+
+                    <div class="email-preview-card mb-4" id="emailDraftPreview">
+                        <p class="text-muted text-center py-5">Nenhum rascunho gerado.</p>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-primary btn-sm" onclick="generateEmailDraft()">
+                            <i class="fas fa-sync-alt"></i> Gerar/Atualizar Rascunho
+                        </button>
+                        <button class="btn btn-success btn-sm ms-auto" onclick="downloadEmailDraftHTML()">
+                            <i class="fas fa-file-code"></i> Salvar HTML
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tab: Upload (Gerenciar Planilhas) -->
+                <div class="finance-tab-content" id="tab-upload">
+                    <h6 class="fw-bold mb-3"><i class="fas fa-file-import text-primary"></i> Adicionar Novas Planilhas de BI</h6>
+
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-4">
+                            <div class="card p-3 border h-100">
+                                <h6 class="fw-bold mb-3">1. Parâmetros da Planilha</h6>
+                                <div class="d-flex flex-column gap-3">
+                                    <div>
+                                        <label class="form-label fs-8 fw-bold">Tipo da Planilha</label>
+                                        <select class="finance-select" id="upload-dataset">
+                                            <option value="compras">Compras Produto</option>
+                                            <option value="resultado">Resultado RE X OR</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="form-label fs-8 fw-bold">Mês de Referência</label>
+                                        <select class="finance-select" id="upload-month">
+                                            <option value="2026-01">Janeiro 2026</option>
+                                            <option value="2026-02">Fevereiro 2026</option>
+                                            <option value="2026-03">Março 2026</option>
+                                            <option value="2026-04">Abril 2026</option>
+                                            <option value="2026-05">Maio 2026</option>
+                                            <option value="2026-06" selected>Junho 2026</option>
+                                            <option value="2026-07">Julho 2026</option>
+                                            <option value="2026-08">Agosto 2026</option>
+                                            <option value="2026-09">Setembro 2026</option>
+                                            <option value="2026-10">Outubro 2026</option>
+                                            <option value="2026-11">Novembro 2026</option>
+                                            <option value="2026-12">Dezembro 2026</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-8">
+                            <div class="card p-3 border h-100">
+                                <h6 class="fw-bold mb-3">2. Selecionar Arquivo Excel</h6>
+                                <div class="dropzone-wrapper" onclick="document.getElementById('uploadFileEl').click()">
+                                    <i class="fas fa-cloud-upload-alt fa-3x mb-3 text-secondary"></i>
+                                    <h6 class="fw-bold mb-1" id="dropzone-text">Arraste ou clique para selecionar o arquivo Excel (.xlsx, .xls)</h6>
+                                    <span class="fs-8 text-muted">Tamanho máximo de 20MB.</span>
+                                    <input type="file" id="uploadFileEl" style="display: none;" onchange="handleFileSelected(this)">
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mt-3">
+                                    <div class="d-flex gap-2">
+                                        <button class="btn btn-primary btn-sm px-4" id="btnUploadSubmit" onclick="uploadSpreadsheet()" disabled>
+                                            <i class="fas fa-upload"></i> Fazer Upload e Processar
+                                        </button>
+                                        <button class="btn btn-outline-secondary btn-sm" onclick="runPipelineOnly()">
+                                            <i class="fas fa-play"></i> Processar Base Atual
+                                        </button>
+                                    </div>
+                                    <button class="btn btn-outline-danger btn-sm" onclick="clearFinancialData()">
+                                        <i class="fas fa-trash-alt"></i> Limpar Dados Atuais
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ChartJS & AJAX Controllers -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // System State
+    const state = {
+        filters: {
+            meses: [],
+            alertas: [],
+            pecs: [],
+            cc_sups: [],
+            contas: [],
+            fornecedores: []
+        },
+        filtersInitialized: false,
+        chatHistory: [],
+        charts: {},
+        currentTab: 'dashboard',
+        currentSubTabs: {
+            dashboard: 'overview',
+            fechamento: 'blown'
+        },
+        currentAlertSubTab: 'blown',
+        selectedFile: null
+    };
+
+    // Helper: CSRF Cookie
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // Loader controls
+    function showLoader(message = "Carregando...") {
+        document.getElementById('loaderMessage').textContent = message;
+        document.getElementById('globalLoader').style.display = 'flex';
+    }
+    function hideLoader() {
+        document.getElementById('globalLoader').style.display = 'none';
+    }
+
+    // Money formatter helper
+    function formatMoney(value) {
+        if (value === null || value === undefined) return "R$ 0,00";
+        return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+    }
+
+    // Initialize Page
+    document.addEventListener("DOMContentLoaded", () => {
+        fetchDashboardData();
+    });
+
+    // Fetch dynamic JSON data
+    function fetchDashboardData() {
+        showLoader("Analisando registros financeiros...");
+        fetch("{% url 'gestao_a_vista:financeiro_api_data' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify(state.filters)
+        })
+        .then(res => {
+            if (!res.ok) {
+                return res.json().then(errData => {
+                    throw new Error(errData.error || "Erro interno do servidor");
+                }).catch(() => {
+                    throw new Error("Erro de comunicação com o servidor.");
+                });
+            }
+            return res.json();
+        })
+        .then(data => {
+            if (data.error) {
+                throw new Error(data.error);
+            }
+            updateKPIs(data.kpis);
+            updateClosingKPIs(data.closing_kpis);
+            updateAlertChips(data.alert_counts);
+            initOrUpdateCharts(data.charts);
+            populateTables(data.tables);
+            
+            if (!state.filtersInitialized) {
+                populateFilterDropdowns(data.filter_options);
+                initCustomMultiselects();
+                state.filtersInitialized = true;
+            }
+            hideLoader();
+        })
+        .catch(err => {
+            console.error("Fetch dashboard error:", err);
+            hideLoader();
+            alert("Não foi possível carregar os dados financeiros do servidor:\n" + err.message);
+        });
+    }
+
+    // Populate Filter Options
+    function populateFilterDropdowns(options) {
+        const buildOptions = (elementId, values) => {
+            const el = document.getElementById(elementId);
+            el.innerHTML = '';
+            values.forEach(val => {
+                const opt = document.createElement('option');
+                opt.value = val;
+                opt.textContent = val;
+                el.appendChild(opt);
+            });
+        };
+
+        buildOptions('filter-meses', options.meses);
+        buildOptions('filter-pecs', options.pecs);
+        if (options.cc_sups) buildOptions('filter-cc-sups', options.cc_sups);
+        buildOptions('filter-contas', options.contas);
+        buildOptions('filter-fornecedores', options.fornecedores);
+    }
+
+    // Clear Filters
+    function clearFilters() {
+        const resetSelect = (id) => {
+            const el = document.getElementById(id);
+            for (let i = 0; i < el.options.length; i++) {
+                el.options[i].selected = false;
+            }
+        };
+        resetSelect('filter-meses');
+        resetSelect('filter-alertas');
+        resetSelect('filter-pecs');
+        if (document.getElementById('filter-cc-sups')) resetSelect('filter-cc-sups');
+        resetSelect('filter-contas');
+        resetSelect('filter-fornecedores');
+        
+        // Sync custom multiselects UI
+        document.querySelectorAll('.filter-select').forEach(s => s.dispatchEvent(new Event('sync-custom')));
+        
+        onFilterChange();
+    }
+
+    // Read selected options
+    function getSelectedOptions(elementId) {
+        const el = document.getElementById(elementId);
+        if (!el) return [];
+        return Array.from(el.selectedOptions).map(opt => opt.value);
+    }
+
+    // Handle filter modification
+    function onFilterChange() {
+        state.filters.meses = getSelectedOptions('filter-meses');
+        state.filters.alertas = getSelectedOptions('filter-alertas');
+        state.filters.pecs = getSelectedOptions('filter-pecs');
+        state.filters.cc_sups = getSelectedOptions('filter-cc-sups');
+        state.filters.contas = getSelectedOptions('filter-contas');
+        state.filters.fornecedores = getSelectedOptions('filter-fornecedores');
+        fetchDashboardData();
+    }
+
+    // Update KPI panels
+    function updateKPIs(kpis) {
+        document.getElementById('kpi-receita-orcada').textContent = formatMoney(kpis.receita_orcada);
+        document.getElementById('kpi-orcamento-custos').textContent = formatMoney(kpis.orcamento_custos);
+        document.getElementById('kpi-margem-orcada').textContent = formatMoney(kpis.margem_orcada);
+        document.getElementById('kpi-realizado-custos').textContent = formatMoney(kpis.realizado_custos);
+        document.getElementById('kpi-saldo-custos').textContent = formatMoney(kpis.saldo_custos);
+        document.getElementById('kpi-excesso-total').textContent = formatMoney(kpis.excesso_total);
+        document.getElementById('kpi-alertas-total').textContent = kpis.alertas_total;
+    }
+
+    // Update Closing KPIs
+    function updateClosingKPIs(kpis) {
+        document.getElementById('close-kpi-orcado').textContent = formatMoney(kpis.orcado_custos);
+        document.getElementById('close-kpi-realizado').textContent = formatMoney(kpis.realizado_fechado);
+        document.getElementById('close-kpi-comprado').textContent = formatMoney(kpis.comprado_exportado);
+        document.getElementById('close-kpi-diferenca').textContent = formatMoney(kpis.diferenca);
+    }
+
+    // Update risk labels
+    function updateAlertChips(counts) {
+        document.getElementById('chip-sem-orcamento').textContent = counts.sem_orcamento;
+        document.getElementById('chip-estourado').textContent = counts.estourado;
+        document.getElementById('chip-critico').textContent = counts.critico;
+        document.getElementById('chip-atencao').textContent = counts.atencao;
+    }
+
+    // Draw Chart.js widgets
+    function initOrUpdateCharts(chartData) {
+        // 1. Alert Distribution
+        if (state.charts.alertDist) {
+            state.charts.alertDist.data.datasets[0].data = chartData.alert_distribution.values;
+            state.charts.alertDist.update();
+        } else {
+            const ctx = document.getElementById('chartAlertDistribution').getContext('2d');
+            state.charts.alertDist = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: chartData.alert_distribution.labels,
+                    datasets: [{
+                        label: 'Quantidade',
+                        data: chartData.alert_distribution.values,
+                        backgroundColor: ['#7c2d12', '#b91c1c', '#c2410c', '#a16207', '#047857'],
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        // 2. Budget vs Spent
+        if (state.charts.budgetVsSpent) {
+            state.charts.budgetVsSpent.data.labels = chartData.budget_vs_spent.months;
+            state.charts.budgetVsSpent.data.datasets[0].data = chartData.budget_vs_spent.budgeted;
+            state.charts.budgetVsSpent.data.datasets[1].data = chartData.budget_vs_spent.spent;
+            state.charts.budgetVsSpent.update();
+        } else {
+            const ctx = document.getElementById('chartBudgetVsSpent').getContext('2d');
+            state.charts.budgetVsSpent = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: chartData.budget_vs_spent.months,
+                    datasets: [
+                        {
+                            label: 'Orçado',
+                            data: chartData.budget_vs_spent.budgeted,
+                            backgroundColor: '#1A2A45',
+                            borderRadius: 4
+                        },
+                        {
+                            label: 'Comprado',
+                            data: chartData.budget_vs_spent.spent,
+                            backgroundColor: '#2A4570',
+                            borderRadius: 4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+        }
+
+        // 3. Top Excesses
+        if (state.charts.topExcess) {
+            state.charts.topExcess.data.labels = chartData.top_excesses.labels;
+            state.charts.topExcess.data.datasets[0].data = chartData.top_excesses.values;
+            state.charts.topExcess.data.datasets[0].backgroundColor = chartData.top_excesses.colors;
+            state.charts.topExcess.update();
+        } else {
+            const ctx = document.getElementById('chartTopExcesses').getContext('2d');
+            state.charts.topExcess = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: chartData.top_excesses.labels,
+                    datasets: [{
+                        label: 'Excesso',
+                        data: chartData.top_excesses.values,
+                        backgroundColor: chartData.top_excesses.colors,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+    }
+
+    // Populate Data Tables
+    function populateTables(tables) {
+        const fillTable = (id, rows, renderRow) => {
+            const tbody = document.getElementById(id).querySelector('tbody');
+            tbody.innerHTML = '';
+            if (rows.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="12" class="text-center text-muted py-4">Nenhum registro encontrado.</td></tr>`;
+                return;
+            }
+            rows.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = renderRow(row);
+                tbody.appendChild(tr);
+            });
+        };
+
+        // Sem Orçamento
+        fillTable('table-nobudget', tables.sem_orcamento, row => `
+            <td>${row.mes}</td>
+            <td>${row.pec}</td>
+            <td>${row.cc_sup || '-'}</td>
+            <td><strong>${row.conta_contabil}</strong><br><small class="text-muted">${row.descricao_conta || ''}</small></td>
+            <td class="text-danger fw-bold">${formatMoney(row.realizado_abs)}</td>
+            <td><small>${row.fornecedores || '-'}</small></td>
+        `);
+
+        // Estouradas
+        fillTable('table-blown', tables.estouradas, row => `
+            <td>${row.mes}</td>
+            <td>${row.pec}</td>
+            <td>${row.cc_sup || '-'}</td>
+            <td><strong>${row.conta_contabil}</strong><br><small class="text-muted">${row.descricao_conta || ''}</small></td>
+            <td>${formatMoney(row.orcado_abs)}</td>
+            <td class="fw-bold">${formatMoney(row.realizado_abs)}</td>
+            <td class="text-danger fw-bold">${formatMoney(row.excesso_abs)}</td>
+            <td><small>${row.fornecedores || '-'}</small></td>
+        `);
+
+        // Perto do limite
+        fillTable('table-nearlimit', tables.perto_de_estourar, row => {
+            const labelClass = row.nivel_alerta === 'critico' ? 'bg-danger' : 'bg-warning text-dark';
+            return `
+                <td><span class="badge ${labelClass}">${row.nivel_alerta}</span></td>
+                <td>${row.mes}</td>
+                <td>${row.pec}</td>
+                <td>${row.cc_sup || '-'}</td>
+                <td><strong>${row.conta_contabil}</strong><br><small class="text-muted">${row.descricao_conta || ''}</small></td>
+                <td>${formatMoney(row.orcado_abs)}</td>
+                <td class="fw-bold">${formatMoney(row.realizado_abs)}</td>
+                <td class="fw-bold">${(row.consumo_pct || 0).toFixed(1)}%</td>
+                <td><small>${row.fornecedores || '-'}</small></td>
+            `;
+        });
+
+        // Base Detalhada
+        fillTable('table-detail', tables.base_detalhada, row => {
+            const labelClass = row.nivel_alerta === 'sem_orcamento' || row.nivel_alerta === 'estourado' || row.nivel_alerta === 'critico' ? 'text-danger fw-bold' : '';
+            return `
+                <td><span class="fw-bold">${row.nivel_alerta || 'sem_alerta'}</span></td>
+                <td>${row.mes}</td>
+                <td>${row.pec}</td>
+                <td>${row.cc_sup || '-'}</td>
+                <td><strong>${row.conta_contabil}</strong><br><small class="text-muted">${row.descricao_conta || ''}</small></td>
+                <td>${formatMoney(row.orcado_abs)}</td>
+                <td class="${labelClass}">${formatMoney(row.realizado_abs)}</td>
+                <td>${formatMoney(row.saldo_abs)}</td>
+                <td class="text-danger">${row.excesso_abs > 0 ? formatMoney(row.excesso_abs) : '-'}</td>
+                <td>${(row.consumo_pct || 0).toFixed(1)}%</td>
+            `;
+        });
+
+        // Closing: Estouradas
+        fillTable('table-closing-blown', tables.closing_estouradas, row => `
+            <td>${row.mes}</td>
+            <td>${row.pec}</td>
+            <td>${row.cc_sup || '-'}</td>
+            <td><strong>${row.conta_contabil}</strong><br><small class="text-muted">${row.descricao_conta || ''}</small></td>
+            <td>${formatMoney(row.orcado_abs)}</td>
+            <td class="fw-bold text-danger">${formatMoney(row.realizado_fechado_abs)}</td>
+            <td class="text-danger fw-bold">${formatMoney(row.excesso_fechamento)}</td>
+        `);
+
+        // Closing: Diferenças
+        fillTable('table-closing-diff', tables.closing_diferencas, row => `
+            <td>${row.mes}</td>
+            <td>${row.pec}</td>
+            <td>${row.cc_sup || '-'}</td>
+            <td><strong>${row.conta_contabil}</strong><br><small class="text-muted">${row.descricao_conta || ''}</small></td>
+            <td>${formatMoney(row.comprado_ate_agora_abs)}</td>
+            <td>${formatMoney(row.realizado_fechado_abs)}</td>
+            <td class="fw-bold text-warning">${formatMoney(row.diferenca_realizado_vs_compras)}</td>
+        `);
+
+        // Closing: Só no RE X OR
+        fillTable('table-closing-onlyre', tables.closing_so_re_x_or, row => `
+            <td>${row.mes}</td>
+            <td>${row.pec}</td>
+            <td>${row.cc_sup || '-'}</td>
+            <td><strong>${row.conta_contabil}</strong><br><small class="text-muted">${row.descricao_conta || ''}</small></td>
+            <td class="fw-bold">${formatMoney(row.realizado_fechado_abs)}</td>
+        `);
+
+        // Closing: Base Detalhada
+        fillTable('table-closing-detail', tables.closing_base_detalhada, row => `
+            <td>${row.mes}</td>
+            <td>${row.pec}</td>
+            <td>${row.cc_sup || '-'}</td>
+            <td><strong>${row.conta_contabil}</strong><br><small class="text-muted">${row.descricao_conta || ''}</small></td>
+            <td>${formatMoney(row.orcado_abs)}</td>
+            <td>${formatMoney(row.comprado_ate_agora_abs)}</td>
+            <td class="fw-bold">${formatMoney(row.realizado_fechado_abs)}</td>
+            <td>${(row.consumo_pct_fechamento || 0).toFixed(1)}%</td>
+            <td class="text-muted">${formatMoney(row.diferenca_realizado_vs_compras)}</td>
+            <td><small class="badge bg-light text-dark">${row.origem_observacao}</small></td>
+        `);
+    }
+
+    // Switch Main Tabs
+    function switchTab(tabId) {
+        document.querySelectorAll('.finance-tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.finance-tab-content').forEach(content => content.classList.remove('active'));
+
+        const event = window.event;
+        if (event) event.target.classList.add('active');
+
+        document.getElementById(`tab-${tabId}`).classList.add('active');
+        state.currentTab = tabId;
+
+        // Auto trigger email generation if switching to email
+        if (tabId === 'email') {
+            generateEmailDraft();
+        }
+    }
+
+    // Switch subtabs
+    function switchSubTab(parentTab, subTabId) {
+        const parent = document.getElementById(`tab-${parentTab}`);
+        parent.querySelectorAll(`.sub-tabs-nav .sub-tab-btn`).forEach(btn => btn.classList.remove('active'));
+        parent.querySelectorAll(`.sub-tab-content`).forEach(content => content.classList.remove('active'));
+
+        const event = window.event;
+        if (event) event.target.classList.add('active');
+
+        document.getElementById(`subtab-${parentTab}-${subTabId}`).classList.add('active');
+        state.currentSubTabs[parentTab] = subTabId;
+    }
+
+    // Switch alert sub-tabs
+    function switchAlertSubTab(subId) {
+        document.querySelectorAll(`#subtab-dashboard-alerts .sub-tabs-nav .sub-tab-btn`).forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll(`.alert-subtab-content`).forEach(el => el.style.display = 'none');
+
+        const event = window.event;
+        if (event) event.target.classList.add('active');
+
+        document.getElementById(`alert-subtab-${subId}`).style.display = 'block';
+        state.currentAlertSubTab = subId;
+    }
+
+    /* AI Chat functionality */
+    function appendChatMessage(role, content) {
+        const chatPanel = document.getElementById('chatMessages');
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `chat-message ${role}`;
+        msgDiv.textContent = content;
+        chatPanel.appendChild(msgDiv);
+        chatPanel.scrollTop = chatPanel.scrollHeight;
+
+        state.chatHistory.push({ role, content });
+        if (state.chatHistory.length > 20) {
+            state.chatHistory.shift();
+        }
+    }
+
+    function typeAssistantMessage(content) {
+        const chatPanel = document.getElementById('chatMessages');
+        const msgDiv = document.createElement('div');
+        msgDiv.className = 'chat-message assistant';
+        msgDiv.textContent = '';
+        chatPanel.appendChild(msgDiv);
+        
+        state.chatHistory.push({ role: 'assistant', content: content });
+        if (state.chatHistory.length > 20) {
+            state.chatHistory.shift();
+        }
+        
+        let index = 0;
+        const speed = 5; // ms entre lotes de caracteres
+        const charsPerTick = 3; // digita 3 caracteres por vez para ser bem rápido
+        
+        function type() {
+            if (index < content.length) {
+                msgDiv.textContent += content.slice(index, index + charsPerTick);
+                index += charsPerTick;
+                chatPanel.scrollTop = chatPanel.scrollHeight;
+                setTimeout(type, speed);
+            }
+        }
+        type();
+    }
+
+    function handleChatKey(e) {
+        if (e.key === 'Enter') {
+            submitChatPrompt();
+        }
+    }
+
+    let thinkingInterval = null;
+
+    function showThinkingIndicator(prompt) {
+        const chatPanel = document.getElementById('chatMessages');
+        removeThinkingIndicator();
+
+        const msgDiv = document.createElement('div');
+        msgDiv.className = 'chat-message assistant thinking-bubble';
+        msgDiv.id = 'chatThinkingIndicator';
+        
+        const clean = prompt.toLowerCase();
+        let phrases = [];
+        
+        if (clean.includes('conta') || clean.includes('estour') || clean.includes('atenç') || clean.includes('atenc')) {
+            phrases = [
+                "Analisando limite de gastos...",
+                "Varrendo contas sob atenção...",
+                "Buscando desvios e estouros de orçamento...",
+                "Calculando saldos restantes..."
+            ];
+        } else if (clean.includes('pec') || clean.includes('contrato') || clean.includes('fornece')) {
+            phrases = [
+                "Buscando informações das PECs...",
+                "Mapeando fornecedores por contrato...",
+                "Correlacionando compras executadas...",
+                "Agrupando maiores desvios..."
+            ];
+        } else if (clean.includes('sem or') || clean.includes('sem_or')) {
+            phrases = [
+                "Buscando compras sem orçamento...",
+                "Identificando lançamentos sem limite cadastrado...",
+                "Sumarizando impacto na margem financeira..."
+            ];
+        } else if (clean.includes('fechamento') || clean.includes('mensal') || clean.includes('realizado')) {
+            phrases = [
+                "Acessando base de fechamento mensal...",
+                "Comparando compras com realizado oficial...",
+                "Calculando desvios do RE X OR..."
+            ];
+        } else {
+            phrases = [
+                "Analisando sua pergunta...",
+                "Consultando base do painel financeiro...",
+                "Processando inteligência de dados...",
+                "Estruturando resposta analítica..."
+            ];
+        }
+
+        let phraseIdx = 0;
+        msgDiv.innerHTML = `<span class="thinking-text">${phrases[0]}</span><span class="loading-dots">...</span>`;
+        chatPanel.appendChild(msgDiv);
+        chatPanel.scrollTop = chatPanel.scrollHeight;
+
+        thinkingInterval = setInterval(() => {
+            phraseIdx = (phraseIdx + 1) % phrases.length;
+            const textEl = msgDiv.querySelector('.thinking-text');
+            if (textEl) {
+                textEl.textContent = phrases[phraseIdx];
+            }
+        }, 1600);
+    }
+
+    function removeThinkingIndicator() {
+        if (thinkingInterval) {
+            clearInterval(thinkingInterval);
+            thinkingInterval = null;
+        }
+        const indicator = document.getElementById('chatThinkingIndicator');
+        if (indicator) {
+            indicator.remove();
+        }
+    }
+
+    function submitChatPrompt() {
+        const input = document.getElementById('chatInput');
+        const text = input.value.trim();
+        if (!text) return;
+
+        input.value = '';
+        appendChatMessage('user', text);
+        showThinkingIndicator(text);
+
+        const answerMode = document.getElementById('chat-answer-mode').value;
+
+        fetch("{% url 'gestao_a_vista:financeiro_api_chat' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                prompt: text,
+                history: state.chatHistory,
+                answer_mode: answerMode,
+                filters: state.filters
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            removeThinkingIndicator();
+            if (data.error) {
+                appendChatMessage('assistant', "Erro na consulta à IA: " + data.error);
+            } else {
+                typeAssistantMessage(data.response);
+            }
+        })
+        .catch(err => {
+            console.error("Chat error:", err);
+            removeThinkingIndicator();
+            appendChatMessage('assistant', "Desculpe, ocorreu uma falha de rede ao conectar com o assistente.");
+        });
+    }
+
+    function sendPresetPrompt(text) {
+        appendChatMessage('user', text);
+        showThinkingIndicator(text);
+        
+        const answerMode = document.getElementById('chat-answer-mode').value;
+        fetch("{% url 'gestao_a_vista:financeiro_api_chat' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                prompt: text,
+                history: state.chatHistory,
+                answer_mode: answerMode,
+                filters: state.filters
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            removeThinkingIndicator();
+            if (data.error) {
+                appendChatMessage('assistant', "Erro na consulta à IA: " + data.error);
+            } else {
+                typeAssistantMessage(data.response);
+            }
+        })
+        .catch(err => {
+            console.error("Chat error:", err);
+            removeThinkingIndicator();
+            appendChatMessage('assistant', "Desculpe, ocorreu uma falha de rede.");
+        });
+    }
+
+    function clearChat() {
+        document.getElementById('chatMessages').innerHTML = '';
+        state.chatHistory = [];
+        appendChatMessage('assistant', "Histórico limpo. Como posso ajudar com sua carteira financeira?");
+    }
+
+    /* Email functionality */
+    let lastDraftHTML = '';
+    function generateEmailDraft() {
+        const preview = document.getElementById('emailDraftPreview');
+        preview.innerHTML = '<p class="text-muted text-center py-5"><i class="fas fa-spinner fa-spin"></i> Redigindo e-mail...</p>';
+
+        fetch("{% url 'gestao_a_vista:financeiro_api_email' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({ filters: state.filters })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.error) {
+                preview.innerHTML = `<p class="text-danger text-center py-5">Erro ao criar rascunho: ${data.error}</p>`;
+            } else {
+                lastDraftHTML = data.html;
+                // Render safely inside sandboxed iframe to prevent CSS leak
+                preview.innerHTML = `<iframe srcdoc="${data.html.replace(/"/g, '&quot;')}" style="width: 100%; height: 100%; border: none;"></iframe>`;
+            }
+        })
+        .catch(err => {
+            console.error("Email error:", err);
+            preview.innerHTML = '<p class="text-danger text-center py-5">Erro ao comunicar com o servidor.</p>';
+        });
+    }
+
+    function downloadEmailDraftHTML() {
+        if (!lastDraftHTML) return;
+        const blob = new Blob([lastDraftHTML], { type: 'text/html' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = (document.getElementById('email-subject').value || 'email_alerta') + '.html';
+        link.click();
+    }
+
+    /* Spreadsheet upload / pipeline execution */
+    function handleFileSelected(input) {
+        if (input.files && input.files[0]) {
+            state.selectedFile = input.files[0];
+            document.getElementById('dropzone-text').innerHTML = `<strong>Arquivo selecionado:</strong> ${input.files[0].name}`;
+            document.getElementById('btnUploadSubmit').disabled = false;
+        } else {
+            state.selectedFile = null;
+            document.getElementById('dropzone-text').innerHTML = 'Arraste ou clique para selecionar o arquivo Excel (.xlsx, .xls)';
+            document.getElementById('btnUploadSubmit').disabled = true;
+        }
+    }
+
+    function uploadSpreadsheet() {
+        if (!state.selectedFile) return;
+
+        const dataset = document.getElementById('upload-dataset').value;
+        const month = document.getElementById('upload-month').value;
+
+        const formData = new FormData();
+        formData.append('file', state.selectedFile);
+        formData.append('dataset', dataset);
+        formData.append('month', month);
+
+        showLoader("Fazendo upload da planilha...");
+
+        fetch("{% url 'gestao_a_vista:financeiro_api_upload' %}", {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.error) {
+                hideLoader();
+                alert("Erro no upload: " + data.error);
+            } else {
+                runPipelineOnly();
+            }
+        })
+        .catch(err => {
+            console.error("Upload error:", err);
+            hideLoader();
+            alert("Erro de rede durante o upload.");
+        });
+    }
+
+    function runPipelineOnly() {
+        showLoader("Processando pipeline financeiro (agregando compras e RE x OR)...");
+        fetch("{% url 'gestao_a_vista:financeiro_api_run_pipeline' %}", {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            hideLoader();
+            if (data.error) {
+                alert("Erro no processamento: " + data.error);
+            } else {
+                alert(`Sucesso! Processadas ${data.result.raw_rows} linhas de compras, ${data.result.budget_rows} linhas de RE x OR e ${data.result.closing_rows} fechamentos.`);
+                // Reset dropzone UI
+                state.selectedFile = null;
+                document.getElementById('uploadFileEl').value = '';
+                document.getElementById('dropzone-text').innerHTML = 'Arraste ou clique para selecionar o arquivo Excel (.xlsx, .xls)';
+                document.getElementById('btnUploadSubmit').disabled = true;
+
+                // Reload dashboard data
+                fetchDashboardData();
+            }
+        })
+        .catch(err => {
+            console.error("Pipeline run error:", err);
+            hideLoader();
+            alert("Erro de rede ao executar o pipeline.");
+        });
+    }
+
+    function clearFinancialData() {
+        if (!confirm("Tem certeza de que deseja apagar permanentemente todas as planilhas e dados financeiros do sistema? Essa ação não pode ser desfeita.")) {
+            return;
+        }
+        
+        showLoader("Limpando base de dados...");
+        
+        fetch("{% url 'gestao_a_vista:financeiro_api_clear' %}", {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            hideLoader();
+            if (data.error) {
+                alert("Erro ao limpar dados: " + data.error);
+            } else {
+                alert("Sucesso: " + data.message);
+                // Reload dashboard data
+                location.reload();
+            }
+        })
+        .catch(err => {
+            console.error("Clear data error:", err);
+            hideLoader();
+            alert("Erro de rede ao limpar os dados.");
+        });
+    }
+
+    // Custom Premium Multiselect Dropdowns implementation
+    function initCustomMultiselects() {
+        const selects = document.querySelectorAll('.filter-select');
+        selects.forEach(select => {
+            // Prevent double initialization
+            if (select.nextElementSibling && select.nextElementSibling.classList.contains('custom-multiselect-wrapper')) {
+                select.nextElementSibling.remove();
+            }
+            
+            select.style.display = 'none';
+            
+            const wrapper = document.createElement('div');
+            wrapper.className = 'custom-multiselect-wrapper';
+            
+            const button = document.createElement('div');
+            button.className = 'custom-multiselect-button';
+            button.innerHTML = '<span class="custom-multiselect-text">Selecione...</span><i class="fas fa-chevron-down text-muted" style="font-size: 0.75rem;"></i>';
+            
+            const dropdown = document.createElement('div');
+            dropdown.className = 'custom-multiselect-dropdown';
+            
+            // Search bar (for elements with many options)
+            const hasSearch = ['filter-pecs', 'filter-cc-sups', 'filter-contas', 'filter-fornecedores'].includes(select.id);
+            let searchInput = null;
+            if (hasSearch) {
+                const searchContainer = document.createElement('div');
+                searchContainer.className = 'custom-multiselect-search-container';
+                searchInput = document.createElement('input');
+                searchInput.type = 'text';
+                searchInput.className = 'form-control form-control-sm custom-multiselect-search';
+                searchInput.placeholder = 'Buscar...';
+                searchContainer.appendChild(searchInput);
+                dropdown.appendChild(searchContainer);
+            }
+            
+            // Helper buttons: Select All / Clear
+            const actionsContainer = document.createElement('div');
+            actionsContainer.className = 'custom-multiselect-actions';
+            
+            const selectAllBtn = document.createElement('button');
+            selectAllBtn.type = 'button';
+            selectAllBtn.className = 'btn btn-link btn-xs p-0 text-decoration-none me-2';
+            selectAllBtn.style.fontSize = '0.725rem';
+            selectAllBtn.textContent = 'Selecionar Todos';
+            
+            const clearAllBtn = document.createElement('button');
+            clearAllBtn.type = 'button';
+            clearAllBtn.className = 'btn btn-link btn-xs p-0 text-decoration-none text-danger';
+            clearAllBtn.style.fontSize = '0.725rem';
+            clearAllBtn.textContent = 'Limpar';
+            
+            actionsContainer.appendChild(selectAllBtn);
+            actionsContainer.appendChild(clearAllBtn);
+            dropdown.appendChild(actionsContainer);
+
+            const optionsContainer = document.createElement('div');
+            optionsContainer.className = 'custom-multiselect-options';
+            
+            const updateButtonText = () => {
+                const selected = Array.from(select.selectedOptions).map(opt => opt.text);
+                const textEl = button.querySelector('.custom-multiselect-text');
+                if (selected.length === 0) {
+                    textEl.textContent = 'Selecione...';
+                    textEl.style.color = '#94a3b8';
+                } else if (selected.length === select.options.length) {
+                    textEl.textContent = 'Todos selecionados';
+                    textEl.style.color = '';
+                } else if (selected.length > 2) {
+                    textEl.textContent = `${selected.length} selecionados`;
+                    textEl.style.color = '';
+                } else {
+                    textEl.textContent = selected.join(', ');
+                    textEl.style.color = '';
+                }
+            };
+            
+            const rebuildOptions = () => {
+                optionsContainer.innerHTML = '';
+                Array.from(select.options).forEach((opt) => {
+                    const label = document.createElement('label');
+                    label.className = 'custom-multiselect-option';
+                    
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.checked = opt.selected;
+                    checkbox.value = opt.value;
+                    
+                    checkbox.addEventListener('change', () => {
+                        opt.selected = checkbox.checked;
+                        updateButtonText();
+                        onFilterChange();
+                    });
+                    
+                    label.appendChild(checkbox);
+                    label.appendChild(document.createTextNode(' ' + opt.text));
+                    optionsContainer.appendChild(label);
+                });
+                updateButtonText();
+            };
+            
+            rebuildOptions();
+            dropdown.appendChild(optionsContainer);
+            
+            button.addEventListener('click', (e) => {
+                e.stopPropagation();
+                document.querySelectorAll('.custom-multiselect-dropdown').forEach(d => {
+                    if (d !== dropdown) d.classList.remove('show');
+                });
+                dropdown.classList.toggle('show');
+                if (dropdown.classList.contains('show') && searchInput) {
+                    searchInput.value = '';
+                    searchInput.dispatchEvent(new Event('input'));
+                    searchInput.focus();
+                }
+            });
+            
+            if (searchInput) {
+                searchInput.addEventListener('input', () => {
+                    const query = searchInput.value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                    const options = optionsContainer.querySelectorAll('.custom-multiselect-option');
+                    options.forEach(optionLabel => {
+                        const text = optionLabel.textContent.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                        if (text.includes(query)) {
+                            optionLabel.style.display = 'flex';
+                        } else {
+                            optionLabel.style.display = 'none';
+                        }
+                    });
+                });
+            }
+            
+            selectAllBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                Array.from(select.options).forEach(opt => opt.selected = true);
+                optionsContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = true);
+                updateButtonText();
+                onFilterChange();
+            });
+            
+            clearAllBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                Array.from(select.options).forEach(opt => opt.selected = false);
+                optionsContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+                updateButtonText();
+                onFilterChange();
+            });
+            
+            wrapper.appendChild(button);
+            wrapper.appendChild(dropdown);
+            select.parentNode.appendChild(wrapper);
+            
+            select.addEventListener('sync-custom', () => {
+                optionsContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                    const opt = Array.from(select.options).find(o => o.value === cb.value);
+                    if (opt) cb.checked = opt.selected;
+                });
+                updateButtonText();
+            });
+        });
+    }
+
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.custom-multiselect-wrapper')) {
+            document.querySelectorAll('.custom-multiselect-dropdown').forEach(d => {
+                d.classList.remove('show');
+            });
+        }
+    });
+</script>
+{% endblock %}

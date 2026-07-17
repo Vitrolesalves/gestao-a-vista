@@ -1,0 +1,603 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Home - Gestão à Vista{% endblock %}
+
+{% block extra_css %}
+<style>
+  .home-title {
+    background: linear-gradient(to right, #0F172A, #1e40af);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-size: 28px;
+    font-weight: bold;
+    margin: 0;
+  }
+
+  .notifications-scroll {
+    max-height: 400px;
+    overflow-y: auto;
+    padding-right: 8px;
+    scrollbar-width: thin;
+    scrollbar-color: #94a3b8 #f1f5f9;
+  }
+
+  .notifications-scroll::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .notifications-scroll::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 3px;
+  }
+
+  .notifications-scroll::-webkit-scrollbar-thumb {
+    background: #94a3b8;
+    border-radius: 3px;
+  }
+
+  .notifications-scroll::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+  <!-- PWA Install Banner -->
+  {% include 'includes/pwa_install_banner.html' %}
+
+  <!-- Welcome Section -->
+  <div class="text-center">
+    <h2 class="home-title mb-4">
+      Bem-vindo, {{ primeiro_nome }}!
+    </h2>
+    <p class="text-slate-600 max-w-2xl mx-auto">
+      Sistema de gestão e monitoramento integrado. Escolha uma das opções abaixo para começar.
+    </p>
+  </div>
+
+  <!-- Monitoring and Projects Cards — visível apenas para administradores -->
+  {% if request.user.role == "administrador" %}
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+    <!-- Notificações de Monitoramento -->
+    <div class="bg-white rounded-lg border shadow-sm">
+      <div class="p-6">
+        <div class="flex items-center gap-2 mb-6">
+          <svg class="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <h3 class="text-lg font-semibold">Notificações de Monitoramento</h3>
+        </div>
+
+        <div class="notifications-scroll space-y-2">
+          {% for erro in erros_dashboard %}
+          <div class="flex items-center justify-between p-4 bg-red-50 rounded-lg">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 bg-red-600 rounded-full"></span>
+              <div class="flex flex-col">
+                <span class="text-sm font-medium">{{ erro.dashboard }}</span>
+                <span class="text-xs text-gray-500">{{ erro.data|date:"d/m/Y H:i" }}</span>
+                {% if erro.prox_att %}
+                <span class="text-xs text-gray-400">Próx. atualização: {{ erro.prox_att|date:"d/m/Y H:i" }}</span>
+                {% endif %}
+              </div>
+            </div>
+            <span class="text-sm text-red-600 font-medium">Erro</span>
+          </div>
+          {% empty %}
+          <div class="text-center p-4 text-slate-500">
+            <p>Nenhum dashboard com erro de atualização.</p>
+          </div>
+          {% endfor %}
+
+          <!-- Outros sistemas (sucesso) -->
+          <div class="flex items-center justify-between p-4 bg-green-50 rounded-lg">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 bg-green-600 rounded-full"></span>
+              <span class="text-sm font-medium">Outros sistemas</span>
+            </div>
+            <span class="text-sm text-green-600 font-medium">Sucesso</span>
+          </div>
+        </div>
+
+        <p class="text-sm text-slate-600 mt-4">
+          {{ total_erros }} erro{{ total_erros|pluralize }} detectado{{ total_erros|pluralize }} de {{ total_sistemas }}
+          sistemas monitorados
+        </p>
+      </div>
+    </div>
+
+    <!-- Projetos Próximos ao Prazo -->
+    <div class="bg-white rounded-lg border shadow-sm">
+      <div class="p-2">
+        <div class="flex items-center gap-2 mb-6">
+          <svg class="h-5 w-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+          </svg>
+          <h3 class="text-lg font-semibold">Projetos Próximos ao Prazo</h3>
+        </div>
+
+        <div
+          class="space-y-2 h-[400px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100"
+          style="scrollbar-width: thin; scrollbar-color: #94a3b8 #f1f5f9;">
+          <!-- Container com altura fixa e scrollbar customizada -->
+          {% for projeto in projetos_proximos %}
+          <div class="p-3 rounded-lg border border-slate-200 hover:shadow-sm transition-shadow {% if projeto.status == 'Em andamento' %}bg-orange-50/50
+                                                    {% elif projeto.status == 'Ativo' %}bg-blue-50/50
+                                                    {% elif projeto.status == 'Concluído' %}bg-green-50/50
+                                                    {% elif projeto.status == 'Cancelado' %}bg-red-50/50
+                                                    {% else %}bg-gray-50/50{% endif %}">
+            <div class="flex items-start justify-between gap-4">
+              <div class="min-w-0"> <!-- Para garantir que o texto quebre se necessário -->
+                <h4 class="font-medium text-sm text-slate-900 truncate">{{ projeto.nome }}</h4>
+                <p class="text-xs text-slate-600 mt-0.5 truncate">{{ projeto.responsavel.name }}</p>
+              </div>
+              <div class="flex items-center gap-1.5 flex-shrink-0">
+                <!-- Prioridade -->
+                <span class="text-xs px-1.5 py-0.5 rounded-md font-medium whitespace-nowrap
+                                {% if projeto.prioridade == 'Alta' %}text-red-700
+                                {% elif projeto.prioridade == 'Média' %}text-green-700
+                                {% else %}text-blue-700{% endif %}">
+                  {{ projeto.prioridade }}
+                </span>
+                <!-- Status -->
+                <span class="text-xs px-1.5 py-0.5 rounded-md font-medium whitespace-nowrap
+                                    {% if projeto.status == 'Em andamento' %}bg-orange-100 text-orange-700
+                                    {% elif projeto.status == 'Ativo' %}bg-blue-100 text-blue-700
+                                    {% elif projeto.status == 'Concluído' %}bg-green-100 text-green-700
+                                    {% elif projeto.status == 'Cancelado' %}bg-red-100 text-red-700
+                                    {% else %}bg-gray-100 text-gray-700{% endif %}">
+                  {{ projeto.status }}
+                </span>
+
+              </div>
+            </div>
+            <div class="mt-2 text-xs text-right text-slate-500">
+              Conclusão: {{ projeto.data_conclusao|date:"d/m/Y" }}
+            </div>
+          </div>
+          {% empty %}
+          <div class="text-center p-4 text-slate-500">
+            <p>Nenhum projeto próximo ao prazo.</p>
+          </div>
+          {% endfor %}
+        </div>
+
+        <p class="text-sm text-slate-600 mt-4">
+          {{ projetos_proximos|length }} projeto{{ projetos_proximos|length|pluralize }} com prazo nos próximos 60 dias
+        </p>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Navigation Menu / Módulos do Sistema -->
+  <div>
+    <h3 class="text-xl font-semibold text-slate-800 mb-6">
+      Módulos do Sistema
+    </h3>
+
+    <!-- Main Navigation Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <!-- Dashboard Module -->
+      {% if user_has_permissions.dashboard %}
+      <a href="{% url 'gestao_a_vista:dashboard' %}"
+        class="group bg-white rounded-lg border shadow-sm hover:shadow-md transition-shadow duration-200">
+        <div class="p-6">
+          <div class="flex items-center space-x-4">
+            <div
+              class="h-12 w-12 bg-slate-100 rounded-lg flex items-center justify-center group-hover:bg-slate-200 transition-colors">
+              <svg class="h-6 w-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+            </div>
+            <div>
+              <h4 class="text-lg font-semibold text-slate-900">Dashboards</h4>
+              <p class="text-sm text-slate-600">Gerencie dashboards do Power BI</p>
+            </div>
+          </div>
+        </div>
+      </a>
+      {% endif %}
+
+      <!-- Financeiro Module -->
+      {% if user_has_permissions.financeiro %}
+      <a href="{% url 'gestao_a_vista:financeiro' %}"
+        class="group bg-white rounded-lg border shadow-sm hover:shadow-md transition-shadow duration-200">
+        <div class="p-6">
+          <div class="flex items-center space-x-4">
+            <div
+              class="h-12 w-12 bg-slate-100 rounded-lg flex items-center justify-center group-hover:bg-slate-200 transition-colors">
+              <svg class="h-6 w-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div>
+              <h4 class="text-lg font-semibold text-slate-900">Financeiro</h4>
+              <p class="text-sm text-slate-600">Acompanhamento e alertas do financeiro</p>
+            </div>
+          </div>
+        </div>
+      </a>
+      {% endif %}
+
+      <!-- Monitoramento Module -->
+      {% if user_has_permissions.monitoramento %}
+      <a href="{% url 'gestao_a_vista:monitoramento' %}"
+        class="group bg-white rounded-lg border shadow-sm hover:shadow-md transition-shadow duration-200">
+        <div class="p-6">
+          <div class="flex items-center space-x-4">
+            <div
+              class="h-12 w-12 bg-slate-100 rounded-lg flex items-center justify-center group-hover:bg-slate-200 transition-colors">
+              <svg class="h-6 w-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div>
+              <h4 class="text-lg font-semibold text-slate-900">Monitoramento</h4>
+              <p class="text-sm text-slate-600">Monitore status de sistemas</p>
+            </div>
+          </div>
+        </div>
+      </a>
+      {% endif %}
+
+      <!-- Gestão de Salas Module (NOVO) -->
+      {% if user_has_permissions.gestao_salas %}
+      <a href="{% url 'gestao_a_vista:gestao_salas' %}"
+        class="group bg-white rounded-lg border shadow-sm hover:shadow-md transition-shadow duration-200">
+        <div class="p-6">
+          <div class="flex items-center space-x-4">
+            <div
+              class="h-12 w-12 bg-slate-100 rounded-lg flex items-center justify-center group-hover:bg-slate-200 transition-colors">
+              <svg class="h-6 w-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+            </div>
+            <div>
+              <h4 class="text-lg font-semibold text-slate-900">Gestão de Salas</h4>
+              <p class="text-sm text-slate-600">Gerencie salas e reservas</p>
+            </div>
+          </div>
+        </div>
+      </a>
+      {% endif %}
+
+      <!-- QR Generator Module -->
+      {% if user_has_permissions.qr_generator %}
+      <a href="{% url 'gestao_a_vista:qr_generator' %}"
+        class="group bg-white rounded-lg border shadow-sm hover:shadow-md transition-shadow duration-200">
+        <div class="p-6">
+          <div class="flex items-center space-x-4">
+            <div
+              class="h-12 w-12 bg-slate-100 rounded-lg flex items-center justify-center group-hover:bg-slate-200 transition-colors">
+              <svg class="h-6 w-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+              </svg>
+            </div>
+            <div>
+              <h4 class="text-lg font-semibold text-slate-900">Gerador QR Code</h4>
+              <p class="text-sm text-slate-600">Crie códigos QR personalizados</p>
+            </div>
+          </div>
+        </div>
+      </a>
+      {% endif %}
+
+      <!-- Etiquetas Generator Module -->
+      {% if user_has_permissions.etiquetas_generator %}
+      <a href="{% url 'gestao_a_vista:etiquetas_generator' %}"
+        class="group bg-white rounded-lg border shadow-sm hover:shadow-md transition-shadow duration-200">
+        <div class="p-6">
+          <div class="flex items-center space-x-4">
+            <div
+              class="h-12 w-12 bg-slate-100 rounded-lg flex items-center justify-center group-hover:bg-slate-200 transition-colors">
+              <svg class="h-6 w-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+              </svg>
+            </div>
+            <div>
+              <h4 class="text-lg font-semibold text-slate-900">Gerador de Etiquetas</h4>
+              <p class="text-sm text-slate-600">Gere etiquetas personalizadas</p>
+            </div>
+          </div>
+        </div>
+      </a>
+      {% endif %}
+
+      <!-- Controle de Acessos Module -->
+      {% if user_has_permissions.controle_acessos %}
+      <a href="{% url 'gestao_a_vista:controle_acessos' %}"
+        class="group bg-white rounded-lg border shadow-sm hover:shadow-md transition-shadow duration-200">
+        <div class="p-6">
+          <div class="flex items-center space-x-4">
+            <div
+              class="h-12 w-12 bg-slate-100 rounded-lg flex items-center justify-center group-hover:bg-slate-200 transition-colors">
+              <svg class="h-6 w-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+            </div>
+            <div>
+              <h4 class="text-lg font-semibold text-slate-900">Controle de Acessos</h4>
+              <p class="text-sm text-slate-600">Gerencie usuários e permissões</p>
+            </div>
+          </div>
+        </div>
+      </a>
+      {% endif %}
+
+      <!-- Portaria Base Module -->
+      <!--<a href="{% url 'gestao_a_vista:portaria_base' %}" 
+               class="group bg-white rounded-lg border shadow-sm hover:shadow-md transition-shadow duration-200">
+                <div class="p-6">
+                    <div class="flex items-center space-x-4">
+                        <div class="h-12 w-12 bg-cyan-100 rounded-lg flex items-center justify-center group-hover:bg-cyan-200 transition-colors">
+                            <svg class="h-6 w-6 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                      d="M8 16l2.879-2.879m0 0a3 3 0 104.243-4.242 3 3 0 00-4.243 4.242zM21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h4 class="text-lg font-semibold text-slate-900">Portaria Base</h4>
+                            <p class="text-sm text-slate-600">Controle de entradas na base</p>
+                        </div>
+                    </div>
+                </div>
+            </a> -->
+
+      <!-- Desativação de CR Module -->
+      {% if user_has_permissions.desativacao_cr %}
+      <a href="{% url 'gestao_a_vista:desativacao_cr' %}"
+        class="group bg-white rounded-lg border shadow-sm hover:shadow-md transition-shadow duration-200">
+        <div class="p-6">
+          <div class="flex items-center space-x-4">
+            <div
+              class="h-12 w-12 bg-slate-100 rounded-lg flex items-center justify-center group-hover:bg-slate-200 transition-colors">
+              <svg class="h-6 w-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <div>
+              <h4 class="text-lg font-semibold text-slate-900">Desativação de CR</h4>
+              <p class="text-sm text-slate-600">Gerencie solicitações de desativação</p>
+            </div>
+          </div>
+        </div>
+      </a>
+      {% endif %}
+
+      <!-- Planner Module -->
+      {% if user_has_permissions.planner %}
+      <a href="{% url 'gestao_a_vista:planner' %}"
+        class="group bg-white rounded-lg border shadow-sm hover:shadow-md transition-shadow duration-200">
+        <div class="p-6">
+          <div class="flex items-center space-x-4">
+            <div
+              class="h-12 w-12 bg-slate-100 rounded-lg flex items-center justify-center group-hover:bg-slate-200 transition-colors">
+              <svg class="h-6 w-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+              </svg>
+            </div>
+            <div>
+              <h4 class="text-lg font-semibold text-slate-900">Planner</h4>
+              <p class="text-sm text-slate-600">Gestão e acompanhamento de projetos</p>
+            </div>
+          </div>
+        </div>
+      </a>
+      {% endif %}
+
+      <!-- Calendário 2026 Module -->
+      {% if user_has_permissions.calendario_2026 %}
+      <a href="{% url 'gestao_a_vista:calendario_2026' %}"
+        class="group bg-white rounded-lg border shadow-sm hover:shadow-md transition-shadow duration-200">
+        <div class="p-6">
+          <div class="flex items-center space-x-4">
+            <div
+              class="h-12 w-12 bg-slate-100 rounded-lg flex items-center justify-center group-hover:bg-slate-200 transition-colors">
+              <svg class="h-6 w-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <div>
+              <h4 class="text-lg font-semibold text-slate-900">Calendário 2026</h4>
+              <p class="text-sm text-slate-600">Eventos e reuniões RCO</p>
+            </div>
+          </div>
+        </div>
+      </a>
+      {% endif %}
+
+      <!-- Torre de Controle Module -->
+      {% if user_has_permissions.torre_controle %}
+      <a href="{% url 'gestao_a_vista:torre_controle' %}"
+        class="group bg-white rounded-lg border shadow-sm hover:shadow-md transition-shadow duration-200">
+        <div class="p-6">
+          <div class="flex items-center space-x-4">
+            <div
+              class="h-12 w-12 bg-slate-100 rounded-lg flex items-center justify-center group-hover:bg-slate-200 transition-colors">
+              <svg class="h-6 w-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
+              </svg>
+            </div>
+            <div>
+              <h4 class="text-lg font-semibold text-slate-900">Torre de Controle</h4>
+              <p class="text-sm text-slate-600">KPI de realização de rondas por cliente</p>
+            </div>
+          </div>
+        </div>
+      </a>
+      {% endif %}
+
+      <!-- Livro ATA Module -->
+      {% if user_has_permissions.livro_ata %}
+      <a href="{% url 'gestao_a_vista:livro_ata' %}"
+        class="group bg-white rounded-lg border shadow-sm hover:shadow-md transition-shadow duration-200">
+        <div class="p-6">
+          <div class="flex items-center space-x-4">
+            <div
+              class="h-12 w-12 bg-slate-100 rounded-lg flex items-center justify-center group-hover:bg-slate-200 transition-colors">
+              <svg class="h-6 w-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+            </div>
+            <div>
+              <h4 class="text-lg font-semibold text-slate-900">Livro ATA</h4>
+              <p class="text-sm text-slate-600">Registro de ocorrências e atas</p>
+            </div>
+          </div>
+        </div>
+      </a>
+      {% endif %}
+
+      <!-- Controle de Chips Module -->
+      {% if user_has_permissions.controle_chips %}
+      <a href="{% url 'gestao_a_vista:controle_chips' %}"
+        class="group bg-white rounded-lg border shadow-sm hover:shadow-md transition-shadow duration-200">
+        <div class="p-6">
+          <div class="flex items-center space-x-4">
+            <div
+              class="h-12 w-12 bg-slate-100 rounded-lg flex items-center justify-center group-hover:bg-slate-200 transition-colors">
+              <svg class="h-6 w-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <div>
+              <h4 class="text-lg font-semibold text-slate-900">Controle de Chips</h4>
+              <p class="text-sm text-slate-600">Gestão de chips e telefonia</p>
+            </div>
+          </div>
+        </div>
+      </a>
+      {% endif %}
+
+      <!-- Relatórios Module -->
+      {% if user_has_permissions.relatorios %}
+      <a href="{% url 'gestao_a_vista:relatorios' %}"
+        class="group bg-white rounded-lg border shadow-sm hover:shadow-md transition-shadow duration-200">
+        <div class="p-6">
+          <div class="flex items-center space-x-4">
+            <div
+              class="h-12 w-12 bg-slate-100 rounded-lg flex items-center justify-center group-hover:bg-slate-200 transition-colors">
+              <svg class="h-6 w-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <div>
+              <h4 class="text-lg font-semibold text-slate-900">Relatórios</h4>
+              <p class="text-sm text-slate-600">Relatórios de Inspeção de EPI e APR - Viagem Segura</p>
+            </div>
+          </div>
+        </div>
+      </a>
+      {% endif %}
+
+      <!-- Implantações Sistêmicas Module -->
+      {% if user_has_permissions.implantacoes_opsvista %}
+      <a href="{% url 'gestao_a_vista:implantacoes_opsvista' %}"
+        class="group bg-white rounded-lg border shadow-sm hover:shadow-md transition-shadow duration-200">
+        <div class="p-6">
+          <div class="flex items-center space-x-4">
+            <div
+              class="h-12 w-12 bg-slate-100 rounded-lg flex items-center justify-center group-hover:bg-slate-200 transition-colors">
+              <svg class="h-6 w-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <div>
+              <h4 class="text-lg font-semibold text-slate-900">Implantações Sistêmicas</h4>
+              <p class="text-sm text-slate-600">Gerencie implantações sistêmicas nos contratos</p>
+            </div>
+          </div>
+        </div>
+      </a>
+      {% endif %}
+
+      <!-- Fluxo de Implantações Module -->
+      {% if user_has_permissions.implantacoes_fluxo %}
+      <a href="{% url 'gestao_a_vista:implantacoes_fluxo' %}"
+        class="group bg-white rounded-lg border shadow-sm hover:shadow-md transition-shadow duration-200">
+        <div class="p-6">
+          <div class="flex items-center space-x-4">
+            <div
+              class="h-12 w-12 bg-slate-100 rounded-lg flex items-center justify-center group-hover:bg-slate-200 transition-colors">
+              <svg class="h-6 w-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2" />
+              </svg>
+            </div>
+            <div>
+              <h4 class="text-lg font-semibold text-slate-900">Fluxo de Implantações</h4>
+              <p class="text-sm text-slate-600">Acompanhe o status e fluxo de implantações</p>
+            </div>
+          </div>
+        </div>
+      </a>
+      {% endif %}
+
+      <!-- Fluxo de Desmobilização Module -->
+      {% if user_has_permissions.desmobilizacoes_fluxo %}
+      <a href="{% url 'gestao_a_vista:desmobilizacoes_fluxo' %}"
+        class="group bg-white rounded-lg border shadow-sm hover:shadow-md transition-shadow duration-200">
+        <div class="p-6">
+          <div class="flex items-center space-x-4">
+            <div
+              class="h-12 w-12 bg-slate-100 rounded-lg flex items-center justify-center group-hover:bg-slate-200 transition-colors">
+              <svg class="h-6 w-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </div>
+            <div>
+              <h4 class="text-lg font-semibold text-slate-900">Fluxo de Desmobilização</h4>
+              <p class="text-sm text-slate-600">Monitore o encerramento e desmobilização de CRs</p>
+            </div>
+          </div>
+        </div>
+      </a>
+      {% endif %}
+
+      <!-- Explorer/Arquivos Module -->
+      {% if user_has_permissions.explorer %}
+      <a href="{% url 'gestao_a_vista:explorer' %}"
+        class="group bg-white rounded-lg border shadow-sm hover:shadow-md transition-shadow duration-200">
+        <div class="p-6">
+          <div class="flex items-center space-x-4">
+            <div
+              class="h-12 w-12 bg-slate-100 rounded-lg flex items-center justify-center group-hover:bg-slate-200 transition-colors">
+              <svg class="h-6 w-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+              </svg>
+            </div>
+            <div>
+              <h4 class="text-lg font-semibold text-slate-900">Arquivos (Explorer)</h4>
+              <p class="text-sm text-slate-600">Acesse e gerencie os arquivos do sistema</p>
+            </div>
+          </div>
+        </div>
+      </a>
+      {% endif %}
+
+    </div>
+  </div>
+</div>
+{% endblock %}

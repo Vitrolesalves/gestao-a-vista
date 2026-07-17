@@ -1,0 +1,160 @@
+version: '3.8'
+
+services:
+  # Database
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: gestao_vista
+      POSTGRES_USER: gestao_user
+      POSTGRES_PASSWORD: gestao_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gestao_user -d gestao_vista"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - gestao_network
+
+  # Redis for caching and sessions
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - gestao_network
+
+  # Web application
+  web:
+    build:
+      context: .
+      target: development
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+      - static_volume:/app/static
+      - media_volume:/app/media
+    environment:
+      - DEBUG=1
+      - DATABASE_URL=postgres://gestao_user:gestao_password@db:5432/gestao_vista
+      - REDIS_URL=redis://redis:6379/0
+      - DJANGO_SETTINGS_MODULE=config.settings
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py collectstatic --noinput &&
+             python manage.py runserver 0.0.0.0:8000"
+    networks:
+      - gestao_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Nginx (for production-like setup)
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx-dev.conf:/etc/nginx/nginx.conf
+      - static_volume:/app/static
+      - media_volume:/app/media
+      - ./docker/ssl:/etc/nginx/ssl
+    depends_on:
+      - web
+    networks:
+      - gestao_network
+    profiles:
+      - production
+
+  # Celery worker (for background tasks)
+  celery:
+    build:
+      context: .
+      target: development
+    volumes:
+      - .:/app
+    environment:
+      - DATABASE_URL=postgres://gestao_user:gestao_password@db:5432/gestao_vista
+      - REDIS_URL=redis://redis:6379/0
+      - DJANGO_SETTINGS_MODULE=config.settings
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: celery -A config worker -l info
+    networks:
+      - gestao_network
+    profiles:
+      - celery
+
+  # Celery beat (for scheduled tasks)
+  celery-beat:
+    build:
+      context: .
+      target: development
+    volumes:
+      - .:/app
+    environment:
+      - DATABASE_URL=postgres://gestao_user:gestao_password@db:5432/gestao_vista
+      - REDIS_URL=redis://redis:6379/0
+      - DJANGO_SETTINGS_MODULE=config.settings
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: celery -A config beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    networks:
+      - gestao_network
+    profiles:
+      - celery
+
+  # Flower (Celery monitoring)
+  flower:
+    build:
+      context: .
+      target: development
+    ports:
+      - "5555:5555"
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+    command: celery -A config flower
+    networks:
+      - gestao_network
+    profiles:
+      - celery
+
+volumes:
+  postgres_data:
+  redis_data:
+  static_volume:
+  media_volume:
+
+networks:
+  gestao_network:
+    driver: bridge

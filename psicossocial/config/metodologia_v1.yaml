@@ -1,0 +1,522 @@
+metadata:
+  id: metodologia_psicossocial_nr01_v1
+  nome: Metodologia Psicossocial NR-01 - COPSOQ II Adaptado
+  versao: "1.1.0"
+  data_criacao: "2026-05-26"
+  status: inicial_local_teste
+  fonte_referencia:
+    - "03_documentacao_codex/PERGUNTAS_BASE_OFICIAIS_FORMULARIO.md"
+    - "03_documentacao_codex/DOCUMENTACAO_ATUALIZADA_PROJETO_BACKEND.md"
+  observacoes:
+    - "Q6 e o eixo principal do ambiente avaliado."
+    - "Q16/VCO nao compoe a media das dimensoes."
+    - "Q17 e Q18 apoiam causas percebidas, melhorias e plano de acao."
+    - "Em 2026-06-01, Q14 passou a ser SAG protetiva e Q15 passou a ser ITI protetiva, por revisao de ambiguidades."
+    - "Em 2026-07-03, Q16_VCO_1 a Q16_VCO_4 tiveram o texto atualizado de 'Ja sofreu...' para 'Sofre...' (tempo presente), acompanhando a redacao atual do Forms. Wording antiga mantida em HEADER_ALIASES para compatibilidade com planilhas ja coletadas."
+    - "Por enquanto nao aplicar limite minimo de respostas por recorte."
+
+escala_likert:
+  tipo: ordinal_1_5
+  respostas:
+    Nunca: 1
+    Raramente: 2
+    "As vezes": 3
+    Frequentemente: 4
+    Sempre: 5
+
+score:
+  raw_score:
+    descricao: "Valor bruto da resposta na escala Likert."
+  risk_score:
+    descricao: "Valor padronizado para risco. Em itens protetivos, aplica inversao."
+    formula_inversao: "6 - raw_score"
+  regra_classificacao:
+    score_oficial: risk_score
+    faixas:
+      - classe: Favoravel
+        minimo: 1.0
+        maximo: 1.99
+        severidade: 1
+      - classe: Atencao
+        minimo: 2.0
+        maximo: 2.99
+        severidade: 2
+      - classe: Critico
+        minimo: 3.0
+        maximo: 3.99
+        severidade: 3
+      - classe: Grave
+        minimo: 4.0
+        maximo: 5.0
+        severidade: 4
+
+regras_gerais:
+  anonimato:
+    analise_individual: false
+    analise_coletiva: true
+    limite_minimo_respostas_por_recorte:
+      ativo: false
+      valor: null
+      observacao: "Usuario decidiu nao aplicar limite minimo nesta fase local/teste."
+  cruzamentos:
+    principal:
+      pergunta: Q6
+      descricao: "Tipo de ambiente."
+    complementares:
+      - Q2
+      - Q5
+      - Q1
+      - Q7
+      - Q3
+      - Q4
+  dashboard:
+    backend_implementa: false
+    observacao: "Dashboard fora do escopo do backend nesta fase."
+
+perguntas:
+  Q1:
+    tipo: caracterizacao
+    codigo_campo: atuacao_grupo_ocupacional
+    titulo: Atuacao / grupo ocupacional
+    texto: "A sua atuacao se enquadra em qual das opcoes abaixo?"
+    obrigatoria: true
+    multipla_escolha: false
+    permite_outra: false
+    uso_backend:
+      - caracterizacao
+      - cruzamento_complementar
+      - grupo_ocupacional_ghe
+    opcoes:
+      - "CATERING (Ajudante de Cozinha, Cozinheiro)"
+      - "INDIRETO (ADMINISTRATIVO / CORPORATIVO) (Analistas, Assistentes, RH, Financeiro, Juridico, Coordenadores, Gerentes, Equipe tecnica, Administrativo em geral)"
+      - "INFRA-SERVICOS (Limpeza, Servicos Gerais, Jardinagem, Portaria, Recepcao, Copa, Camareira, Maqueiro, Facilities)"
+      - "INFRA-SERVICOS - BOMBEIRO (Bombeiro Civil, Bombeiro Lider)"
+      - "LOGISTICA (Auxiliar de Logistica, Operadores, Empilhadeira, Supervisao Operacional)"
+      - "MANUTENCAO DE REDES - ENGENHARIA (Eletricistas, Tecnicos de Rede, Operadores de Equipamentos, Motoristas, Supervisores, Engenheiros, Equipe tecnica do contrato)"
+      - "MANUTENCAO INDUSTRIAL - ENGENHARIA (Mecanicos, Eletricistas, Soldadores, Caldeireiros, Tecnicos, Engenheiros, Supervisores, Manutencao Industrial, Equipe tecnica do contrato)"
+      - "MANUTENCAO PREDIAL - ENGENHARIA (Oficiais de Manutencao, Eletricistas, Encanadores, Mecanicos de Ar Condicionado, Tecnicos, Supervisores, Equipe tecnica do contrato)"
+      - "SEGURANCA ELETRONICA (Instaladores, Operadores de CFTV, Monitoramento, Supervisores)"
+      - "SEGURANCA HUMANA (Vigilantes, Vigilantes Condutores, Supervisores de Seguranca, Bombeiros, Inspetores)"
+
+  Q2:
+    tipo: caracterizacao
+    codigo_campo: unidade_contrato
+    titulo: Unidade ou contrato
+    texto: "Em qual unidade ou contrato voce trabalha? (Se \"outra\", escrever o nome do contrato)"
+    obrigatoria: true
+    multipla_escolha: false
+    permite_outra: true
+    uso_backend:
+      - vinculo_pgr
+      - cruzamento_complementar
+      - evidencia_ocupacional
+    opcoes:
+      - "Bases Administrativas do Grupo Exemplo"
+      - Outra
+
+  Q3:
+    tipo: caracterizacao
+    codigo_campo: turno_trabalho
+    titulo: Turno de trabalho
+    texto: "Qual o seu turno de trabalho?"
+    obrigatoria: true
+    multipla_escolha: false
+    permite_outra: true
+    uso_backend:
+      - caracterizacao
+      - cruzamento_complementar_opcional
+    opcoes:
+      - Diurno
+      - Noturno
+      - Outra
+
+  Q4:
+    tipo: caracterizacao
+    codigo_campo: escala_trabalho
+    titulo: Escala de trabalho
+    texto: "Qual a sua escala de trabalho?"
+    obrigatoria: true
+    multipla_escolha: false
+    permite_outra: true
+    uso_backend:
+      - caracterizacao
+      - cruzamento_complementar_opcional
+      - interpretacao_q17_jornada_escala
+    opcoes:
+      - "12 X 36 (Trabalha um dia sim e um dia nao)"
+      - "5 X 2 (Trabalha 5 dias e folga dois)"
+      - Outra
+
+  Q5:
+    tipo: caracterizacao
+    codigo_campo: area_atividade
+    titulo: Area de atividade
+    texto: "Em qual area voce realiza a maior parte das suas atividades?"
+    obrigatoria: true
+    multipla_escolha: false
+    permite_outra: true
+    uso_backend:
+      - cruzamento_complementar
+      - localizacao_operacional
+    opcoes:
+      - Administrativo
+      - "Producao (chao de fabrica / industrial)"
+      - "Logistica (estoque, almoxarifado, expedicao)"
+      - "Manutencao (predial, eletrica, mecanica)"
+      - "Brigada (Bombeiros)"
+      - "Limpeza / Higienizacao"
+      - "Portaria / Vigilancia / Controle de acesso"
+      - "Atendimento ao publico (recepcao, call center, suporte direto)"
+      - Outra
+
+  Q6:
+    tipo: caracterizacao
+    codigo_campo: tipo_ambiente
+    titulo: Tipo de ambiente
+    texto: "Em qual tipo de ambiente voce realiza a maior parte das suas atividades?"
+    obrigatoria: true
+    multipla_escolha: false
+    permite_outra: false
+    eixo_principal: true
+    uso_backend:
+      - eixo_principal
+      - cruzamento_ambiente
+      - agrupador_ambiente_psicossocial
+    opcoes:
+      - "Ambiente administrativo (escritorio)"
+      - "Ambiente industrial (producao / fabrica)"
+      - "Ambiente logistico (estoque / almoxarifado)"
+      - "Ambiente hospitalar / assistencial"
+      - "Ambiente externo (rua, campo, deslocamento)"
+      - "Ambiente com atendimento direto ao publico"
+
+  Q7:
+    tipo: caracterizacao
+    codigo_campo: tempo_funcao
+    titulo: Tempo na funcao
+    texto: "Ha quanto tempo voce trabalha nessa funcao/atividade atual?"
+    obrigatoria: true
+    multipla_escolha: false
+    permite_outra: false
+    uso_backend:
+      - tempo_exposicao
+      - cruzamento_complementar
+    opcoes:
+      - "Menos de 1 ano"
+      - "1 a 2 anos"
+      - "2,1 a 3 anos"
+      - "3,1 a 4 anos"
+      - "4,1 a 5 anos"
+      - "Mais de 5 anos"
+
+  Q8:
+    tipo: caracterizacao
+    codigo_campo: grupo_idade
+    titulo: Grupo de idade
+    texto: "Qual e o seu grupo de idade?"
+    obrigatoria: true
+    multipla_escolha: false
+    permite_outra: false
+    uso_backend:
+      - caracterizacao_populacional
+    opcoes:
+      - "Ate 30 anos"
+      - "De 31 a 40 anos"
+      - "De 41 a 50 anos"
+      - "De 51 a 60 anos"
+      - "Acima de 60 anos"
+
+  Q9:
+    tipo: dimensao_score
+    codigo_dimensao: DEM
+    titulo: Demandas
+    obrigatoria: true
+    escala: escala_likert
+    regra_padrao: risco_direto
+    itens:
+      - codigo: Q9_DEM_1
+        texto: "Preciso trabalhar sob pressao para realizar minhas atividades."
+        direcao: risco_direto
+      - codigo: Q9_DEM_2
+        texto: "O meu trabalho exige alto esforco mental (cognitivo)."
+        direcao: risco_direto
+      - codigo: Q9_DEM_3
+        texto: "O meu trabalho exige esforco emocional (labor emocional)."
+        direcao: risco_direto
+      - codigo: Q9_DEM_4
+        texto: "Minha carga de trabalho e excessiva."
+        direcao: risco_direto
+      - codigo: Q9_DEM_5
+        texto: "Tenho dificuldade de cumprir minhas tarefas dentro da jornada."
+        direcao: risco_direto
+
+  Q10:
+    tipo: dimensao_score
+    codigo_dimensao: EST
+    titulo: Estresse e esgotamento relacionado ao trabalho
+    obrigatoria: true
+    escala: escala_likert
+    regra_padrao: risco_direto
+    itens:
+      - codigo: Q10_EST_1
+        texto: "Sinto-me esgotado ao final da jornada de trabalho."
+        direcao: risco_direto
+      - codigo: Q10_EST_2
+        texto: "Tenho dificuldade para me recuperar apos o trabalho."
+        direcao: risco_direto
+      - codigo: Q10_EST_3
+        texto: "Sinto-me cansado mesmo antes de iniciar o trabalho."
+        direcao: risco_direto
+      - codigo: Q10_EST_4
+        texto: "Sinto que estou emocionalmente desgastado com o trabalho."
+        direcao: risco_direto
+
+  Q11:
+    tipo: dimensao_score
+    codigo_dimensao: CTV
+    titulo: Conflito trabalho x vida pessoal
+    obrigatoria: true
+    escala: escala_likert
+    regra_padrao: risco_direto
+    itens:
+      - codigo: Q11_CTV_1
+        texto: "O trabalho interfere negativamente na minha vida pessoal."
+        direcao: risco_direto
+      - codigo: Q11_CTV_2
+        texto: "Tenho dificuldade de conciliar trabalho e vida pessoal."
+        direcao: risco_direto
+      - codigo: Q11_CTV_3
+        texto: "Levo preocupacoes do trabalho para casa."
+        direcao: risco_direto
+
+  Q12:
+    tipo: dimensao_score
+    codigo_dimensao: REL
+    titulo: Relacoes e lideranca
+    obrigatoria: true
+    escala: escala_likert
+    regra_padrao: protetivo_inverter
+    itens:
+      - codigo: Q12_REL_1
+        texto: "Recebo apoio da minha lideranca direta."
+        direcao: protetivo_inverter
+      - codigo: Q12_REL_2
+        texto: "Existe respeito no ambiente de trabalho por minha lideranca direta."
+        direcao: protetivo_inverter
+      - codigo: Q12_REL_3
+        texto: "A comunicacao da minha lideranca direta e clara."
+        direcao: protetivo_inverter
+      - codigo: Q12_REL_4
+        texto: "Conflitos sao tratados de forma justa."
+        direcao: protetivo_inverter
+      - codigo: Q12_REL_5
+        texto: "Posso contar com colegas de trabalho quando preciso de apoio nas atividades."
+        direcao: protetivo_inverter
+
+  Q13:
+    tipo: dimensao_score
+    codigo_dimensao: ORG
+    titulo: Organizacao e autonomia
+    obrigatoria: true
+    escala: escala_likert
+    regra_padrao: protetivo_inverter
+    itens:
+      - codigo: Q13_ORG_1
+        texto: "Recebo orientacoes claras do meu lider direto sobre como executar minhas atividades."
+        direcao: protetivo_inverter
+      - codigo: Q13_ORG_2
+        texto: "Tenho autonomia (liberdade) para realizar minhas atividades diarias."
+        direcao: protetivo_inverter
+      - codigo: Q13_ORG_3
+        texto: "A empresa me proporciona oportunidade de crescimento profissional (Ex. cursos/treinamentos gratuitos)."
+        direcao: protetivo_inverter
+      - codigo: Q13_ORG_4
+        texto: "Posso sugerir melhorias no trabalho (sou ouvido)."
+        direcao: protetivo_inverter
+      - codigo: Q13_ORG_5
+        texto: "Tenho acesso as informacoes necessarias para trabalhar."
+        direcao: protetivo_inverter
+
+  Q14:
+    tipo: dimensao_score
+    codigo_dimensao: SAG
+    titulo: Saude geral
+    obrigatoria: true
+    escala: escala_likert
+    regra_padrao: protetivo_inverter
+    itens:
+      - codigo: Q14_SAG_1
+        texto: "Considero minha saude fisica boa."
+        direcao: protetivo_inverter
+      - codigo: Q14_SAG_2
+        texto: "Percebo que minhas condicoes atuais de trabalho favorecem meu bem-estar mental."
+        direcao: protetivo_inverter
+      - codigo: Q14_SAG_3
+        texto: "Sinto disposicao para realizar minhas atividades diarias."
+        direcao: protetivo_inverter
+      - codigo: Q14_SAG_4
+        texto: "Meu trabalho me permite dormir bem."
+        direcao: protetivo_inverter
+
+  Q15:
+    tipo: dimensao_score
+    codigo_dimensao: ITI
+    titulo: Interface trabalho-individuo
+    obrigatoria: true
+    escala: escala_likert
+    regra_padrao: protetivo_inverter
+    itens:
+      - codigo: Q15_ITI_1
+        texto: "Meu trabalho corresponde as minhas expectativas."
+        direcao: protetivo_inverter
+      - codigo: Q15_ITI_2
+        texto: "Sinto que minhas habilidades sao aproveitadas."
+        direcao: protetivo_inverter
+      - codigo: Q15_ITI_3
+        texto: "Me identifico com o trabalho que realizo."
+        direcao: protetivo_inverter
+
+  Q16:
+    tipo: vco
+    codigo_dimensao: VCO
+    titulo: Violencia e comportamentos ofensivos
+    texto_bloco: "VCO - as respostas deste bloco serao tratadas de forma restrita, consolidada e, quando necessario, poderao subsidiar encaminhamentos institucionais conforme canais internos da empresa."
+    obrigatoria: true
+    compoe_media_score: false
+    escala:
+      tipo: binaria_sim_nao
+      respostas:
+        Sim: 1
+        Nao: 0
+    tratativa:
+      fluxo_separado: true
+      relatorio_comum_exibe_individual: false
+      gerar_indicador_consolidado: true
+      encaminhamento_institucional_quando_necessario: true
+    itens:
+      - codigo: Q16_VCO_1
+        texto: "Sofre desrespeito grave no trabalho?"
+      - codigo: Q16_VCO_2
+        texto: "Sofre ameaca verbal ou intimidacao?"
+      - codigo: Q16_VCO_3
+        texto: "Sofre assedio moral?"
+      - codigo: Q16_VCO_4
+        texto: "Sofre assedio sexual?"
+      - codigo: Q16_VCO_5
+        texto: "Ja sofreu violencia fisica?"
+
+  Q17:
+    tipo: qualitativa_estruturada
+    codigo_campo: causas_desgaste
+    titulo: Causas percebidas de desgaste
+    texto: "O que mais gera desgaste no seu trabalho?"
+    obrigatoria: true
+    multipla_escolha: true
+    maximo_opcoes: 3
+    permite_outra: true
+    uso_backend:
+      - frequencia_causas
+      - explicacao_dimensoes_criticas
+      - plano_acao
+    opcoes:
+      - "Excesso de trabalho / sobrecarga."
+      - "Pressao por prazos."
+      - "Falta de organizacao nas atividades."
+      - "Problemas de comunicacao."
+      - "Falta de apoio da lideranca."
+      - "Conflitos no ambiente de trabalho."
+      - "Falta de reconhecimento."
+      - "Falta de recursos ou estrutura."
+      - "Jornada de trabalho / escala."
+      - "Atendimento ao publico / desgaste emocional."
+      - Outra
+
+  Q18:
+    tipo: qualitativa_estruturada
+    codigo_campo: melhorias_sugeridas
+    titulo: Melhorias sugeridas
+    texto: "O que voce acredita que deveria melhorar no ambiente de trabalho?"
+    obrigatoria: true
+    multipla_escolha: true
+    maximo_opcoes: 3
+    permite_outra: true
+    uso_backend:
+      - frequencia_melhorias
+      - plano_acao
+      - justificativa_complementar_relatorio
+    opcoes:
+      - "Melhor organizacao das atividades."
+      - "Melhor comunicacao."
+      - "Melhoria na lideranca / gestao."
+      - "Reducao da carga de trabalho."
+      - "Melhor distribuicao de tarefas."
+      - "Mais recursos / estrutura."
+      - "Treinamentos e capacitacao."
+      - "Melhor clima organizacional."
+      - "Ajustes na jornada / escala."
+      - Outra
+
+dimensoes:
+  DEM:
+    nome: Demandas
+    pergunta: Q9
+    regra: risco_direto
+  EST:
+    nome: Estresse e esgotamento relacionado ao trabalho
+    pergunta: Q10
+    regra: risco_direto
+  CTV:
+    nome: Conflito trabalho x vida pessoal
+    pergunta: Q11
+    regra: risco_direto
+  REL:
+    nome: Relacoes e lideranca
+    pergunta: Q12
+    regra: protetivo_inverter
+  ORG:
+    nome: Organizacao e autonomia
+    pergunta: Q13
+    regra: protetivo_inverter
+  ITI:
+    nome: Interface trabalho-individuo
+    pergunta: Q15
+    regra: protetivo_inverter
+  SAG:
+    nome: Saude geral
+    pergunta: Q14
+    regra: protetivo_inverter
+
+vco:
+  pergunta: Q16
+  compoe_score_medio: false
+  gerar_aba_separada: true
+  nivel_exposicao_relatorio_padrao: consolidado
+
+qualitativas:
+  causas_desgaste:
+    pergunta: Q17
+    maximo_opcoes: 3
+  melhorias_sugeridas:
+    pergunta: Q18
+    maximo_opcoes: 3
+
+exportacao_excel_inicial:
+  formato: xlsx
+  abas:
+    - "01_BASE_FORMS"
+    - "02_DE_PARA"
+    - "03_PARAMETROS"
+    - "04_BASE_TRATADA"
+    - "05_SCORE_DIMENSOES"
+    - "06_CRUZAMENTO_AMBIENTE"
+    - "07_CRUZAMENTO_COMPLEMENTAR"
+    - "08_VCO_TRATATIVA"
+    - "09_CAUSAS_MELHORIAS"
+    - "10_PLANO_ACAO"
+    - "12_INTEGRACAO_PGR_PCMSO"
+    - "13_LOG_AUDITORIA"
+  abas_fora_escopo_backend:
+    - "11_DASHBOARD"
+  abas_complementares_referencia:
+    - "00_FLUXO_LOGICA"
+    - "14_RESUMO_EXECUTIVO"

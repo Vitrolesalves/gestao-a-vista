@@ -1,0 +1,1143 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+    .livro-ata-title {
+        background: linear-gradient(to right, #0F172A, #1e40af);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-size: 28px;
+        font-weight: bold;
+        margin: 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-100 p-6">
+    <div class="max-w-7xl mx-auto">
+        <!-- Cabeçalho -->
+        <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center gap-3">
+                <i class="fas fa-book text-gray-700 text-2xl"></i>
+                <h1 class="livro-ata-title">LIVRO ATA</h1>
+            </div>
+            <div class="flex items-center gap-2">
+                {% if request.user.role == 'administrador' or request.user.is_superuser %}
+                <button
+                    id="whatsappConfigButton"
+                    class="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded-md flex items-center gap-2"
+                    title="Configurações e status da conexão WhatsApp (uazapi)"
+                >
+                    <i class="fas fa-circle text-gray-400" id="whatsappStatusDot" style="font-size: 8px;"></i>
+                    <span id="whatsappStatusLabel">Configurações</span>
+                </button>
+                <button
+                    id="testWhatsappButton"
+                    class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md flex items-center gap-2"
+                    title="Envia uma mensagem de teste para o número configurado, para validar a integração de notificações"
+                >
+                    <i class="fab fa-whatsapp"></i>
+                    <span>Testar Notificação WhatsApp</span>
+                </button>
+                {% endif %}
+                <button
+                    id="downloadReportButton"
+                    class="hidden bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md items-center gap-2"
+                >
+                    <i class="fas fa-file-pdf"></i>
+                    <span>Baixar Relatório (30 dias)</span>
+                </button>
+                <button
+                    id="newSearchButton"
+                    class="hidden bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md flex items-center gap-2"
+                >
+                    <i class="fas fa-search"></i>
+                    <span>Nova Busca</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Formulário de Busca -->
+        <div id="searchForm" class="max-w-2xl mx-auto bg-white rounded-lg shadow-sm p-6">
+            <h2 class="text-xl font-semibold text-gray-700 text-center mb-4">
+                Acesso ao Livro Ata
+            </h2>
+
+            {% if request.user.role == 'administrador' or request.user.role == 'gerente' or request.user.role == 'coordenador' or request.user.role == 'supervisor' or request.user.is_superuser %}
+            <div class="flex justify-center gap-2 mb-4">
+                <button type="button" id="tabGerente" class="search-tab-btn px-4 py-2 rounded-md text-sm font-medium bg-[#1a2a45] text-white">
+                    Buscar por Gerente
+                </button>
+                <button type="button" id="tabCr" class="search-tab-btn px-4 py-2 rounded-md text-sm font-medium bg-gray-100 text-gray-700">
+                    Buscar por CR
+                </button>
+            </div>
+
+            <!-- Busca por Gerente: mostra a situação do mês em todos os CRs do gerente -->
+            <div id="gerenteSearchSection" class="space-y-4">
+                <div>
+                    <label for="gerenteSelect" class="text-sm font-medium text-gray-700">
+                        Gerente
+                    </label>
+                    <select id="gerenteSelect" class="w-full mt-1 rounded-md border-gray-300">
+                        <option value="">Carregando gerentes...</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="mesSelect" class="text-sm font-medium text-gray-700">
+                        Mês
+                    </label>
+                    <input type="month" id="mesSelect" class="w-full mt-1 rounded-md border-gray-300">
+                </div>
+                <button
+                    id="buscarGerenteButton"
+                    class="w-full bg-[#1a2a45] hover:bg-[#2a4570] text-white px-4 py-2 rounded-md flex items-center justify-center gap-2"
+                >
+                    <i class="fas fa-search"></i>
+                    <span>Buscar</span>
+                </button>
+            </div>
+            {% endif %}
+
+            <div id="crSearchSection" class="space-y-4{% if request.user.role == 'administrador' or request.user.role == 'gerente' or request.user.role == 'coordenador' or request.user.role == 'supervisor' or request.user.is_superuser %} hidden{% endif %}">
+                <div>
+                    <label for="cr" class="text-sm font-medium text-gray-700">
+                        Número do CR
+                    </label>
+                    <div class="flex gap-2 mt-1">
+                        <input
+                            type="text"
+                            id="cr"
+                            class="flex-1 rounded-md border-gray-300"
+                            placeholder="Digite o número do CR (ex: CR-001)"
+                        >
+                        <button
+                            id="searchButton"
+                            class="bg-[#1a2a45] hover:bg-[#2a4570] text-white px-4 py-2 rounded-md flex items-center gap-2"
+                        >
+                            <i class="fas fa-search"></i>
+                            <span>Buscar</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="text-center">
+                    <p class="text-sm text-gray-600 mb-2">ou</p>
+                    <p class="text-sm text-gray-600">
+                        Acesse através do QR Code disponibilizado no local
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Relatório Mensal por Gerente -->
+        <div id="gerenteReportContainer" class="hidden space-y-4 mt-6">
+            <div class="bg-white rounded-lg shadow-sm p-4 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-800" id="gerenteReportTitulo"></h3>
+                    <p class="text-sm text-gray-500">D = turno diurno (06h-18h) | N = turno noturno (18h-06h)</p>
+                </div>
+                <button id="downloadConsolidadoButton" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center gap-2">
+                    <i class="fas fa-file-pdf"></i>
+                    <span>Relatório Consolidado (30 dias)</span>
+                </button>
+            </div>
+            <div class="bg-white rounded-lg shadow-sm p-4" style="overflow-x: auto;">
+                <table class="text-xs border-collapse w-full" id="gerenteReportTable">
+                    <thead>
+                        <tr id="gerenteReportHeaderRow"></tr>
+                    </thead>
+                    <tbody id="gerenteReportBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Lista de Plantões -->
+        <div id="shiftsList" class="hidden space-y-6 mt-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" id="shiftsGrid">
+                <!-- Plantões serão inseridos aqui via JavaScript -->
+            </div>
+
+            <!-- Detalhes do Plantão -->
+            <div id="shiftDetails" class="hidden space-y-6">
+                <!-- Detalhes serão inseridos aqui via JavaScript -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Templates para JavaScript -->
+<template id="shiftCardTemplate">
+    <div class="bg-white rounded-lg border-2 cursor-pointer transition-all shadow-sm hover:shadow-md">
+        <div class="p-4">
+            <div class="bg-green-500 text-white px-3 py-1 rounded text-sm font-medium mb-3 inline-block shift-status-badge">
+                <span class="shift-date"></span> | <span class="shift-time"></span>
+            </div>
+            <!-- Indicador de registro não realizado -->
+            <div class="bg-red-500 text-white px-3 py-1 rounded text-sm font-medium mb-3 inline-block expired-badge hidden">
+                <i class="fas fa-exclamation-triangle mr-1"></i>
+                <span class="shift-date-expired"></span> | <span class="shift-time-expired"></span> - NÃO REALIZADO
+            </div>
+            <div class="space-y-2">
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-user text-gray-600"></i>
+                    <span class="guard-name font-medium text-gray-800"></span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-file-alt text-gray-600"></i>
+                    <span class="guard-number text-gray-600"></span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-clock text-gray-600"></i>
+                    <span class="shift-type text-gray-600 text-sm"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<template id="shiftDetailsTemplate">
+    <div class="space-y-6">
+        <!-- Informações do Plantão -->
+        <div class="bg-white border border-gray-200 rounded-lg p-6">
+            <div class="flex flex-wrap items-center gap-6">
+                <div class="bg-gray-800 text-white px-4 py-2 rounded-lg font-medium shift-date"></div>
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-clock text-gray-600"></i>
+                    <span class="text-gray-700 font-medium shift-time"></span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-file-alt text-gray-600"></i>
+                    <span class="text-gray-700 font-medium guard-number"></span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-user text-gray-600"></i>
+                    <span class="font-semibold text-gray-800 guard-name"></span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-map-marker-alt text-gray-600"></i>
+                    <span class="text-gray-700 font-medium location"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Descrição e Evidências -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Relatos do Plantão -->
+                <div class="bg-white rounded-lg border border-gray-200">
+                    <div class="p-4 border-b border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-700 flex items-center gap-2">
+                            <i class="fas fa-file-alt text-blue-500"></i>
+                            RELATOS DO PLANTÃO
+                        </h3>
+                    </div>
+                    <div class="p-4">
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <p class="text-gray-700 leading-relaxed description"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Descrição de Ocorrências -->
+                <div class="bg-white rounded-lg border border-gray-200">
+                    <div class="p-4 border-b border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-700 flex items-center gap-2">
+                            <i class="fas fa-exclamation-triangle text-red-500"></i>
+                            DESCRIÇÃO DE OCORRÊNCIAS
+                        </h3>
+                    </div>
+                    <div class="p-4">
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <div class="occurrences-content space-y-3">
+                                <!-- Conteúdo será preenchido via JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Evidências -->
+                <div class="bg-white rounded-lg border border-gray-200">
+                    <div class="p-4 border-b border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-700 flex items-center gap-2">
+                            <i class="fas fa-camera text-blue-500"></i>
+                            EVIDÊNCIAS REGISTRADAS
+                        </h3>
+                    </div>
+                    <div class="p-4">
+                        <div id="evidencesGrid" class="grid grid-cols-2 gap-4">
+                            <!-- Evidências serão inseridas aqui -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Questionário/Conformidades -->
+            <div class="space-y-6">
+                <div class="bg-white rounded-lg border border-gray-200">
+                    <div class="p-4 border-b border-gray-200">
+                        <h3 class="text-lg font-semibold text-white bg-gray-800 px-4 py-2 rounded text-center">
+                            QUESTIONÁRIO DE CONFORMIDADE
+                        </h3>
+                    </div>
+                    <div class="p-4 space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+                                <i class="fas fa-check-circle text-green-600 text-2xl mb-2"></i>
+                                <div class="text-2xl font-bold text-green-600 conforme-count">0</div>
+                                <div class="text-sm text-green-700">Conformes</div>
+                            </div>
+                            <div class="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
+                                <i class="fas fa-times-circle text-red-600 text-2xl mb-2"></i>
+                                <div class="text-2xl font-bold text-red-600 nao-conforme-count">0</div>
+                                <div class="text-sm text-red-700">Não Conformes</div>
+                            </div>
+                        </div>
+
+                        <button id="showComplianceDetails" class="w-full px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                            <i class="fas fa-eye mr-2"></i>
+                            Ver Detalhes
+                        </button>
+                    </div>
+                </div>
+
+                <button id="backToSearch" class="w-full px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                    Voltar à Busca
+                </button>
+            </div>
+        </div>
+    </div>
+</template>
+
+<!-- Modal de Configurações - Status da conexão WhatsApp (uazapi) -->
+<div id="whatsappConfigModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg max-w-md w-full m-4">
+        <div class="p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-semibold text-gray-800">Configurações - WhatsApp</h3>
+                <button id="closeWhatsappConfigModal" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="whatsappConfigContent" class="text-center space-y-4">
+                <p class="text-gray-500">Verificando status da conexão...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Conformidade -->
+<div id="complianceModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg max-w-4xl w-full max-h-[80vh] overflow-y-auto m-4">
+        <div class="p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-semibold text-gray-800">Detalhes da Conformidade</h3>
+                <button id="closeComplianceModal" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="space-y-6">
+                <!-- Itens Conformes -->
+                <div>
+                    <h4 class="text-lg font-semibold text-green-600 mb-3 flex items-center gap-2">
+                        <i class="fas fa-check-circle"></i>
+                        Itens Conformes (<span class="conforme-count">0</span>)
+                    </h4>
+                    <div id="conformeItems" class="space-y-2">
+                        <!-- Itens conformes serão inseridos aqui -->
+                    </div>
+                </div>
+
+                <!-- Itens Não Conformes -->
+                <div>
+                    <h4 class="text-lg font-semibold text-red-600 mb-3 flex items-center gap-2">
+                        <i class="fas fa-times-circle"></i>
+                        Itens Não Conformes (<span class="nao-conforme-count">0</span>)
+                    </h4>
+                    <div id="naoConformeItems" class="space-y-2">
+                        <!-- Itens não conformes serão inseridos aqui -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal da Galeria de Imagens -->
+<div id="imageGalleryModal" class="hidden fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50">
+    <div class="relative max-w-4xl max-h-full w-full h-full flex items-center justify-center p-4">
+        <!-- Botão Fechar -->
+        <button id="closeGalleryModal" class="absolute top-4 right-4 text-white hover:text-gray-300 text-3xl z-10">
+            <i class="fas fa-times"></i>
+        </button>
+        
+        <!-- Navegação Anterior -->
+        <button id="prevImage" class="absolute left-4 top-1/2 transform -translate-y-1/2 text-white hover:text-gray-300 text-3xl z-10">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+        
+        <!-- Imagem Principal -->
+        <div class="text-center">
+            <img id="galleryImage" src="" alt="Evidência" class="max-w-full max-h-full object-contain">
+            <div id="imageDescription" class="text-white mt-4 text-lg"></div>
+            <div id="imageCounter" class="text-gray-300 mt-2 text-sm"></div>
+        </div>
+        
+        <!-- Navegação Próxima -->
+        <button id="nextImage" class="absolute right-4 top-1/2 transform -translate-y-1/2 text-white hover:text-gray-300 text-3xl z-10">
+            <i class="fas fa-chevron-right"></i>
+        </button>
+    </div>
+</div>
+
+<!-- Dados do contexto para JavaScript -->
+<div id="contextData" style="display: none;" 
+     data-qrcode-id="{% if qrcode_id %}{{ qrcode_id }}{% endif %}">
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchForm = document.getElementById('searchForm');
+    const searchButton = document.getElementById('searchButton');
+    const crInput = document.getElementById('cr');
+    const shiftsList = document.getElementById('shiftsList');
+    const shiftsGrid = document.getElementById('shiftsGrid');
+    const shiftDetails = document.getElementById('shiftDetails');
+    const complianceModal = document.getElementById('complianceModal');
+    const closeComplianceModal = document.getElementById('closeComplianceModal');
+    const showComplianceDetails = document.getElementById('showComplianceDetails');
+    const backToSearch = document.getElementById('backToSearch');
+    const newSearchButton = document.getElementById('newSearchButton');
+    const downloadReportButton = document.getElementById('downloadReportButton');
+    const testWhatsappButton = document.getElementById('testWhatsappButton');
+
+    // Verificar se há parâmetro qrcode na URL ou no contexto
+    const urlParams = new URLSearchParams(window.location.search);
+    let qrcodeId = urlParams.get('qrcode');
+    let isDWVistaMode = false; // Flag para rastrear se estamos consultando DW_Vista
+    let lastSearchCr = null; // Guarda o CR pesquisado para o relatório de 30 dias
+
+    // Verificar se veio do contexto Django (URL pattern)
+    const contextData = document.getElementById('contextData');
+    if (contextData && contextData.dataset.qrcodeId) {
+        qrcodeId = contextData.dataset.qrcodeId;
+    }
+
+    if (qrcodeId) {
+        // Se veio de QR Code, buscar automaticamente
+        isDWVistaMode = true; // QR Code sempre usa DW_Vista
+        searchShiftsByQRCode(qrcodeId);
+        // Ocultar formulário de busca
+        searchForm.style.display = 'none';
+    }
+
+    // Função para formatar data (corrige problema de fuso horário)
+    function formatDate(dateStr) {
+        if (!dateStr) return '';
+        
+        // Se a data está no formato YYYY-MM-DD, criar data local
+        if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+            const [year, month, day] = dateStr.split('-');
+            const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+            return date.toLocaleDateString('pt-BR');
+        }
+        
+        // Para outros formatos, usar o método original
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('pt-BR');
+    }
+
+    // Função para formatar hora
+    function formatTime(timeStr) {
+        return timeStr.slice(0, 5) + 'h';
+    }
+
+    // Buscar plantões por CR
+    async function searchShifts() {
+        const cr = crInput.value.trim();
+        if (!cr) {
+            showNotification('Digite um número de CR válido', 'warning');
+            return;
+        }
+
+        console.log(`Buscando plantões para CR: ${cr}`);
+
+        try {
+            const response = await fetch(`/api/livro-ata/shifts/?cr_number=${encodeURIComponent(cr)}`);
+            const data = await response.json();
+            
+            console.log('Resposta da API:', data);
+
+            if (data.error) {
+                showNotification(data.error, 'error');
+                
+                // Se há plantões mesmo com erro (serviço indisponível), mostrar os dados disponíveis
+                if (data.shifts && data.shifts.length > 0) {
+                    console.log('Mostrando dados disponíveis mesmo com serviço indisponível');
+                    displayShifts(data.shifts);
+                    isDWVistaMode = true;
+                    lastSearchCr = cr;
+                    searchForm.style.display = 'none';
+                }
+                return;
+            }
+
+            displayShifts(data.shifts);
+            // Settar flag para indicar que estamos em modo DW_Vista (busca por CR)
+            isDWVistaMode = true;
+            lastSearchCr = cr;
+            // Ocultar formulário de busca após resultado bem-sucedido (igual ao QR Code)
+            searchForm.style.display = 'none';
+        } catch (error) {
+            console.error('Erro ao buscar plantões:', error);
+            showNotification('Erro ao buscar registros de plantão. Verifique sua conexão e tente novamente.', 'error');
+        }
+    }
+
+    // Buscar plantões por QR Code
+    async function searchShiftsByQRCode(qrcodeId) {
+        try {
+            // Usar API específica para QR Code (sem autenticação)
+            const response = await fetch(`/api/livro-ata/qrcode-shifts/?qrcode=${encodeURIComponent(qrcodeId)}`);
+            const data = await response.json();
+
+            if (data.error) {
+                showNotification(data.error, 'error');
+                return;
+            }
+
+            displayShifts(data.shifts);
+        } catch (error) {
+            console.error('Erro ao buscar plantões por QR Code:', error);
+            showNotification('Erro ao buscar registros de plantão', 'error');
+        }
+    }
+
+    // Exibir plantões
+    function displayShifts(shifts) {
+        shiftsGrid.innerHTML = '';
+        const template = document.getElementById('shiftCardTemplate');
+
+        shifts.forEach(shift => {
+            const card = template.content.cloneNode(true);
+            
+            card.querySelector('.shift-date').textContent = formatDate(shift.date);
+            card.querySelector('.shift-time').textContent = formatTime(shift.time);
+            card.querySelector('.guard-name').textContent = shift.guard_name;
+            card.querySelector('.guard-number').textContent = '#' + shift.guard_number;
+            card.querySelector('.shift-type').textContent = shift.shift_type;
+
+            // Verificar se o registro expirou
+            if (shift.expirada === true) {
+                // Ocultar badge normal e mostrar badge de expirado
+                card.querySelector('.shift-status-badge').classList.add('hidden');
+                card.querySelector('.expired-badge').classList.remove('hidden');
+                
+                // Preencher data e hora no badge de expirado
+                card.querySelector('.shift-date-expired').textContent = formatDate(shift.date);
+                card.querySelector('.shift-time-expired').textContent = formatTime(shift.time);
+                
+                // Adicionar classe visual para indicar expiração
+                const cardElement = card.firstElementChild;
+                cardElement.classList.add('border-red-300', 'bg-red-50');
+            }
+
+            const cardElement = card.firstElementChild;
+            cardElement.setAttribute('data-shift-id', shift.id);
+            cardElement.addEventListener('click', () => loadShiftDetails(shift.id));
+
+            shiftsGrid.appendChild(card);
+        });
+
+        shiftsList.classList.remove('hidden');
+        shiftDetails.classList.add('hidden');
+
+        // Mostrar botão "Nova Busca" no cabeçalho quando resultados são exibidos
+        if (!qrcodeId) {
+            newSearchButton.classList.remove('hidden');
+        }
+
+        // Mostrar botão de relatório de 30 dias sempre que houver uma busca válida (CR ou QR Code)
+        downloadReportButton.classList.remove('hidden');
+        downloadReportButton.classList.add('flex');
+    }
+
+    // Baixar relatório em PDF dos últimos 30 dias, seguindo a mesma busca (CR ou QR Code)
+    function baixarRelatorio30Dias() {
+        let url;
+        if (qrcodeId) {
+            url = `/api/livro-ata/qrcode-relatorio/?qrcode=${encodeURIComponent(qrcodeId)}`;
+        } else if (lastSearchCr) {
+            url = `/api/livro-ata/relatorio/?cr_number=${encodeURIComponent(lastSearchCr)}`;
+        } else {
+            showNotification('Faça uma busca por CR ou QR Code antes de baixar o relatório', 'warning');
+            return;
+        }
+        window.open(url, '_blank');
+    }
+
+    downloadReportButton.addEventListener('click', baixarRelatorio30Dias);
+
+    // Botão de teste da notificação WhatsApp (uazapi) - somente administradores
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    if (testWhatsappButton) {
+        testWhatsappButton.addEventListener('click', async () => {
+            testWhatsappButton.disabled = true;
+            const originalHtml = testWhatsappButton.innerHTML;
+            testWhatsappButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Enviando...</span>';
+
+            try {
+                const response = await fetch('/api/livro-ata/notificacao-teste/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken'),
+                    },
+                });
+                const data = await response.json();
+
+                if (!response.ok || data.error) {
+                    showNotification(data.error || 'Erro ao enviar notificação de teste', 'error');
+                } else {
+                    showNotification(data.message || 'Notificação de teste enviada!', 'success');
+                }
+            } catch (error) {
+                console.error('Erro ao enviar notificação de teste:', error);
+                showNotification('Erro ao enviar notificação de teste', 'error');
+            } finally {
+                testWhatsappButton.disabled = false;
+                testWhatsappButton.innerHTML = originalHtml;
+            }
+        });
+    }
+
+    // ===== Configurações - Status da conexão WhatsApp (uazapi) =====
+    const whatsappConfigButton = document.getElementById('whatsappConfigButton');
+    const whatsappStatusDot = document.getElementById('whatsappStatusDot');
+    const whatsappConfigModal = document.getElementById('whatsappConfigModal');
+    const closeWhatsappConfigModal = document.getElementById('closeWhatsappConfigModal');
+    const whatsappConfigContent = document.getElementById('whatsappConfigContent');
+
+    if (whatsappConfigButton) {
+        let whatsappAutoAberto = false;
+        let whatsappPollTimer = null;
+
+        function renderWhatsappStatus(data) {
+            if (data.status === 'connected') {
+                whatsappStatusDot.classList.remove('text-red-500', 'text-yellow-400', 'text-gray-400');
+                whatsappStatusDot.classList.add('text-green-500');
+                whatsappConfigContent.innerHTML = `
+                    <div class="text-green-600">
+                        <i class="fas fa-check-circle text-4xl mb-2"></i>
+                        <p class="font-semibold">WhatsApp conectado</p>
+                        ${data.profile_name ? `<p class="text-sm text-gray-500">${data.profile_name}</p>` : ''}
+                    </div>
+                `;
+                return;
+            }
+
+            const corStatus = data.status === 'connecting' ? 'text-yellow-400' : 'text-red-500';
+            whatsappStatusDot.classList.remove('text-green-500', 'text-gray-400', 'text-red-500', 'text-yellow-400');
+            whatsappStatusDot.classList.add(corStatus);
+
+            if (data.error) {
+                whatsappConfigContent.innerHTML = `
+                    <div class="text-red-600">
+                        <i class="fas fa-exclamation-triangle text-4xl mb-2"></i>
+                        <p class="font-semibold">WhatsApp desconectado</p>
+                        <p class="text-sm text-gray-500 mt-2">${data.error}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            whatsappConfigContent.innerHTML = `
+                <div class="text-red-600 mb-2">
+                    <i class="fas fa-exclamation-triangle text-2xl mb-1"></i>
+                    <p class="font-semibold">WhatsApp desconectado - escaneie o QR Code</p>
+                </div>
+                ${data.qrcode ? `<img src="${data.qrcode}" alt="QR Code WhatsApp" class="mx-auto rounded-lg border" style="max-width: 260px;">` : ''}
+                ${data.paircode ? `<p class="text-sm text-gray-600">Ou use o código no celular: <span class="font-mono font-bold">${data.paircode}</span></p>` : ''}
+                <p class="text-xs text-gray-400">Atualiza automaticamente a cada 1 minuto.</p>
+            `;
+
+            if (!whatsappAutoAberto) {
+                whatsappAutoAberto = true;
+                whatsappConfigModal.classList.remove('hidden');
+            }
+        }
+
+        async function verificarStatusWhatsapp() {
+            try {
+                const response = await fetch('/api/livro-ata/whatsapp-status/');
+                const data = await response.json();
+                if (!response.ok) {
+                    renderWhatsappStatus({ status: 'disconnected', error: data.error || 'Erro ao consultar status' });
+                    return;
+                }
+                renderWhatsappStatus(data);
+            } catch (error) {
+                console.error('Erro ao consultar status do WhatsApp:', error);
+                renderWhatsappStatus({ status: 'disconnected', error: 'Erro ao consultar status' });
+            }
+        }
+
+        whatsappConfigButton.addEventListener('click', () => {
+            whatsappConfigModal.classList.remove('hidden');
+            verificarStatusWhatsapp();
+        });
+
+        closeWhatsappConfigModal.addEventListener('click', () => {
+            whatsappConfigModal.classList.add('hidden');
+        });
+
+        whatsappConfigModal.addEventListener('click', (e) => {
+            if (e.target === whatsappConfigModal) {
+                whatsappConfigModal.classList.add('hidden');
+            }
+        });
+
+        verificarStatusWhatsapp();
+        whatsappPollTimer = setInterval(verificarStatusWhatsapp, 60000);
+    }
+
+    // Carregar detalhes do plantão
+    async function loadShiftDetails(shiftId) {
+        try {
+            // Se estamos em modo DW_Vista (QR Code ou busca por CR), usar API DW_Vista
+            const apiUrl = isDWVistaMode ?
+                `/api/livro-ata/qrcode-shifts/${shiftId}/` :
+                `/api/livro-ata/shifts/${shiftId}/`;
+
+            const response = await fetch(apiUrl);
+            const data = await response.json();
+
+            if (data.error) {
+                showNotification(data.error, 'error');
+                return;
+            }
+
+            displayShiftDetails(data);
+        } catch (error) {
+            console.error('Erro ao carregar detalhes:', error);
+            showNotification('Erro ao carregar detalhes do plantão', 'error');
+        }
+    }
+
+    // Exibir detalhes do plantão
+    function displayShiftDetails(data) {
+        const template = document.getElementById('shiftDetailsTemplate');
+        const details = template.content.cloneNode(true);
+        const shift = data.shift;
+
+        // Preencher informações básicas
+        details.querySelector('.shift-date').textContent = formatDate(shift.date);
+        details.querySelector('.shift-time').textContent = formatTime(shift.time);
+        details.querySelector('.guard-number').textContent = '#' + shift.guard_number;
+        details.querySelector('.guard-name').textContent = shift.guard_name;
+        details.querySelector('.location').textContent = shift.location;
+        details.querySelector('.description').textContent = shift.description || 'Nenhuma descrição disponível.';
+
+        // Preencher evidências
+        const evidencesGrid = details.querySelector('#evidencesGrid');
+        if (data.evidences.length === 0) {
+            evidencesGrid.innerHTML = `
+                <div class="col-span-2 text-center py-8 text-gray-500">
+                    <i class="fas fa-camera text-gray-300 text-4xl mb-2"></i>
+                    <p>Nenhuma evidência registrada para este plantão</p>
+                </div>
+            `;
+        } else {
+            evidencesGrid.innerHTML = data.evidences.map((evidence, index) => `
+                <div class="space-y-2">
+                    <img
+                        src="${evidence.image_url}"
+                        alt="Evidência"
+                        class="w-full h-32 object-cover rounded-lg border cursor-pointer hover:opacity-80 transition-opacity"
+                        onclick="console.log('Clique na imagem ${index}'); openImageGallery(${index})"
+                    >
+                    ${evidence.description ? `<p class="text-sm text-gray-600">${evidence.description}</p>` : ''}
+                </div>
+            `).join('');
+            
+            // Armazenar evidências globalmente para a galeria
+            window.currentEvidences = data.evidences;
+            console.log('Evidências carregadas:', data.evidences.length, 'evidências');
+        }
+
+        // Preencher ocorrências
+        const occurrencesContent = details.querySelector('.occurrences-content');
+        if (data.occurrences && data.occurrences.length > 0) {
+            occurrencesContent.innerHTML = data.occurrences.map(occurrence => `
+                <div class="border-l-4 ${occurrence.type === 'non_conformity' ? 'border-red-500 bg-red-50' : 'border-blue-500 bg-blue-50'} p-3 rounded">
+                    <h4 class="font-semibold ${occurrence.type === 'non_conformity' ? 'text-red-800' : 'text-blue-800'} mb-2">
+                        ${occurrence.title}
+                    </h4>
+                    <p class="${occurrence.type === 'non_conformity' ? 'text-red-700' : 'text-blue-700'} leading-relaxed">
+                        ${occurrence.content}
+                    </p>
+                </div>
+            `).join('');
+        } else {
+            occurrencesContent.innerHTML = `
+                <div class="text-center py-4 text-gray-500">
+                    <i class="fas fa-info-circle text-gray-300 text-2xl mb-2"></i>
+                    <p>Não há registro de ocorrências no plantão</p>
+                </div>
+            `;
+        }
+
+        // Preencher contadores de conformidade
+        const conformeItems = data.compliance_items.filter(item => item.status === 'conforme');
+        const naoConformeItems = data.compliance_items.filter(item => item.status === 'nao_conforme');
+
+        // Atualizar contadores no template clonado (dentro de shiftDetails)
+        details.querySelectorAll('.conforme-count').forEach(el => {
+            el.textContent = conformeItems.length;
+        });
+        details.querySelectorAll('.nao-conforme-count').forEach(el => {
+            el.textContent = naoConformeItems.length;
+        });
+
+        // Atualizar contadores no modal de conformidade (elementos fixos no DOM)
+        document.querySelectorAll('#complianceModal .conforme-count').forEach(el => {
+            el.textContent = conformeItems.length;
+        });
+        document.querySelectorAll('#complianceModal .nao-conforme-count').forEach(el => {
+            el.textContent = naoConformeItems.length;
+        });
+
+        // Preencher itens de conformidade no modal
+        const conformeItemsContainer = document.getElementById('conformeItems');
+        const naoConformeItemsContainer = document.getElementById('naoConformeItems');
+
+        conformeItemsContainer.innerHTML = conformeItems.map(item => `
+            <div class="bg-green-50 border border-green-200 rounded-lg p-3">
+                <div class="font-medium text-green-800">${item.item_description}</div>
+                ${item.observations ? `<div class="text-sm text-green-600 mt-1">${item.observations}</div>` : ''}
+            </div>
+        `).join('');
+
+        naoConformeItemsContainer.innerHTML = naoConformeItems.map(item => `
+            <div class="bg-red-50 border border-red-200 rounded-lg p-3">
+                <div class="font-medium text-red-800">${item.item_description}</div>
+                ${item.observations ? `<div class="text-sm text-red-600 mt-1">${item.observations}</div>` : ''}
+            </div>
+        `).join('');
+
+        // Exibir detalhes MANTENDO os cards visíveis
+        shiftDetails.innerHTML = '';
+        shiftDetails.appendChild(details);
+        shiftDetails.classList.remove('hidden');
+        // REMOVIDO: shiftsGrid.classList.add('hidden'); - Manter cards visíveis
+        
+        // Rolar automaticamente para os detalhes
+        setTimeout(() => {
+            shiftDetails.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'start' 
+            });
+        }, 100); // Pequeno delay para garantir que o conteúdo foi renderizado
+    }
+
+    // Event listeners
+    searchButton.addEventListener('click', searchShifts);
+    crInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') searchShifts();
+    });
+
+    // Usar delegação de eventos para elementos dinâmicos
+    document.addEventListener('click', (e) => {
+        if (e.target.id === 'showComplianceDetails' || e.target.closest('#showComplianceDetails')) {
+            const complianceModal = document.getElementById('complianceModal');
+            if (complianceModal) {
+                complianceModal.classList.remove('hidden');
+            }
+        }
+
+        if (e.target.id === 'closeComplianceModal' || e.target.closest('#closeComplianceModal')) {
+            const complianceModal = document.getElementById('complianceModal');
+            if (complianceModal) {
+                complianceModal.classList.add('hidden');
+            }
+        }
+
+        // Delegação de eventos para o botão "Voltar à Busca"
+        if (e.target.id === 'backToSearch' || e.target.closest('#backToSearch')) {
+            // Ocultar detalhes e lista de plantões
+            shiftDetails.classList.add('hidden');
+            shiftsList.classList.add('hidden');
+
+            // Sempre mostrar o formulário de busca
+            searchForm.style.display = 'block';
+
+            // Resetar estado
+            isDWVistaMode = false;
+            qrcodeId = null; // Limpar o QR code ID para permitir nova busca
+            lastSearchCr = null;
+            newSearchButton.classList.add('hidden');
+            downloadReportButton.classList.add('hidden');
+            downloadReportButton.classList.remove('flex');
+            crInput.value = ''; // Limpar o input de CR
+            crInput.focus(); // Focar no input para começar a digitar
+        }
+    });
+
+    // Nova Busca - botão no cabeçalho
+    newSearchButton.addEventListener('click', () => {
+        shiftDetails.classList.add('hidden');
+        shiftsList.classList.add('hidden');
+        searchForm.style.display = 'block';
+        isDWVistaMode = false; // Resetar flag ao voltar para busca
+        lastSearchCr = null;
+        newSearchButton.classList.add('hidden'); // Ocultar botão de nova busca
+        downloadReportButton.classList.add('hidden');
+        downloadReportButton.classList.remove('flex');
+        crInput.value = ''; // Limpar o input de CR
+        crInput.focus(); // Focar no input para começar a digitar
+    });
+
+    // Fechar modal ao clicar fora dele
+    complianceModal.addEventListener('click', (e) => {
+        if (e.target === complianceModal) {
+            complianceModal.classList.add('hidden');
+        }
+    });
+
+    // Galeria de Imagens
+    let currentImageIndex = 0;
+    const imageGalleryModal = document.getElementById('imageGalleryModal');
+    const galleryImage = document.getElementById('galleryImage');
+    const imageDescription = document.getElementById('imageDescription');
+    const imageCounter = document.getElementById('imageCounter');
+    const closeGalleryModal = document.getElementById('closeGalleryModal');
+    const prevImage = document.getElementById('prevImage');
+    const nextImage = document.getElementById('nextImage');
+    
+    // Debug: verificar se os elementos foram encontrados
+    console.log('Elementos da galeria encontrados:');
+    console.log('imageGalleryModal:', !!imageGalleryModal);
+    console.log('galleryImage:', !!galleryImage);
+    console.log('imageDescription:', !!imageDescription);
+    console.log('imageCounter:', !!imageCounter);
+
+    window.openImageGallery = function(index) {
+        console.log('openImageGallery chamada com index:', index);
+        console.log('currentEvidences disponíveis:', window.currentEvidences ? window.currentEvidences.length : 'nenhuma');
+        
+        if (!window.currentEvidences || window.currentEvidences.length === 0) {
+            console.log('Nenhuma evidência disponível para exibir');
+            return;
+        }
+        
+        currentImageIndex = index;
+        updateGalleryImage();
+        imageGalleryModal.classList.remove('hidden');
+        console.log('Modal da galeria deveria estar aberto agora');
+    };
+
+    function updateGalleryImage() {
+        if (!window.currentEvidences || window.currentEvidences.length === 0) return;
+        
+        const evidence = window.currentEvidences[currentImageIndex];
+        galleryImage.src = evidence.image_url;
+        imageDescription.textContent = evidence.description || 'Evidência registrada';
+        imageCounter.textContent = `${currentImageIndex + 1} de ${window.currentEvidences.length}`;
+        
+        // Controlar visibilidade dos botões de navegação
+        prevImage.style.display = window.currentEvidences.length > 1 ? 'block' : 'none';
+        nextImage.style.display = window.currentEvidences.length > 1 ? 'block' : 'none';
+    }
+
+    closeGalleryModal.addEventListener('click', () => {
+        imageGalleryModal.classList.add('hidden');
+    });
+
+    prevImage.addEventListener('click', () => {
+        if (window.currentEvidences && window.currentEvidences.length > 1) {
+            currentImageIndex = (currentImageIndex - 1 + window.currentEvidences.length) % window.currentEvidences.length;
+            updateGalleryImage();
+        }
+    });
+
+    nextImage.addEventListener('click', () => {
+        if (window.currentEvidences && window.currentEvidences.length > 1) {
+            currentImageIndex = (currentImageIndex + 1) % window.currentEvidences.length;
+            updateGalleryImage();
+        }
+    });
+
+    // Fechar galeria ao clicar fora da imagem
+    imageGalleryModal.addEventListener('click', (e) => {
+        if (e.target === imageGalleryModal) {
+            imageGalleryModal.classList.add('hidden');
+        }
+    });
+
+    // Navegação por teclado
+    document.addEventListener('keydown', (e) => {
+        if (!imageGalleryModal.classList.contains('hidden')) {
+            if (e.key === 'Escape') {
+                imageGalleryModal.classList.add('hidden');
+            } else if (e.key === 'ArrowLeft') {
+                prevImage.click();
+            } else if (e.key === 'ArrowRight') {
+                nextImage.click();
+            }
+        }
+    });
+
+    // ===== Busca por Gerente (relatório mensal consolidado) =====
+    const tabGerente = document.getElementById('tabGerente');
+    const tabCr = document.getElementById('tabCr');
+    const gerenteSearchSection = document.getElementById('gerenteSearchSection');
+    const crSearchSection = document.getElementById('crSearchSection');
+    const gerenteSelect = document.getElementById('gerenteSelect');
+    const mesSelect = document.getElementById('mesSelect');
+    const buscarGerenteButton = document.getElementById('buscarGerenteButton');
+    const gerenteReportContainer = document.getElementById('gerenteReportContainer');
+    const gerenteReportTitulo = document.getElementById('gerenteReportTitulo');
+    const gerenteReportHeaderRow = document.getElementById('gerenteReportHeaderRow');
+    const gerenteReportBody = document.getElementById('gerenteReportBody');
+    const downloadConsolidadoButton = document.getElementById('downloadConsolidadoButton');
+
+    if (tabGerente && tabCr) {
+        function ativarTab(tab) {
+            const gerenteAtiva = tab === 'gerente';
+            gerenteSearchSection.classList.toggle('hidden', !gerenteAtiva);
+            crSearchSection.classList.toggle('hidden', gerenteAtiva);
+            tabGerente.classList.toggle('bg-[#1a2a45]', gerenteAtiva);
+            tabGerente.classList.toggle('text-white', gerenteAtiva);
+            tabGerente.classList.toggle('bg-gray-100', !gerenteAtiva);
+            tabGerente.classList.toggle('text-gray-700', !gerenteAtiva);
+            tabCr.classList.toggle('bg-[#1a2a45]', !gerenteAtiva);
+            tabCr.classList.toggle('text-white', !gerenteAtiva);
+            tabCr.classList.toggle('bg-gray-100', gerenteAtiva);
+            tabCr.classList.toggle('text-gray-700', gerenteAtiva);
+            if (!gerenteAtiva) {
+                gerenteReportContainer.classList.add('hidden');
+            }
+        }
+        tabGerente.addEventListener('click', () => ativarTab('gerente'));
+        tabCr.addEventListener('click', () => ativarTab('cr'));
+    }
+
+    if (gerenteSelect) {
+        const hoje = new Date();
+        mesSelect.value = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
+
+        fetch('/api/livro-ata/gerentes/')
+            .then(response => response.json())
+            .then(data => {
+                const gerentes = data.gerentes || [];
+                if (gerentes.length === 0) {
+                    gerenteSelect.innerHTML = '<option value="">Nenhum gerente cadastrado</option>';
+                    return;
+                }
+                gerenteSelect.innerHTML = gerentes
+                    .map(g => `<option value="${g.id}">${g.name}</option>`)
+                    .join('');
+            })
+            .catch(error => {
+                console.error('Erro ao carregar gerentes:', error);
+                gerenteSelect.innerHTML = '<option value="">Erro ao carregar gerentes</option>';
+            });
+    }
+
+    function renderRelatorioMensal(data) {
+        const crs = data.crs || [];
+        gerenteReportTitulo.textContent = `${data.gerente} - ${data.mes}`;
+
+        if (crs.length === 0) {
+            gerenteReportHeaderRow.innerHTML = '';
+            gerenteReportBody.innerHTML = '<tr><td class="p-4 text-center text-gray-500">Nenhum CR encontrado para este gerente.</td></tr>';
+            gerenteReportContainer.classList.remove('hidden');
+            return;
+        }
+
+        const dias = crs[0].dias;
+
+        gerenteReportHeaderRow.innerHTML = `
+            <th class="p-2 text-left border-b border-gray-200 sticky left-0 bg-white">CR</th>
+            ${dias.map(d => `<th class="p-1 text-center border-b border-gray-200" colspan="2">${d.dia}</th>`).join('')}
+        `;
+
+        gerenteReportBody.innerHTML = crs.map(cr => `
+            <tr>
+                <td class="p-2 border-b border-gray-100 font-medium text-gray-700 whitespace-nowrap sticky left-0 bg-white">${cr.cr_nome}</td>
+                ${cr.dias.map(d => `
+                    <td class="p-1 text-center border-b border-gray-100 ${d.diurno ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}" title="Diurno - dia ${d.dia}">D</td>
+                    <td class="p-1 text-center border-b border-gray-100 ${d.noturno ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}" title="Noturno - dia ${d.dia}">N</td>
+                `).join('')}
+            </tr>
+        `).join('');
+
+        gerenteReportContainer.classList.remove('hidden');
+    }
+
+    if (buscarGerenteButton) {
+        buscarGerenteButton.addEventListener('click', async () => {
+            const gerenteId = gerenteSelect.value;
+            if (!gerenteId) {
+                showNotification('Selecione um gerente', 'warning');
+                return;
+            }
+            const mes = mesSelect.value;
+
+            buscarGerenteButton.disabled = true;
+            const originalHtml = buscarGerenteButton.innerHTML;
+            buscarGerenteButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Buscando...</span>';
+
+            try {
+                const url = `/api/livro-ata/relatorio-mensal/?gerente_id=${encodeURIComponent(gerenteId)}${mes ? `&mes=${encodeURIComponent(mes)}` : ''}`;
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (!response.ok || data.error) {
+                    showNotification(data.error || 'Erro ao buscar relatório do gerente', 'error');
+                    return;
+                }
+                renderRelatorioMensal(data);
+            } catch (error) {
+                console.error('Erro ao buscar relatório do gerente:', error);
+                showNotification('Erro ao buscar relatório do gerente', 'error');
+            } finally {
+                buscarGerenteButton.disabled = false;
+                buscarGerenteButton.innerHTML = originalHtml;
+            }
+        });
+    }
+
+    if (downloadConsolidadoButton) {
+        downloadConsolidadoButton.addEventListener('click', () => {
+            const gerenteId = gerenteSelect.value;
+            if (!gerenteId) {
+                showNotification('Selecione um gerente antes de baixar o relatório', 'warning');
+                return;
+            }
+            window.open(`/api/livro-ata/relatorio-consolidado/?gerente_id=${encodeURIComponent(gerenteId)}`, '_blank');
+        });
+    }
+});
+</script>
+{% endblock %} 

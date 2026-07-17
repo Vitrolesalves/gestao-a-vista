@@ -1,0 +1,2082 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% csrf_token %}
+
+{% block title %}Gerador de QR Code - Gestão à Vista{% endblock %}
+
+{% block extra_css %}
+<style>
+    .qr-generator-title {
+        background: linear-gradient(to right, #0F172A, #1e40af);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-size: 28px;
+        font-weight: bold;
+        margin: 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div>
+        <h1 class="qr-generator-title flex items-center gap-3">
+            <svg class="h-8 w-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                      d="M12 4v1m6 11h2m-2 0h-2m2 0v2m0-2v-2m2-4h2m-2 0h-2m2 0v2m0-2v-2m-6 0h2m-2 0H8m2 0v2m0-2v-2M4 7h2m-2 0H2m2 0v2m0-2V5" />
+            </svg>
+            Gerador de QR Code
+        </h1>
+        <p class="text-slate-600 mt-2">
+            Configure e gere QR Codes personalizados para seus locais
+        </p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Configurações -->
+        <div class="space-y-6">
+            <!-- Logo Upload -->
+            <div class="bg-white rounded-lg border shadow-sm">
+                <div class="p-4">
+                    <div class="space-y-4">
+                        <h3 class="font-medium text-slate-800">Logo do Cliente</h3>
+                        
+                        <div class="mt-1 flex items-center">
+                            <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:border-blue-500 transition-colors w-full" 
+                                 onclick="document.getElementById('clientLogo').click()">
+                                <div id="logoPreview" class="hidden mb-4 text-center">
+                                    <div class="border border-gray-200 rounded-lg p-4 bg-gray-50 inline-block max-w-full">
+                                        <img id="logoPreviewImage" src="" alt="Logo Preview" class="block transition-all duration-300" style="max-height: 200px; max-width: 250px;">
+                                    </div>
+                                    <p class="text-xs text-gray-500 mt-2">
+                                        <span class="inline-block">Use o controle abaixo para ajustar o tamanho</span>
+                                        <br>
+                                        <span class="text-gray-400">Logo posicionada no rodapé do QR Code</span>
+                                    </p>
+                                </div>
+                                <div id="logoPlaceholder">
+                                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                    <p class="mt-1 text-sm text-gray-500">
+                                        Clique para fazer upload da logo
+                                    </p>
+                                </div>
+                            </div>
+                            <input type="file" id="clientLogo" class="hidden" accept="image/*">
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="text-sm text-gray-700">Tamanho da Logo: <span id="logoSizeValue">80</span>px</label>
+                            <input type="range" 
+                                   id="logoSize" 
+                                   min="30" 
+                                   max="200" 
+                                   value="80" 
+                                   step="5"
+                                   class="w-full">
+                            <div class="flex justify-between text-xs text-gray-500">
+                                <span>30px</span>
+                                <span>115px</span>
+                                <span>200px</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tipo de QR Code -->
+            <div class="bg-white rounded-lg border shadow-sm">
+                <div class="p-4 space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Tipo de QR Code
+                        </label>
+                        <div class="grid grid-cols-2 gap-3">
+                            <label class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                <input type="radio" name="qrType" value="locations" class="mr-3" checked>
+                                <div>
+                                    <div class="font-medium text-gray-900">Locais</div>
+                                    <div class="text-sm text-gray-500">QR Codes para locais específicos</div>
+                                </div>
+                            </label>
+                            <label class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                <input type="radio" name="qrType" value="livroata" class="mr-3">
+                                <div>
+                                    <div class="font-medium text-gray-900">Livro Ata</div>
+                                    <div class="text-sm text-gray-500">QR Code para Livro de Ocorrência</div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Serviço -->
+            <div class="bg-white rounded-lg border shadow-sm" id="serviceSection">
+                <div class="p-4 space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Escolha o Serviço
+                        </label>
+                        <select id="serviceSelect" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            <option value="">Selecione um serviço</option>
+                            <option value="grupoexemplobr">Grupo Exemplo BR</option>
+                            <option value="grupoexemploaz">Grupo Exemplo AZ</option>
+                            <option value="opsvista">OpsVista</option>
+                            <option value="vigilancia">Vigilância</option>
+                            <option value="facilities">Facilities</option>
+                            <option value="innova">Innova</option>
+                        </select>
+                        
+                        <!-- Preview da Logo do Serviço -->
+                        <div id="serviceLogoPreview" class="mt-4 hidden text-center">
+                            <div class="border border-gray-200 rounded-lg p-4 bg-gray-50 inline-block max-w-full">
+                                <img id="serviceLogoImage" src="" alt="Logo do Serviço" class="block transition-all duration-300" style="max-height: 150px; max-width: 150px;">
+                            </div>
+                            <p class="text-xs text-gray-500 mt-2">
+                                <span class="inline-block">Logo do Serviço Selecionado</span>
+                                <br>
+                                <span class="text-gray-400">Posicionada no canto superior direito</span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <div id="serviceLogoSize" class="space-y-2 hidden">
+                        <label class="text-sm text-gray-700">Tamanho da Logo do Serviço: <span id="serviceLogoSizeValue">60</span>px</label>
+                        <input type="range" 
+                               id="serviceLogoSizeSlider" 
+                               min="30" 
+                               max="150" 
+                               value="60" 
+                               step="5"
+                               class="w-full">
+                        <div class="flex justify-between text-xs text-gray-500">
+                            <span>30px</span>
+                            <span>90px</span>
+                            <span>150px</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Número do CR
+                        </label>
+                        <form id="crSearchForm" class="flex gap-2" method="get" action="">
+                        <input type="text" 
+                                   name="cr"
+                                   value="{{ request.GET.cr }}"
+                                   class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                               placeholder="Digite o número do CR">
+                            <button type="submit" 
+                                    class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                                Buscar
+                            </button>
+                        </form>
+                    </div>
+
+                    {% if error %}
+                    <div class="p-4 bg-red-50 border border-red-200 rounded-md">
+                        <p class="text-sm text-red-600">{{ error }}</p>
+                    </div>
+                    {% endif %}
+
+                    {% if cr_info %}
+                    <div class="mt-4 p-4 bg-gray-50 rounded-md">
+                        <h4 class="font-medium text-gray-700 mb-2">Informações do CR</h4>
+                        <div class="space-y-1 text-sm">
+                            <p><span class="font-medium">CR:</span> {{ cr_info.cr }}</p>
+
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Configuração de Descrição -->
+            <div class="bg-white rounded-lg border shadow-sm" id="descriptionSection">
+                <div class="p-4">
+                    <h3 class="font-medium text-slate-800 mb-4">Configuração da Descrição</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Como formar a descrição dos locais?
+                            </label>
+                            <select id="descriptionMode" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                <option value="auto">Automático (Hierarquia Completa)</option>
+                                <option value="description">Apenas Descrição do Local</option>
+                                <option value="custom">Níveis Personalizados</option>
+                            </select>
+                        </div>
+                        
+                        <div id="customLevelsConfig" class="hidden space-y-3">
+                            <p class="text-sm text-gray-600">Selecione quais níveis incluir na descrição:</p>
+                            <div class="grid grid-cols-2 gap-3">
+                                <label class="flex items-center">
+                                    <input type="checkbox" id="level4" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2">
+                                    <span class="text-sm">Nível 4 (Edifício)</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" id="level5" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2">
+                                    <span class="text-sm">Nível 5 (Andar)</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" id="level6" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2">
+                                    <span class="text-sm">Nível 6 (Seção)</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" id="level7" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2">
+                                    <span class="text-sm">Nível 7 (Área)</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" id="level8" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2">
+                                    <span class="text-sm">Nível 8</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" id="level9" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2">
+                                    <span class="text-sm">Nível 9</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" id="level10" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2">
+                                    <span class="text-sm">Nível 10</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" id="level11" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2">
+                                    <span class="text-sm">Nível 11</span>
+                                </label>
+                            </div>
+                            <label class="flex items-center">
+                                <input type="checkbox" id="includeDescription" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2">
+                                <span class="text-sm font-medium">Incluir Descrição do Local</span>
+                            </label>
+                        </div>
+                        
+                        <div id="descriptionPreview" class="hidden p-3 bg-gray-50 rounded-md">
+                            <p class="text-sm text-gray-700 font-medium mb-1">Preview da Descrição:</p>
+                            <p id="descriptionPreviewText" class="text-sm text-gray-600 italic">Selecione um local para ver o preview</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Seleção de Locais -->
+            <div class="bg-white rounded-lg border shadow-sm" id="locationSection">
+                <div class="p-4">
+                    <h3 class="font-medium text-slate-800 mb-4">Selecione os Locais</h3>
+                    <div class="location-section">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" 
+                                       id="selectAllLocations"
+                                       class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <label for="selectAllLocations" class="text-sm text-gray-700">
+                                    Selecionar Todos
+                            </label>
+                            </div>
+                            <button type="button" 
+                                    id="deselectAllLocations"
+                                    class="text-sm text-blue-600 hover:text-blue-800">
+                                Desmarcar Todos
+                            </button>
+                        </div>
+                        <div id="locationTree" class="location-tree divide-y">
+                            <!-- Locais serão inseridos aqui via JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Seção Livro Ata -->
+            <div class="bg-white rounded-lg border shadow-sm hidden" id="livroAtaSection">
+                <div class="p-4">
+                    <h3 class="font-medium text-slate-800 mb-4">Livro de Ocorrência</h3>
+                    <div class="space-y-4">
+                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                            <div class="flex items-start space-x-3">
+                                <div class="flex-shrink-0">
+                                    <svg class="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h4 class="text-sm font-medium text-blue-900">Informações sobre o Livro Ata</h4>
+                                    <div class="mt-2 text-sm text-blue-800">
+                                        <ul class="list-disc list-inside space-y-1">
+                                            <li>Será gerado um QR Code único para o CR selecionado</li>
+                                            <li>A descrição será automaticamente: "LIVRO DE OCORRÊNCIA"</li>
+                                            <li>O QR Code direcionará para: https://gestao.example.com/livroata/qrcode=&lt;id&gt;</li>
+                                            <li>Se já existir um QR Code para este CR, será retornado o existente</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="livroAtaStatus" class="hidden">
+                            <!-- Status do QR Code do Livro Ata será mostrado aqui -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Preview e Geração -->
+        <div class="space-y-6">
+            <div class="bg-white rounded-lg border shadow-sm">
+                <div class="p-4 border-b flex items-center justify-between">
+                    <h2 class="font-semibold">QR Codes</h2>
+                    <div class="flex items-center space-x-2">
+                        <div class="flex items-center space-x-2">
+                            <input type="checkbox" 
+                                   id="previewMode"
+                                   class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            <label for="previewMode" class="text-sm">
+                                Preview
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <div id="qrPreview" class="space-y-4">
+                        {% if not cr_info %}
+                        <div class="text-center py-12 text-slate-500">
+                            <svg class="h-16 w-16 mx-auto mb-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                      d="M12 4v1m6 11h2m-2 0h-2m2 0v2m0-2v-2m2-4h2m-2 0h-2m2 0v2m0-2v-2m-6 0h2m-2 0H8m2 0v2m0-2v-2M4 7h2m-2 0H2m2 0v2m0-2V5" />
+                            </svg>
+                            <p class="mb-2">Complete as configurações para gerar os QR Codes</p>
+                            <div class="text-sm space-y-1">
+                                <p>• Escolha um serviço</p>
+                                <p>• Informe o número do CR</p>
+                                <p>• Selecione pelo menos um local</p>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let selectedLocations = [];
+let previewTimeout = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    initializeForm();
+    setupEventListeners();
+    
+    // Carregar locais iniciais se houver CR na URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const cr = urlParams.get('cr');
+    if (cr) {
+        loadLocations(cr);
+    } else {
+        const locationTree = document.getElementById('locationTree');
+        locationTree.innerHTML = '<div class="text-center py-4 text-gray-500">Digite um CR para ver os locais disponíveis</div>';
+    }
+});
+
+function initializeForm() {
+    // Logo size slider
+    const logoSize = document.getElementById('logoSize');
+    const logoSizeValue = document.getElementById('logoSizeValue');
+    const logoPreviewImage = document.getElementById('logoPreviewImage');
+    
+    logoSize.addEventListener('input', function() {
+        logoSizeValue.textContent = this.value;
+        // Atualizar o preview da logo em tempo real
+        if (logoPreviewImage && logoPreviewImage.src) {
+            logoPreviewImage.style.maxHeight = this.value + 'px';
+            logoPreviewImage.style.maxWidth = this.value + 'px';
+        }
+        // Atualizar preview do QR Code se estiver ativo (com debounce para performance)
+        updatePreview();
+    });
+
+    // Service logo size slider
+    const serviceLogoSize = document.getElementById('serviceLogoSizeSlider');
+    const serviceLogoSizeValue = document.getElementById('serviceLogoSizeValue');
+    const serviceLogoImage = document.getElementById('serviceLogoImage');
+    
+    serviceLogoSize.addEventListener('input', function() {
+        serviceLogoSizeValue.textContent = this.value;
+        // Atualizar o preview da logo do serviço em tempo real
+        if (serviceLogoImage && serviceLogoImage.src) {
+            serviceLogoImage.style.maxHeight = this.value + 'px';
+            serviceLogoImage.style.maxWidth = this.value + 'px';
+        }
+        // Atualizar preview do QR Code se estiver ativo (com debounce para performance)
+        updatePreview();
+    });
+
+    // Preview mode toggle
+    const previewMode = document.getElementById('previewMode');
+    previewMode.addEventListener('change', updatePreview);
+}
+
+function setupEventListeners() {
+    // QR Type selection
+    const qrTypeRadios = document.querySelectorAll('input[name="qrType"]');
+    qrTypeRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            toggleQRTypeSections(this.value);
+        });
+    });
+    
+    // Description mode configuration
+    const descriptionMode = document.getElementById('descriptionMode');
+    const customLevelsConfig = document.getElementById('customLevelsConfig');
+    const descriptionPreview = document.getElementById('descriptionPreview');
+    
+    descriptionMode.addEventListener('change', function() {
+        if (this.value === 'custom') {
+            customLevelsConfig.classList.remove('hidden');
+            descriptionPreview.classList.remove('hidden');
+        } else {
+            customLevelsConfig.classList.add('hidden');
+            descriptionPreview.classList.add('hidden');
+        }
+        
+        // Forçar regeração do preview se estiver ativo
+        const previewMode = document.getElementById('previewMode');
+        if (previewMode && previewMode.checked && selectedLocations.length > 0) {
+            // Limpar timeout anterior e gerar imediatamente
+            if (previewTimeout) {
+                clearTimeout(previewTimeout);
+            }
+            generateQRCodes();
+        }
+    });
+    
+    // Level checkboxes
+    const levelCheckboxes = ['level4', 'level5', 'level6', 'level7', 'level8', 'level9', 'level10', 'level11', 'includeDescription'];
+    levelCheckboxes.forEach(id => {
+        const checkbox = document.getElementById(id);
+        if (checkbox) {
+            checkbox.addEventListener('change', function() {
+                updateDescriptionPreview();
+                
+                // Forçar regeração do preview se estiver ativo
+                const previewMode = document.getElementById('previewMode');
+                if (previewMode && previewMode.checked && selectedLocations.length > 0) {
+                    if (previewTimeout) {
+                        clearTimeout(previewTimeout);
+                    }
+                    generateQRCodes();
+                }
+            });
+        }
+    });
+
+    // Logo upload preview
+    const clientLogo = document.getElementById('clientLogo');
+    const logoPreview = document.getElementById('logoPreview');
+    const logoPlaceholder = document.getElementById('logoPlaceholder');
+    
+    clientLogo.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const logoPreviewImage = document.getElementById('logoPreviewImage');
+                const logoSize = document.getElementById('logoSize');
+                
+                logoPreviewImage.src = e.target.result;
+                
+                // Aplicar o tamanho atual do slider
+                const currentSize = logoSize.value;
+                logoPreviewImage.style.maxHeight = currentSize + 'px';
+                logoPreviewImage.style.maxWidth = currentSize + 'px';
+                
+                logoPreview.classList.remove('hidden');
+                logoPlaceholder.classList.add('hidden');
+                
+                // Atualizar preview do QR Code se necessário
+                updatePreview();
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    // Service selection
+    const serviceSelect = document.getElementById('serviceSelect');
+    serviceSelect.addEventListener('change', function() {
+        const serviceLogoSizeDiv = document.getElementById('serviceLogoSize');
+        const hasLogo = ['grupoexemplobr', 'grupoexemploaz', 'opsvista', 'vigilancia', 'facilities', 'innova'].includes(this.value);
+        serviceLogoSizeDiv.classList.toggle('hidden', !hasLogo);
+        
+        // Carregar logo do serviço
+        loadServiceLogo(this.value);
+        
+        updatePreview();
+    });
+
+    // CR input form
+    const crForm = document.getElementById('crSearchForm');
+    crForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const cr = this.querySelector('input[name="cr"]').value.trim();
+        if (cr) {
+            // Atualizar a URL
+            const url = new URL(window.location);
+            url.searchParams.set('cr', cr);
+            window.history.pushState({}, '', url);
+
+            // Verificar tipo de QR selecionado
+            const qrType = document.querySelector('input[name="qrType"]:checked').value;
+            
+            if (qrType === 'livroata') {
+                // Verificar status do Livro Ata
+                checkLivroAtaStatus(cr);
+            } else {
+                // Carregar os locais normalmente
+                loadLocations(cr);
+            }
+        }
+    });
+
+    // Select/Deselect all
+    const selectAllCheckbox = document.getElementById('selectAllLocations');
+    const deselectAllButton = document.getElementById('deselectAllLocations');
+
+        selectAllCheckbox.addEventListener('change', function() {
+        // Selecionar/desmarcar todos os checkboxes (hierárquicos e de locais)
+        const locationTree = document.getElementById('locationTree');
+        if (!locationTree) return;
+        
+        const allCheckboxes = locationTree.querySelectorAll('input[type="checkbox"]');
+        allCheckboxes.forEach(checkbox => {
+            checkbox.checked = this.checked;
+            checkbox.indeterminate = false;
+            
+            // Só chamar handleLocationSelection para checkboxes de locais
+            if (checkbox.closest('.location-item')) {
+                handleLocationSelection(checkbox);
+            }
+        });
+    });
+
+        deselectAllButton.addEventListener('click', function() {
+        selectAllCheckbox.checked = false;
+        
+        // Desmarcar todos os checkboxes
+        const locationTree = document.getElementById('locationTree');
+        if (!locationTree) return;
+        
+        const allCheckboxes = locationTree.querySelectorAll('input[type="checkbox"]');
+        allCheckboxes.forEach(checkbox => {
+            checkbox.checked = false;
+            checkbox.indeterminate = false;
+            
+            // Só chamar handleLocationSelection para checkboxes de locais
+            if (checkbox.closest('.location-item')) {
+                handleLocationSelection(checkbox);
+            }
+        });
+    });
+}
+
+function loadLocations(cr = '') {
+    console.log('Carregando locais para CR:', cr);
+    
+    fetch(`/api/locations/?cr=${encodeURIComponent(cr)}`, {
+        credentials: 'same-origin',                         // envia o cookie de sessão
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
+        }
+    })
+    .then(async (response) => {
+        console.log('Resposta recebida:', response.status);
+        const ct = response.headers.get('content-type') || '';
+        const body = await response.text();
+
+        if (!response.ok || !ct.includes('application/json')) {
+            console.error('Resposta não-JSON (provável redirect pro login):', body.slice(0, 300));
+            throw new Error('Resposta não-JSON/redirect - Você pode ter sido deslogado');
+        }
+        return JSON.parse(body);
+    })
+    .then(data => {
+            console.log('Dados recebidos:', data);
+            
+            // Debug: analisar estrutura dos dados
+            if (data.locations && data.locations.length > 0) {
+                console.log('[DEBUG] Primeira localização:', data.locations[0]);
+                if (data.locations[0].children) {
+                    console.log('[DEBUG] Filhos da primeira localização:', data.locations[0].children);
+                    if (data.locations[0].children.length > 0) {
+                        console.log('[DEBUG] Primeiro filho:', data.locations[0].children[0]);
+                        if (data.locations[0].children[0].children) {
+                            console.log('[DEBUG] Filhos do primeiro filho:', data.locations[0].children[0].children);
+                            if (data.locations[0].children[0].children.length > 0) {
+                                console.log('[DEBUG] Primeiro neto:', data.locations[0].children[0].children[0]);
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Atualizar informações do CR
+            const crInfoDiv = document.querySelector('.mt-4.p-4.bg-gray-50');
+            if (data.cr_info) {
+                if (!crInfoDiv) {
+                    // Se o div não existe, criar novo
+                    const parentDiv = document.querySelector('.p-4.space-y-4');
+                    const newCrInfoDiv = document.createElement('div');
+                    newCrInfoDiv.className = 'mt-4 p-4 bg-gray-50 rounded-md';
+                    newCrInfoDiv.innerHTML = `
+                        <h4 class="font-medium text-gray-700 mb-2">Informações do CR</h4>
+                        <div class="space-y-1 text-sm">
+                            <p><span class="font-medium">CR:</span> ${data.cr_info.cr}</p>
+                        </div>
+                    `;
+                    parentDiv.appendChild(newCrInfoDiv);
+                } else {
+                    // Se o div existe, atualizar conteúdo
+                    crInfoDiv.innerHTML = `
+                        <h4 class="font-medium text-gray-700 mb-2">Informações do CR</h4>
+                        <div class="space-y-1 text-sm">
+                            <p><span class="font-medium">CR:</span> ${data.cr_info.cr}</p>
+                        </div>
+                    `;
+                }
+            } else {
+                // Se não há informações do CR, remover o div se existir
+                if (crInfoDiv) {
+                    crInfoDiv.remove();
+                }
+            }
+
+            // Atualizar lista de locais com estrutura hierárquica
+            const locationTree = document.getElementById('locationTree');
+            locationTree.innerHTML = '';
+            
+            // Limpar atributos de setup para permitir nova configuração
+            locationTree.removeAttribute('data-expand-setup');
+            locationTree.removeAttribute('data-checkbox-setup');
+            
+            if (data.locations && data.locations.length > 0) {
+                // Função recursiva para criar hierarquia dinâmica
+                function createHierarchyNode(node, level = 0) {
+                    const nodeDiv = document.createElement('div');
+                    
+                    // Definir classes e cores baseadas no nível
+                    const levelConfig = {
+                        0: { 
+                            item: 'building-item mb-4', 
+                            header: 'building-header flex items-center p-2 bg-gray-100 rounded-md hover:bg-gray-200',
+                            content: 'building-content ml-4 mt-2',
+                            checkbox: 'building-checkbox',
+                            textColor: 'text-gray-800'
+                        },
+                        1: { 
+                            item: 'floor-item mb-2', 
+                            header: 'floor-header flex items-center p-2 bg-blue-50 rounded-md hover:bg-blue-100',
+                            content: 'floor-content ml-4 mt-2',
+                            checkbox: 'floor-checkbox',
+                            textColor: 'text-blue-800'
+                        },
+                        2: { 
+                            item: 'section-item mb-2', 
+                            header: 'section-header flex items-center p-2 bg-green-50 rounded-md hover:bg-green-100',
+                            content: 'section-content ml-4 mt-2',
+                            checkbox: 'section-checkbox',
+                            textColor: 'text-green-800'
+                        }
+                    };
+                    
+                    const config = levelConfig[Math.min(level, 2)];
+                    
+                    // NOVA LÓGICA: Todos os nós com displayName são selecionáveis
+                    const hasChildren = node.children && Array.isArray(node.children) && node.children.length > 0;
+                    const isSelectable = node.displayName; // Qualquer nó com displayName é selecionável
+                    const isOnlySelectable = isSelectable && !hasChildren; // Local final apenas
+                    
+                    if (isOnlySelectable) {
+                        // É um item final selecionável - criar checkbox direto (sem expansão)
+                        nodeDiv.className = 'location-item';
+                        
+                        const checkbox = document.createElement('input');
+                        checkbox.type = 'checkbox';
+                        checkbox.className = 'rounded border-gray-300 text-blue-600 focus:ring-blue-500';
+                        checkbox.value = JSON.stringify({
+                            id: node.id,
+                            displayName: node.displayName
+                        });
+                        
+                        const label = document.createElement('label');
+                        label.className = 'text-sm text-gray-900 ml-2 cursor-pointer';
+                        label.textContent = node.name;
+                        
+                        // Permitir clicar no label para marcar/desmarcar checkbox
+                        label.addEventListener('click', () => {
+                            checkbox.checked = !checkbox.checked;
+                            checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+                        });
+                        
+                        nodeDiv.appendChild(checkbox);
+                        nodeDiv.appendChild(label);
+                    } else {
+                        // É um container - tem children e também é selecionável
+                        nodeDiv.className = config.item;
+                        
+                        if (hasChildren) {
+                            // Criar header
+                            const nodeHeader = document.createElement('div');
+                            nodeHeader.className = config.header;
+                            
+                            // Checkbox - SELECIONÁVEL se tem displayName
+                            const nodeCheckbox = document.createElement('input');
+                            nodeCheckbox.type = 'checkbox';
+                            nodeCheckbox.className = `${config.checkbox} rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2`;
+                            
+                            // CORREÇÃO: Verificar tipo de container/local
+                            if (node.isSelectableContainer) {
+                                // É um container que também é um local selecionável
+                                nodeCheckbox.value = JSON.stringify({
+                                    id: node.id,
+                                    displayName: node.displayName,
+                                    isSelectableContainer: true,
+                                    level: level
+                                });
+                            } else if (node.isContainer) {
+                                // É um container apenas organizacional
+                                nodeCheckbox.value = JSON.stringify({
+                                    id: node.id,
+                                    name: node.name,
+                                    isContainer: true,
+                                    level: level
+                                });
+                            } else if (isSelectable) {
+                                // É um local final selecionável
+                                nodeCheckbox.value = JSON.stringify({
+                                    id: node.id,
+                                    displayName: node.displayName,
+                                    level: level
+                                });
+                            } else {
+                                // Checkbox desabilitado
+                                nodeCheckbox.disabled = true;
+                            }
+                            
+                            // Ícone de expansão
+                            const expandIcon = document.createElement('span');
+                            expandIcon.className = 'expand-icon mr-2 transition-transform cursor-pointer text-gray-500 hover:text-gray-700 select-none flex items-center';
+                            expandIcon.innerHTML = `
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                </svg>
+                            `;
+                            
+                            // Nome do nível
+                            const nodeName = document.createElement('span');
+                            nodeName.className = `font-medium ${config.textColor} flex-1`;
+                            nodeName.textContent = node.name;
+                            
+                            nodeHeader.appendChild(nodeCheckbox);
+                            nodeHeader.appendChild(expandIcon);
+                            nodeHeader.appendChild(nodeName);
+                            nodeDiv.appendChild(nodeHeader);
+                            
+                            // Container para o conteúdo (inicialmente oculto)
+                            const contentWrapper = document.createElement('div');
+                            contentWrapper.className = 'hidden';
+                            
+                            // Conteúdo
+                            const nodeContent = document.createElement('div');
+                            nodeContent.className = config.content;
+                            
+                            // Adicionar filhos
+                            node.children.forEach(child => {
+                                const childElement = createHierarchyNode(child, level + 1);
+                                nodeContent.appendChild(childElement);
+                            });
+                            
+                            contentWrapper.appendChild(nodeContent);
+                            nodeDiv.appendChild(contentWrapper);
+                        }
+                    }
+                    
+                    return nodeDiv;
+                }
+                
+                // Criar hierarquia para cada nó raiz
+                data.locations.forEach(rootNode => {
+                    const hierarchyElement = createHierarchyNode(rootNode, 0);
+                    locationTree.appendChild(hierarchyElement);
+                });
+                
+                // Adicionar event listeners para expand/collapse
+                setupExpandCollapse();
+            } else {
+                locationTree.innerHTML = '<div class="text-center py-4 text-gray-500">Nenhum local encontrado para este CR</div>';
+            }
+        })
+        .catch(error => {
+            console.error('Falha ao carregar locais:', error);
+            const locationTree = document.getElementById('locationTree');
+            locationTree.innerHTML = '<div class="text-center py-4 text-red-500">Não foi possível carregar os locais. Verifique se você está logado e tente novamente.</div>';
+            
+            // Se for erro de redirect/login, mostrar alerta
+            if (error.message.includes('redirect') || error.message.includes('deslogado')) {
+                showNotification('Não foi possível carregar os locais. Faça login novamente e tente de novo.', 'error');
+            }
+        });
+}
+
+function toggleQRTypeSections(qrType) {
+    const serviceSection = document.getElementById('serviceSection');
+    const descriptionSection = document.getElementById('descriptionSection');
+    const locationSection = document.getElementById('locationSection');
+    const livroAtaSection = document.getElementById('livroAtaSection');
+    
+    if (qrType === 'livroata') {
+        // Modo Livro Ata - mostrar apenas serviço e livro ata
+        serviceSection.classList.remove('hidden');
+        descriptionSection.classList.add('hidden');
+        locationSection.classList.add('hidden');
+        livroAtaSection.classList.remove('hidden');
+        
+        // Verificar se há CR selecionado para mostrar status
+        const cr = document.querySelector('input[name="cr"]').value;
+        if (cr) {
+            checkLivroAtaStatus(cr);
+        }
+        
+        // CORREÇÃO: Ativar automaticamente o preview para Livro Ata
+        const previewMode = document.getElementById('previewMode');
+        if (previewMode && !previewMode.checked) {
+            previewMode.checked = true;
+            // Disparar evento change para atualizar o preview
+            previewMode.dispatchEvent(new Event('change'));
+        }
+    } else {
+        // Modo Locais - mostrar todas as seções normais
+        serviceSection.classList.remove('hidden');
+        descriptionSection.classList.remove('hidden');
+        locationSection.classList.remove('hidden');
+        livroAtaSection.classList.add('hidden');
+    }
+    
+    // Atualizar preview
+    updatePreview();
+}
+
+async function checkLivroAtaStatus(cr) {
+    const livroAtaStatus = document.getElementById('livroAtaStatus');
+    
+    try {
+        const response = await fetch(`/api/livro-ata-status/?cr=${encodeURIComponent(cr)}`, {
+            credentials: 'same-origin',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}'
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            
+            if (data.exists) {
+                livroAtaStatus.innerHTML = `
+                    <div class="p-4 bg-green-50 rounded-lg border border-green-200">
+                        <div class="flex items-start space-x-3">
+                            <div class="flex-shrink-0">
+                                <svg class="h-5 w-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-medium text-green-900">QR Code já existe</h4>
+                                <p class="mt-1 text-sm text-green-800">
+                                    Já existe um QR Code do Livro Ata para este CR.<br>
+                                    <strong>URL:</strong> ${data.qr_code_url}<br>
+                                    <strong>Criado em:</strong> ${new Date(data.created_at).toLocaleDateString('pt-BR')}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                livroAtaStatus.innerHTML = `
+                    <div class="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                        <div class="flex items-start space-x-3">
+                            <div class="flex-shrink-0">
+                                <svg class="h-5 w-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16c-.77.833.192 2.5 1.732 2.5z"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-medium text-yellow-900">Novo QR Code</h4>
+                                <p class="mt-1 text-sm text-yellow-800">
+                                    Será criado um novo QR Code do Livro Ata para este CR.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            livroAtaStatus.classList.remove('hidden');
+        }
+    } catch (error) {
+        console.error('Erro ao verificar status do Livro Ata:', error);
+        livroAtaStatus.innerHTML = `
+            <div class="p-4 bg-red-50 rounded-lg border border-red-200">
+                <div class="flex items-start space-x-3">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-medium text-red-900">Erro</h4>
+                        <p class="mt-1 text-sm text-red-800">
+                            Não foi possível verificar o status do QR Code.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        `;
+        livroAtaStatus.classList.remove('hidden');
+    }
+}
+
+function setupExpandCollapse() {
+    const locationTree = document.getElementById('locationTree');
+    
+    if (locationTree.hasAttribute('data-expand-setup')) {
+        return;
+    }
+    locationTree.setAttribute('data-expand-setup', 'true');
+    
+    // Usar event delegation para expand/collapse
+    locationTree.addEventListener('click', function(e) {
+        // Encontrar o header mais próximo
+        let header = e.target.closest('[class*="-header"]');
+        
+        if (!header) return;
+        
+        // Não expandir se clicou no checkbox
+        if (e.target.type === 'checkbox') {
+            return;
+        }
+        
+        const contentWrapper = header.nextElementSibling;
+        const icon = header.querySelector('.expand-icon');
+        
+        if (contentWrapper && icon) {
+            contentWrapper.classList.toggle('hidden');
+            
+            if (contentWrapper.classList.contains('hidden')) {
+                // Fechado - ícone para direita
+                icon.style.transform = 'rotate(0deg)';
+            } else {
+                // Aberto - ícone para baixo
+                icon.style.transform = 'rotate(90deg)';
+            }
+        }
+    });
+    
+    setupHierarchicalCheckboxes();
+}
+
+function setupHierarchicalCheckboxes() {
+    // Usar event delegation para checkboxes também
+    const locationTree = document.getElementById('locationTree');
+    
+    // Verificar se já tem event listener (evitar duplicação)
+    if (locationTree.hasAttribute('data-checkbox-setup')) {
+        return;
+    }
+    locationTree.setAttribute('data-checkbox-setup', 'true');
+    
+    locationTree.addEventListener('change', function(e) {
+        const checkbox = e.target;
+        
+        if (checkbox.type !== 'checkbox') return;
+        
+        // Se é checkbox de location-item (final)
+        if (checkbox.closest('.location-item')) {
+            handleLocationSelection(checkbox);
+            
+            // NOVO: Quando um local final é selecionado, automaticamente selecionar todos os containers pais
+            if (checkbox.checked) {
+                selectAllParentContainers(checkbox);
+            }
+            
+            updateParentCheckboxes();
+            return;
+        }
+        
+        // Se é checkbox hierárquico (building, floor, section)
+        const container = checkbox.closest('[class*="-item"]');
+        const contentWrapper = container ? container.querySelector(':scope > div:nth-child(2)') : null; // O wrapper é o segundo filho
+        
+        if (contentWrapper) {
+            // CORREÇÃO: Verificar se o container é realmente selecionável antes de adicionar
+            if (checkbox.value && checkbox.value !== '') {
+                try {
+                    const containerData = JSON.parse(checkbox.value);
+                    // Processar se for local selecionável OU container selecionável
+                    if (containerData.isContainer !== true || containerData.isSelectableContainer) {
+                        handleLocationSelection(checkbox);
+                    }
+                } catch (e) {
+                    console.log('[DEBUG] Erro ao processar container checkbox:', e);
+                }
+            }
+            
+            // Selecionar/desselecionar todos os locais dentro deste container
+            const roomCheckboxes = contentWrapper.querySelectorAll('.location-item input[type="checkbox"]');
+            roomCheckboxes.forEach(roomCheckbox => {
+                roomCheckbox.checked = checkbox.checked;
+                handleLocationSelection(roomCheckbox);
+                
+                // Se está marcando, selecionar containers pais também
+                if (checkbox.checked) {
+                    selectAllParentContainers(roomCheckbox);
+                }
+            });
+            
+            // Atualizar checkboxes de subníveis
+            const sublevelCheckboxes = contentWrapper.querySelectorAll('[class*="-checkbox"]:not(.location-item input[type="checkbox"])');
+            sublevelCheckboxes.forEach(sublevelCheckbox => {
+                sublevelCheckbox.checked = checkbox.checked;
+                sublevelCheckbox.indeterminate = false;
+            });
+        }
+        
+        // Atualizar checkboxes pai
+        updateParentCheckboxes();
+    });
+}
+
+function updateParentCheckboxes() {
+    // Função para atualizar um checkbox baseado nos filhos
+    const updateCheckbox = (checkbox) => {
+        const container = checkbox.closest('[class*="-item"]');
+        if (!container) return;
+        
+        const contentWrapper = container.querySelector(':scope > div:nth-child(2)'); // O wrapper é o segundo filho
+        if (!contentWrapper) return;
+        
+        const roomCheckboxes = contentWrapper.querySelectorAll('.location-item input[type="checkbox"]');
+        const checkedRooms = contentWrapper.querySelectorAll('.location-item input[type="checkbox"]:checked');
+        
+        if (checkedRooms.length === 0) {
+            checkbox.checked = false;
+            checkbox.indeterminate = false;
+        } else if (checkedRooms.length === roomCheckboxes.length) {
+            checkbox.checked = true;
+            checkbox.indeterminate = false;
+        } else {
+            checkbox.checked = false;
+            checkbox.indeterminate = true;
+        }
+    };
+    
+    // Atualizar todos os checkboxes hierárquicos no DOM atual
+    const locationTree = document.getElementById('locationTree');
+    if (locationTree) {
+        const hierarchicalCheckboxes = locationTree.querySelectorAll('[class*="-checkbox"]:not(.location-item input[type="checkbox"])');
+        hierarchicalCheckboxes.forEach(checkbox => {
+            updateCheckbox(checkbox);
+        });
+    }
+}
+
+function selectAllParentContainers(childCheckbox) {
+    console.log('[DEBUG] selectAllParentContainers called for:', childCheckbox.value);
+    
+    // Encontrar todos os containers pais deste checkbox
+    let currentElement = childCheckbox.closest('.location-item');
+    
+    while (currentElement) {
+        // Subir na hierarquia procurando containers pais
+        currentElement = currentElement.parentElement;
+        
+        // Procurar por containers hierárquicos neste nível
+        const parentContainer = currentElement ? currentElement.closest('[class*="-item"]:not(.location-item)') : null;
+        
+        if (parentContainer) {
+            // Encontrar o checkbox do container pai
+            const parentCheckbox = parentContainer.querySelector(':scope > div:first-child input[type="checkbox"]');
+            
+            if (parentCheckbox && parentCheckbox.value && parentCheckbox.value !== '') {
+                // CORREÇÃO: Verificar se é realmente um local selecionável (não apenas um container)
+                try {
+                    const parentData = JSON.parse(parentCheckbox.value);
+                    // Selecionar se for local real OU container selecionável
+                    if ((parentData.isContainer !== true || parentData.isSelectableContainer) && !parentCheckbox.checked) {
+                        console.log('[DEBUG] Auto-selecionando local/container pai válido:', parentCheckbox.value);
+                        parentCheckbox.checked = true;
+                        handleLocationSelection(parentCheckbox);
+                    } else if (parentData.isContainer === true && !parentData.isSelectableContainer) {
+                        console.log('[DEBUG] Ignorando container organizacional:', parentData.name);
+                        // Apenas marcar visualmente, mas não adicionar à seleção
+                        parentCheckbox.checked = true;
+                    }
+                } catch (e) {
+                    console.log('[DEBUG] Erro ao processar valor do checkbox pai:', e);
+                }
+            }
+            
+            // Continuar subindo na hierarquia
+            currentElement = parentContainer;
+        } else {
+            break;
+        }
+    }
+}
+
+function escapeHtml(text) {
+    const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    };
+    return String(text).replace(/[&<>"']/g, m => map[m]);
+}
+
+function decodeUnicode(str) {
+    if (!str) return '';
+    
+    try {
+        // Garantir que é string
+        str = String(str);
+        
+        // Decodificar sequências Unicode como \u00c1 para o caractere real (Á)
+        str = str.replace(/\\u([\dA-Fa-f]{4})/g, function (match, code) {
+            return String.fromCharCode(parseInt(code, 16));
+        });
+        
+        // Substituir \n por espaço
+        str = str.replace(/\\n/g, ' ');
+        
+        // Substituir outras sequências de escape comuns
+        str = str.replace(/\\t/g, ' ');
+        str = str.replace(/\\r/g, '');
+        
+        // Remover aspas extras que podem vir do JSON
+        str = str.replace(/^["']|["']$/g, '');
+        
+        // Limpar qualquer código HTML/JSON que possa ter vazado
+        str = str.split('"')[0].split(',')[0].trim();
+        
+        return str;
+    } catch (e) {
+        console.error('[ERROR] Erro ao decodificar string:', e, str);
+        return String(str);
+    }
+}
+
+function handleLocationSelection(checkbox) {
+    try {
+        console.log('[DEBUG] handleLocationSelection called with:', checkbox.value);
+        const location = JSON.parse(checkbox.value);
+        console.log('[DEBUG] Parsed location:', location);
+        
+        // CORREÇÃO: Filtrar apenas containers organizacionais (não selecionáveis)
+        if (location.isContainer === true && !location.isSelectableContainer) {
+            console.log('[DEBUG] Ignorando container organizacional na seleção:', location.name);
+            return; // Não processar containers organizacionais
+        }
+        
+        // Decodificar caracteres Unicode no displayName
+        if (location.displayName) {
+            location.displayName = decodeUnicode(location.displayName);
+        }
+        
+        // Verificar se tem displayName
+        if (!location.displayName) {
+            console.error('[DEBUG] Location missing displayName:', location);
+            // Tentar usar name como fallback
+            location.displayName = location.name || location.id || 'Local sem nome';
+        }
+        
+        if (checkbox.checked) {
+            // Adicionar se não existir, considerando apenas o ID (que é único)
+            const existingLocation = selectedLocations.find(loc => 
+                loc.id === location.id
+            );
+            
+            if (!existingLocation) {
+                selectedLocations.push(location);
+                console.log('[DEBUG] Added location:', location);
+            }
+        } else {
+            // Remover se existir, considerando apenas o ID
+            selectedLocations = selectedLocations.filter(loc => 
+                loc.id !== location.id
+            );
+            console.log('[DEBUG] Removed location with id:', location.id);
+        }
+        
+        console.log('[DEBUG] Current selectedLocations:', selectedLocations);
+        updatePreview();
+    } catch (error) {
+        console.error('[DEBUG] Error in handleLocationSelection:', error);
+        console.error('[DEBUG] Checkbox value:', checkbox.value);
+    }
+}
+
+function loadServiceLogo(serviceName) {
+    const serviceLogoPreview = document.getElementById('serviceLogoPreview');
+    const serviceLogoImage = document.getElementById('serviceLogoImage');
+    
+    if (!serviceName) {
+        serviceLogoPreview.classList.add('hidden');
+        return;
+    }
+    
+    console.log('Carregando logo para o serviço:', serviceName);
+    
+    fetch(`/api/service-logo/?service=${encodeURIComponent(serviceName)}`, {
+        method: 'GET',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json',
+        },
+        credentials: 'same-origin'
+    })
+        .then(response => {
+            console.log('Status da resposta:', response.status);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Resposta da API de logo:', data);
+            console.log('Success:', data.success);
+            console.log('Logo base64 presente:', !!data.logo_base64);
+            console.log('Tamanho da logo base64:', data.logo_base64?.length || 0);
+            
+            if (data.success && data.logo_base64) {
+                // A imagem já vem com o prefixo data:image/png;base64, então usar diretamente
+                console.log('Definindo src da imagem...');
+                serviceLogoImage.src = data.logo_base64;
+                
+                serviceLogoImage.onload = function() {
+                    console.log('✓ Imagem carregada com sucesso');
+                    
+                    // Aplicar o tamanho atual do slider
+                    const serviceLogoSizeSlider = document.getElementById('serviceLogoSizeSlider');
+                    if (serviceLogoSizeSlider) {
+                        const currentSize = serviceLogoSizeSlider.value;
+                        serviceLogoImage.style.maxHeight = currentSize + 'px';
+                        serviceLogoImage.style.maxWidth = currentSize + 'px';
+                    }
+                    
+                    serviceLogoPreview.classList.remove('hidden');
+                    
+                    // Atualizar preview do QR Code se necessário
+                    updatePreview();
+                };
+                
+                serviceLogoImage.onerror = function() {
+                    console.error('✗ Erro ao carregar a imagem');
+                    console.error('Src da imagem:', this.src.substring(0, 100) + '...');
+                    serviceLogoPreview.classList.add('hidden');
+                };
+            } else {
+                // Esconder preview se não houver logo
+                serviceLogoPreview.classList.add('hidden');
+                console.log('Logo não encontrada para o serviço:', serviceName);
+                if (data.available_services) {
+                    console.log('Serviços disponíveis:', data.available_services);
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Erro ao carregar logo do serviço:', error);
+            serviceLogoPreview.classList.add('hidden');
+        });
+}
+
+function updateDescriptionPreview() {
+    const descriptionMode = document.getElementById('descriptionMode').value;
+    const descriptionPreviewText = document.getElementById('descriptionPreviewText');
+    
+    if (descriptionMode !== 'custom') {
+        return;
+    }
+    
+    // Simular um exemplo baseado nos níveis selecionados
+    const selectedLevels = [];
+    const levelMapping = {
+        'level4': 'HIAE GO',
+        'level5': '1° ANDAR', 
+        'level6': 'SADT',
+        'level7': 'AREA TECNICA',
+        'level8': 'HEMATOLOGIA',
+        'level9': 'SETOR A',
+        'level10': 'BLOCO 1',
+        'level11': 'ALA NORTE'
+    };
+    
+    Object.keys(levelMapping).forEach(levelId => {
+        const checkbox = document.getElementById(levelId);
+        if (checkbox && checkbox.checked) {
+            selectedLevels.push(levelMapping[levelId]);
+        }
+    });
+    
+    let previewText = selectedLevels.join(' -> ');
+    
+    const includeDescription = document.getElementById('includeDescription');
+    if (includeDescription && includeDescription.checked) {
+        if (previewText) {
+            previewText += ' - SALA DE UTILIDADES';
+        } else {
+            previewText = 'SALA DE UTILIDADES';
+        }
+    }
+    
+    if (!previewText) {
+        previewText = 'Selecione pelo menos um nível ou a descrição';
+    }
+    
+    descriptionPreviewText.textContent = previewText;
+}
+
+function getDescriptionConfig() {
+    const descriptionMode = document.getElementById('descriptionMode').value;
+    
+    const config = {
+        mode: descriptionMode,
+        levels: [],
+        includeDescription: false
+    };
+    
+    if (descriptionMode === 'custom') {
+        const levelIds = ['level4', 'level5', 'level6', 'level7', 'level8', 'level9', 'level10', 'level11'];
+        levelIds.forEach(levelId => {
+            const checkbox = document.getElementById(levelId);
+            if (checkbox && checkbox.checked) {
+                config.levels.push(levelId.replace('level', 'nivel_'));
+            }
+        });
+        
+        const includeDescription = document.getElementById('includeDescription');
+        config.includeDescription = includeDescription && includeDescription.checked;
+    }
+    
+    return config;
+}
+
+function updatePreview() {
+    // Limpar timeout anterior para evitar chamadas excessivas
+    if (previewTimeout) {
+        clearTimeout(previewTimeout);
+    }
+    
+    const service = document.getElementById('serviceSelect').value;
+    const cr = document.querySelector('input[name="cr"]').value;
+    const showPreview = document.getElementById('previewMode').checked;
+    const qrPreview = document.getElementById('qrPreview');
+    const qrType = document.querySelector('input[name="qrType"]:checked').value;
+    
+
+    // Verificar condições baseadas no tipo de QR
+    let missingRequirements = [];
+    if (!service) missingRequirements.push('• Escolha um serviço');
+    if (!cr) missingRequirements.push('• Informe o número do CR');
+    
+    if (qrType === 'locations' && selectedLocations.length === 0) {
+        missingRequirements.push('• Selecione pelo menos um local');
+    }
+
+    if (missingRequirements.length > 0) {
+        qrPreview.innerHTML = `
+            <div class="text-center py-12 text-slate-500">
+                <svg class="h-16 w-16 mx-auto mb-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                          d="M12 4v1m6 11h2m-2 0h-2m2 0v2m0-2v-2m2-4h2m-2 0h-2m2 0v2m0-2v-2m-6 0h2m-2 0H8m2 0v2m0-2v-2M4 7h2m-2 0H2m2 0v2m0-2V5" />
+                </svg>
+                <p class="mb-2">Complete as configurações para gerar os QR Codes</p>
+                <div class="text-sm space-y-1">
+                    ${missingRequirements.join('')}
+                </div>
+            </div>
+        `;
+        return;
+    }
+
+    if (!showPreview) {
+        qrPreview.innerHTML = `
+            <div class="text-center py-8">
+                <svg class="h-12 w-12 mx-auto mb-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                </svg>
+                <p class="text-slate-600 mb-4">
+                    Ative o preview para visualizar os QR Codes antes de gerar
+                </p>
+            </div>
+        `;
+        return;
+    }
+
+    // Mostrar loading imediatamente
+    showLoadingState();
+
+    // Debounce - aguardar 500ms antes de gerar preview
+    previewTimeout = setTimeout(() => {
+        const qrType = document.querySelector('input[name="qrType"]:checked').value;
+        if (qrType === 'livroata') {
+            generateLivroAtaQRCode();
+        } else {
+            generateQRCodes();
+        }
+    }, 500);
+}
+
+function showLoadingState() {
+    const qrPreview = document.getElementById('qrPreview');
+    qrPreview.innerHTML = `
+        <div class="text-center py-8">
+            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+            <p class="text-slate-600">
+                Gerando preview dos QR Codes...
+            </p>
+            <p class="text-xs text-slate-500 mt-2">
+                ${selectedLocations.length} local(is) selecionado(s)
+            </p>
+        </div>
+    `;
+}
+
+async function generateLivroAtaQRCode() {
+    const service = document.getElementById('serviceSelect').value;
+    const crNumber = document.querySelector('input[name="cr"]').value;
+    const logoSize = document.getElementById('logoSize').value;
+    const serviceLogoSizeSlider = document.getElementById('serviceLogoSizeSlider');
+    const serviceLogoSize = serviceLogoSizeSlider ? serviceLogoSizeSlider.value : 60;
+    const clientLogo = document.getElementById('clientLogo').files[0];
+    
+    const formData = new FormData();
+    formData.append('data', JSON.stringify({
+        service: service,
+        cr_number: crNumber,
+        qr_type: 'livroata',
+        logo_size: logoSize,
+        service_logo_size: serviceLogoSize
+    }));
+    
+    if (clientLogo) {
+        formData.append('client_logo', clientLogo);
+    }
+    
+    try {
+        const response = await fetch('/api/generate-livro-ata-qr/', {
+            method: 'POST',
+            body: formData,
+            credentials: 'same-origin',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}'
+            }
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            const qrPreview = document.getElementById('qrPreview');
+            qrPreview.innerHTML = `
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between mb-4">
+                        <p class="text-sm text-slate-600">
+                            QR Code do Livro de Ocorrência
+                        </p>
+                        ${result.is_existing ? `
+                            <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                                Existente
+                            </span>
+                        ` : `
+                            <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                                Novo
+                            </span>
+                        `}
+                    </div>
+                    
+                    <div class="border rounded-lg p-4 space-y-3">
+                        <div class="flex justify-center">
+                            <div class="bg-white border rounded relative">
+                                <img src="data:image/png;base64,${result.qr_code.image}" 
+                                     style="width: 150px; height: 200px"
+                                     alt="QR Code Livro Ata">
+                            </div>
+                        </div>
+                        
+                        <div class="text-center">
+                            <p class="font-medium text-slate-800">
+                                LIVRO DE OCORRÊNCIA
+                            </p>
+                            <p class="text-xs text-slate-500">
+                                ${escapeHtml(service)} - CR ${escapeHtml(crNumber)}
+                            </p>
+                            <p class="text-xs text-slate-400 mt-1">
+                                ${escapeHtml(result.qr_code_url)}
+                            </p>
+                        </div>
+
+                        <div class="flex gap-2">
+                            <button onclick='copyQRData(${JSON.stringify(result.qr_code_url)})'
+                                    class="flex-1 py-1 px-3 border rounded text-sm hover:bg-slate-50">
+                                <svg class="inline-block h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                </svg>
+                                Copiar URL
+                            </button>
+                            <button onclick="downloadLivroAtaQR('${result.livro_ata_id}')"
+                                    class="flex-1 py-1 px-3 border rounded text-sm hover:bg-slate-50">
+                                <svg class="inline-block h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                </svg>
+                                Baixar
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2">
+                        <button onclick="downloadLivroAtaPDF('${result.livro_ata_id}')"
+                                class="w-full py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center justify-center gap-2">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                            </svg>
+                            Baixar PDF A4 - Livro de Ocorrência
+                        </button>
+                    </div>
+                </div>
+            `;
+        } else {
+            throw new Error(result.error || 'Erro ao gerar QR Code do Livro Ata');
+        }
+    } catch (error) {
+        console.error('Error generating Livro Ata QR code:', error);
+        const qrPreview = document.getElementById('qrPreview');
+        
+        let errorMessage = error.message;
+        if (errorMessage.includes('CR não encontrado')) {
+            errorMessage = `CR não encontrado no sistema. Verifique se o número do CR está correto e se existe na base de dados.`;
+        }
+        
+        qrPreview.innerHTML = `
+            <div class="text-center py-8 text-red-500">
+                <svg class="h-12 w-12 mx-auto mb-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <p class="mb-2 font-medium">Erro ao gerar QR Code do Livro Ata</p>
+                <p class="text-sm">${errorMessage}</p>
+            </div>
+        `;
+    }
+}
+
+async function generateQRCodes() {
+    const service = document.getElementById('serviceSelect').value;
+    const crNumber = document.querySelector('input[name="cr"]').value;
+    const logoSize = document.getElementById('logoSize').value;
+    const serviceLogoSizeSlider = document.getElementById('serviceLogoSizeSlider');
+    const serviceLogoSize = serviceLogoSizeSlider ? serviceLogoSizeSlider.value : 60;
+    const clientLogo = document.getElementById('clientLogo').files[0];
+    
+    // Preparar dados dos locais selecionados (limitar a 3 para preview rápido)
+    const maxPreviewItems = 3;
+    const locationsForPreview = selectedLocations.slice(0, maxPreviewItems);
+    
+    console.log('[DEBUG] selectedLocations:', selectedLocations);
+    console.log('[DEBUG] locationsForPreview:', locationsForPreview);
+    
+    const locationsData = locationsForPreview.map((location, index) => {
+        console.log(`[DEBUG] Processing location ${index}:`, location);
+        if (!location.displayName) {
+            console.error(`[DEBUG] Location ${index} missing displayName:`, location);
+        }
+        return {
+            id: location.id,
+            displayName: location.displayName || location.name || `Local ${index + 1}`
+        };
+    });
+    
+    const descriptionConfig = getDescriptionConfig();
+    
+    const formData = new FormData();
+    formData.append('data', JSON.stringify({
+        service: service,
+        cr_number: crNumber,
+        locations: locationsData,
+        logo_size: logoSize,
+        service_logo_size: serviceLogoSize,
+        description_config: descriptionConfig
+    }));
+    
+    if (clientLogo) {
+        formData.append('client_logo', clientLogo);
+    }
+    
+    try {
+        const response = await fetch('/api/generate-qr/', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            const qrPreview = document.getElementById('qrPreview');
+            qrPreview.innerHTML = `
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between mb-4">
+                        <p class="text-sm text-slate-600">
+                            ${selectedLocations.length} QR Code(s) configurados
+                        </p>
+                        ${selectedLocations.length > maxPreviewItems ? `
+                            <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                                Preview: ${maxPreviewItems} de ${selectedLocations.length}
+                            </span>
+                        ` : ''}
+                    </div>
+                    
+                    <div class="space-y-4 max-h-96 overflow-y-auto">
+                        ${result.qr_codes.map((qr, idx) => `
+                            <div class="border rounded-lg p-4 space-y-3">
+                                <div class="flex justify-center">
+                                    <div class="bg-white border rounded relative">
+                                        <img src="data:image/png;base64,${qr.image}" 
+                                             style="width: 150px; height: 200px"
+                                             alt="QR Code">
+                                    </div>
+                                </div>
+                                
+                                <div class="text-center">
+                                    <p class="font-medium text-slate-800">
+                                        ${escapeHtml(decodeUnicode(locationsForPreview[idx].displayName))}
+                                    </p>
+                                    <p class="text-xs text-slate-500">
+                                        ${escapeHtml(service)} - CR ${escapeHtml(crNumber)}
+                                    </p>
+                                </div>
+
+                                <div class="flex gap-2">
+                                    <button onclick='copyQRData(${JSON.stringify(qr.data)})'
+                                            class="flex-1 py-1 px-3 border rounded text-sm hover:bg-slate-50">
+                                        <svg class="inline-block h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                        </svg>
+                                        Copiar
+                                    </button>
+                                </div>
+                            </div>
+                        `).join('')}
+                        ${selectedLocations.length > maxPreviewItems ? `
+                            <div class="text-center p-4 bg-blue-50 rounded-lg">
+                                <p class="text-sm text-blue-800 font-medium">
+                                    Preview limitado a ${maxPreviewItems} QR Codes
+                                </p>
+                                <p class="text-xs text-blue-600 mt-1">
+                                    Total selecionado: ${selectedLocations.length} locais
+                                </p>
+                                <p class="text-xs text-blue-500">
+                                    Todos serão gerados no download final
+                                </p>
+                            </div>
+                        ` : ''}
+                    </div>
+
+                    <div class="space-y-2">
+                        <button onclick="downloadAllQRCodes()"
+                                class="w-full py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center justify-center gap-2">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                            </svg>
+                            Baixar PDF A4 - 3x4 (${selectedLocations.length} QR Codes)
+                        </button>
+                        
+                        <button onclick="downloadIndividualQRCodes()"
+                                class="w-full py-2 px-4 border border-gray-300 rounded-md hover:bg-gray-50 flex items-center justify-center gap-2">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                            </svg>
+                            Baixar Arquivos Individuais
+                        </button>
+                    </div>
+
+                    ${selectedLocations.length > 12 ? `
+                        <p class="text-xs text-slate-500 text-center">
+                            * Mais de 12 QR Codes serão divididos em múltiplas páginas A4
+                        </p>
+                    ` : ''}
+                </div>
+            `;
+        } else {
+            throw new Error(result.error || 'Erro ao gerar QR Codes');
+        }
+    } catch (error) {
+        console.error('Error generating QR codes:', error);
+        qrPreview.innerHTML = `
+            <div class="text-center py-8 text-red-500">
+                <p class="mb-2">Erro ao gerar QR Codes</p>
+                <p class="text-sm">${error.message}</p>
+            </div>
+        `;
+    }
+}
+
+function copyQRData(data) {
+    navigator.clipboard.writeText(data);
+    showNotification('Dados copiados para a área de transferência', 'success');
+}
+
+function downloadQR(qrData) {
+    window.location.href = `/qr-generator/download/${qrData}/`;
+}
+
+async function downloadAllQRCodes() {
+    const service = document.getElementById('serviceSelect').value;
+    const crNumber = document.querySelector('input[name="cr"]').value;
+    const logoSize = document.getElementById('logoSize').value;
+    const serviceLogoSizeSlider = document.getElementById('serviceLogoSizeSlider');
+    const serviceLogoSize = serviceLogoSizeSlider ? serviceLogoSizeSlider.value : 60;
+    const clientLogo = document.getElementById('clientLogo').files[0];
+    
+    if (!service || !crNumber || selectedLocations.length === 0) {
+        showNotification('Por favor, complete todas as configurações antes de fazer o download.', 'warning');
+        return;
+    }
+    
+    // Mostrar loading
+    const button = event.target;
+    const originalText = button.innerHTML;
+    button.innerHTML = '<div class="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>Gerando PDF...';
+    button.disabled = true;
+    
+    try {
+        // Preparar dados de todos os locais selecionados
+        const locationsData = selectedLocations.map(location => ({
+            id: location.id,
+            displayName: location.displayName
+        }));
+        
+        const descriptionConfig = getDescriptionConfig();
+        
+        const formData = new FormData();
+        formData.append('data', JSON.stringify({
+            service: service,
+            cr_number: crNumber,
+            locations: locationsData,
+            logo_size: logoSize,
+            service_logo_size: serviceLogoSize,
+            description_config: descriptionConfig
+        }));
+        
+        if (clientLogo) {
+            formData.append('client_logo', clientLogo);
+        }
+        
+        const response = await fetch('/api/download-pdf/', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}'
+            }
+        });
+        
+        if (response.ok) {
+            // Criar download do PDF
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `qr_codes_${crNumber}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            
+            console.log('PDF baixado com sucesso');
+        } else {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Erro ao gerar PDF');
+        }
+        
+    } catch (error) {
+        console.error('Erro no download do PDF:', error);
+        showNotification('Erro ao gerar PDF: ' + error.message, 'error');
+    } finally {
+        // Restaurar botão
+        button.innerHTML = originalText;
+        button.disabled = false;
+    }
+}
+
+function downloadIndividualQRCodes() {
+    selectedLocations.forEach((_, index) => {
+        setTimeout(() => {
+            const qrData = document.querySelector(`#qrPreview img:nth-child(${index + 1})`).src;
+            downloadQR(btoa(qrData));
+        }, index * 500);
+    });
+}
+
+function downloadLivroAtaQR(livroAtaId) {
+    window.location.href = `/api/download-livro-ata-qr/${livroAtaId}/`;
+}
+
+async function downloadLivroAtaPDF(livroAtaId) {
+    // Mostrar loading
+    const button = event.target;
+    const originalText = button.innerHTML;
+    button.innerHTML = '<div class="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>Gerando PDF...';
+    button.disabled = true;
+    
+    try {
+        // Coletar configurações atuais (incluindo logo do cliente)
+        const logoSize = document.getElementById('logoSize').value;
+        const serviceLogoSizeSlider = document.getElementById('serviceLogoSizeSlider');
+        const serviceLogoSize = serviceLogoSizeSlider ? serviceLogoSizeSlider.value : 60;
+        const clientLogo = document.getElementById('clientLogo').files[0];
+        const service = document.getElementById('serviceSelect').value;
+        
+        console.log('[DEBUG] downloadLivroAtaPDF - logoSize:', logoSize);
+        console.log('[DEBUG] downloadLivroAtaPDF - serviceLogoSize:', serviceLogoSize);
+        console.log('[DEBUG] downloadLivroAtaPDF - service:', service);
+        console.log('[DEBUG] downloadLivroAtaPDF - clientLogo:', clientLogo);
+        console.log('[DEBUG] downloadLivroAtaPDF - clientLogo existe?', !!clientLogo);
+        
+        if (clientLogo) {
+            console.log('[DEBUG] Logo do cliente encontrada:', {
+                name: clientLogo.name,
+                size: clientLogo.size,
+                type: clientLogo.type
+            });
+        } else {
+            console.warn('[WARNING] ⚠️ Nenhuma logo do cliente selecionada!');
+        }
+        
+        const formData = new FormData();
+        formData.append('data', JSON.stringify({
+            livro_ata_id: livroAtaId,
+            logo_size: logoSize,
+            service_logo_size: serviceLogoSize,
+            service: service
+        }));
+        
+        // ✅ ADICIONAR LOGO DO CLIENTE SE EXISTIR
+        if (clientLogo) {
+            formData.append('client_logo', clientLogo);
+            console.log('[DEBUG] ✅ Logo do cliente adicionada ao FormData');
+        }
+        
+        // Debug: Mostrar conteúdo do FormData
+        console.log('[DEBUG] FormData entries:');
+        for (let pair of formData.entries()) {
+            console.log(`  ${pair[0]}:`, pair[1]);
+        }
+        
+        // Obter CSRF token
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+        console.log('[DEBUG] CSRF Token:', csrfToken);
+        
+        const response = await fetch('/api/download-livro-ata-pdf/', {
+            method: 'POST',
+            body: formData,
+            credentials: 'same-origin',
+            headers: {
+                'X-CSRFToken': csrfToken
+            }
+        });
+        
+        console.log('[DEBUG] Response status:', response.status);
+        console.log('[DEBUG] Response headers:', response.headers);
+        
+        if (response.ok) {
+            // Criar download do PDF
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `livro_ata_qr_code.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            
+            console.log('PDF do Livro Ata baixado com sucesso');
+        } else {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Erro ao gerar PDF do Livro Ata');
+        }
+        
+    } catch (error) {
+        console.error('Erro no download do PDF do Livro Ata:', error);
+        showNotification('Erro ao gerar PDF do Livro Ata: ' + error.message, 'error');
+    } finally {
+        // Restaurar botão
+        button.innerHTML = originalText;
+        button.disabled = false;
+    }
+}
+</script>
+
+<style>
+.location-section {
+    background: white;
+    border-radius: 8px;
+}
+
+.location-tree {
+    max-height: 400px;
+    overflow-y: auto;
+    margin-top: 1rem;
+}
+
+/* Building Level */
+.building-item {
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.building-content {
+    padding: 0.5rem 0;
+    margin-left: 1rem;
+}
+
+/* Floor Level */
+.floor-item {
+    border: 1px solid #dbeafe;
+    border-radius: 0.375rem;
+    margin-bottom: 0.5rem;
+}
+
+.floor-content {
+    padding: 0.5rem 0;
+    margin-left: 1rem;
+}
+
+/* Section Level */
+.section-item {
+    border: 1px solid #dcfce7;
+    border-radius: 0.375rem;
+    margin-bottom: 0.5rem;
+}
+
+.section-content {
+    padding: 0.5rem 0;
+    margin-left: 1rem;
+}
+
+/* Headers */
+.building-header,
+.floor-header,
+.section-header {
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    padding: 0.75rem;
+    border-radius: 0.375rem;
+}
+
+.building-header {
+    background-color: #f3f4f6;
+    font-weight: 600;
+}
+
+.floor-header {
+    background-color: #dbeafe;
+    font-weight: 500;
+}
+
+.section-header {
+    background-color: #dcfce7;
+    font-weight: 500;
+}
+
+.building-header:hover {
+    background-color: #e5e7eb;
+}
+
+.floor-header:hover {
+    background-color: #bfdbfe;
+}
+
+.section-header:hover {
+    background-color: #bbf7d0;
+}
+
+/* Location Items */
+.location-item {
+    padding: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: 0.25rem;
+    transition: background-color 0.2s;
+}
+
+.location-item:hover {
+    background-color: rgba(59, 130, 246, 0.05);
+}
+
+/* Expand Icon */
+.expand-icon {
+    transition: transform 0.2s ease;
+    min-width: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Checkboxes */
+input[type="checkbox"] {
+    width: 1rem;
+    height: 1rem;
+    border-radius: 0.25rem;
+    border-color: #d1d5db;
+    color: #2563eb;
+    cursor: pointer;
+}
+
+input[type="checkbox"]:checked {
+    background-color: #2563eb;
+    border-color: #2563eb;
+}
+
+input[type="checkbox"]:focus {
+    outline: none;
+    ring: 2px;
+    ring-color: #93c5fd;
+}
+
+input[type="checkbox"]:indeterminate {
+    background-color: #2563eb;
+    border-color: #2563eb;
+}
+
+/* Hidden state */
+.hidden {
+    display: none;
+}
+
+/* Content wrapper transitions */
+.building-content,
+.floor-content,
+.section-content {
+    transition: all 0.2s ease-in-out;
+}
+</style> 
+{% endblock %}

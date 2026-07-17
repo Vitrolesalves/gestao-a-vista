@@ -1,0 +1,37 @@
+# Ambiente
+.env
+.venv/
+venv/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# Django
+*.log
+db.sqlite3
+db.sqlite3-journal
+*.sqlite3
+django_cache/
+staticfiles/
+media/
+
+# Testes / cobertura
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# IDE / SO
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Node (ferramentas de front-end auxiliares)
+node_modules/

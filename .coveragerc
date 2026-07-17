@@ -1,0 +1,27 @@
+[run]
+source = Gestao_a_Vista
+omit = 
+    */migrations/*
+    */venv/*
+    */env/*
+    */tests/*
+    manage.py
+    */settings/*
+    */wsgi.py
+    */asgi.py
+    */__pycache__/*
+    */static/*
+    */media/*
+
+[report]
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    raise AssertionError
+    raise NotImplementedError
+    if __name__ == .__main__.:
+    class .*\(Protocol\):
+    @(abc\.)?abstractmethod
+
+[html]
+directory = htmlcov

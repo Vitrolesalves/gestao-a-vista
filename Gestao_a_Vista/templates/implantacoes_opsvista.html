@@ -1,0 +1,872 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}implantações Sistêmicas - Gestão à Vista{% endblock %}
+
+{% block extra_css %}
+<style>
+    .implantacoes-title {
+        background: linear-gradient(to right, #0F172A, #1e40af);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-size: 28px;
+        font-weight: bold;
+        margin: 0;
+    }
+
+    /* Dashboard (Visão Geral) */
+    .impl-kpi { border: none; border-radius: 12px; color: #fff; padding: 1rem 1.1rem; display: block; text-decoration: none; transition: transform .15s ease, box-shadow .15s ease; }
+    .impl-kpi:hover { transform: translateY(-3px); box-shadow: 0 10px 18px rgba(15,23,42,.18); color: #fff; }
+    .impl-kpi .impl-kpi-valor { font-size: 1.9rem; font-weight: 800; line-height: 1.1; }
+    .impl-kpi .impl-kpi-label { font-size: .74rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; opacity: .9; }
+    .impl-kpi-total { background: linear-gradient(135deg, #1a2a45, #1e3558); }
+    .impl-kpi-ativos { background: linear-gradient(135deg, #22c55e, #15803d); }
+    .impl-kpi-desmob { background: linear-gradient(135deg, #64748b, #334155); }
+    .impl-kpi-crs { background: linear-gradient(135deg, #0ea5e9, #0369a1); }
+
+    .impl-chart-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 1px 3px rgba(15,23,42,.07); }
+    .impl-chart-card h3 { font-size: .8rem; font-weight: 700; color: #334155; padding: .8rem 1rem; border-bottom: 1px solid #f1f5f9; margin: 0; }
+    .impl-chart-box { position: relative; height: 220px; padding: .8rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="border-b pb-4">
+        <h1 class="implantacoes-title">Implantações Sistêmicas</h1>
+        <p class="text-muted-foreground">Gerencie as implantações Sistêmicas nos contratos</p>
+    </div>
+
+    <!-- Dashboard: Visão Geral (KPIs + gráficos de andamento) -->
+    {{ dashboard_stats|json_script:"implDashStats" }}
+    <div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+            <a href="?" class="impl-kpi impl-kpi-total" title="Ver todos os registros">
+                <div class="impl-kpi-valor">{{ dashboard_stats.kpis.total }}</div>
+                <div class="impl-kpi-label">Total de Implantações</div>
+            </a>
+            <a href="?status=ativo" class="impl-kpi impl-kpi-ativos" title="Filtrar pelas implantações ativas">
+                <div class="impl-kpi-valor">{{ dashboard_stats.kpis.ativos }}</div>
+                <div class="impl-kpi-label">Em Andamento (Ativas)</div>
+            </a>
+            <a href="?status=desmobilizado" class="impl-kpi impl-kpi-desmob" title="Filtrar pelas implantações desmobilizadas">
+                <div class="impl-kpi-valor">{{ dashboard_stats.kpis.desmobilizados }}</div>
+                <div class="impl-kpi-label">Desmobilizadas</div>
+            </a>
+            <a href="?status=ativo" class="impl-kpi impl-kpi-crs" title="Filtrar pelas implantações ativas (CRs em atendimento)">
+                <div class="impl-kpi-valor">{{ dashboard_stats.kpis.crs }}</div>
+                <div class="impl-kpi-label">CRs Atendidos</div>
+            </a>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+            <div class="impl-chart-card">
+                <h3>Andamento (Status)</h3>
+                <div class="impl-chart-box"><canvas id="implChartStatus"></canvas></div>
+            </div>
+            <div class="impl-chart-card md:col-span-2">
+                <h3>Implantações por Serviço</h3>
+                <div class="impl-chart-box"><canvas id="implChartServico"></canvas></div>
+            </div>
+            <div class="impl-chart-card">
+                <h3>Tipo de Dashboard</h3>
+                <div class="impl-chart-box"><canvas id="implChartDashboards"></canvas></div>
+            </div>
+            <div class="impl-chart-card md:col-span-2 xl:col-span-4">
+                <h3>Novas Implantações por Mês (últimos 6 meses)</h3>
+                <div class="impl-chart-box"><canvas id="implChartMensal"></canvas></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="bg-white rounded-lg border shadow-sm">
+        <div class="p-4 border-b">
+            <h2 class="text-lg font-semibold flex items-center gap-2">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+                </svg>
+                Filtros
+            </h2>
+        </div>
+        <div class="p-4">
+            <form method="get" class="flex gap-4 items-end flex-wrap">
+                <div class="flex-1 min-w-[200px]">
+                    <label for="filtro-cr" class="block text-sm font-medium mb-1">CR</label>
+                    <div class="relative flex items-center">
+                        <svg class="absolute left-3 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                        <input type="text" 
+                               id="filtro-cr" 
+                               name="cr" 
+                               value="{{ filtros.cr }}"
+                               placeholder="Buscar por CR..." 
+                               class="pl-10 w-full h-10 rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    </div>
+                </div>
+                <div class="flex-1 min-w-[200px]">
+                    <label for="filtro-sistema" class="block text-sm font-medium mb-1">Sistema</label>
+                    <div class="relative flex items-center">
+                        <svg class="absolute left-3 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/>
+                        </svg>
+                        <input type="text" 
+                               id="filtro-sistema" 
+                               name="sistema" 
+                               value="{{ filtros.sistema }}"
+                               placeholder="Buscar por sistema..." 
+                               class="pl-10 w-full h-10 rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    </div>
+                </div>
+                <div class="w-48">
+                    <label for="filtro-servico" class="block text-sm font-medium mb-1">Serviço</label>
+                    <select id="filtro-servico" 
+                            name="servico" 
+                            class="w-full h-10 rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                        <option value="todos" {% if filtros.servico == 'todos' %}selected{% endif %}>Todos os serviços</option>
+                        {% for value, label in servico_choices %}
+                            <option value="{{ value }}" {% if filtros.servico == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="w-48">
+                    <label for="filtro-status" class="block text-sm font-medium mb-1">Status</label>
+                    <select id="filtro-status" 
+                            name="status" 
+                            class="w-full h-10 rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                        <option value="todos" {% if filtros.status == 'todos' %}selected{% endif %}>Todos os status</option>
+                        {% for value, label in status_choices %}
+                            <option value="{{ value }}" {% if filtros.status == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="button" 
+                        class="px-4 h-10 text-white rounded-md hover:opacity-90 flex items-center gap-2"
+                        style="background-color: #0F172A;"
+                        onclick="openDialog()">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Nova Implantação
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Lista -->
+    <div class="bg-white rounded-lg border shadow-sm">
+        <div class="p-4 border-b">
+            <h2 class="text-lg font-semibold">Lista de Implantações</h2>
+        </div>
+        <div class="p-4">
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="border-b text-xs uppercase">
+                            <th class="text-left py-2 px-2 font-medium text-gray-900">CR</th>
+                            <th class="text-left py-2 px-2 font-medium text-gray-900">Sistema</th>
+                            <th class="text-left py-2 px-2 font-medium text-gray-900">Implantações</th>
+                            <th class="text-left py-2 px-2 font-medium text-gray-900">Dashboards</th>
+                            <th class="text-left py-2 px-2 font-medium text-gray-900">Serviço</th>
+                            <th class="text-left py-2 px-2 font-medium text-gray-900">Status</th>
+                            <th class="text-left py-2 px-2 font-medium text-gray-900">Criado em</th>
+                            <th class="text-center py-2 px-2 font-medium text-gray-900">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for registro in registros %}
+                        <tr class="border-b text-xs hover:bg-gray-50">
+                            <td class="py-1.5 px-2">
+                                <div class="font-medium">
+                                    {{ registro.cr_id }}
+                                </div>
+                            </td>
+                            <td class="py-1.5 px-2">{{ registro.sistema }}</td>
+                            <td class="py-1.5 px-2">
+                                <div class="max-w-xs">
+                                    {% if registro.implantacoes %}
+                                        {% for implantacao in registro.implantacoes %}
+                                            <span class="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full mr-1 mb-1">{{ implantacao }}</span>
+                                        {% endfor %}
+                                    {% else %}
+                                        <span class="text-gray-400">Nenhuma</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td class="py-1.5 px-2">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                    {% if registro.dashboards == 'regional' %}bg-blue-100 text-blue-800
+                                    {% elif registro.dashboards == 'corporativo' %}bg-purple-100 text-purple-800
+                                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                    {{ registro.get_dashboards_display }}
+                                </span>
+                            </td>
+                            <td class="py-1.5 px-2">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                    {% if registro.servico == 'seguranca' %}bg-red-100 text-red-800
+                                    {% elif registro.servico == 'facilities' %}bg-green-100 text-green-800
+                                    {% elif registro.servico == 'portaria' %}bg-blue-100 text-blue-800
+                                    {% elif registro.servico == 'manutencao' %}bg-yellow-100 text-yellow-800
+                                    {% elif registro.servico == 'jardinagem' %}bg-green-100 text-green-800
+                                    {% elif registro.servico == 'brigadista' %}bg-orange-100 text-orange-800
+                                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                    {{ registro.get_servico_display }}
+                                </span>
+                            </td>
+                            <td class="py-1.5 px-2">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                    {% if registro.status == 'ativo' %}bg-green-100 text-green-800
+                                    {% else %}bg-red-100 text-red-800{% endif %}">
+                                    {{ registro.get_status_display }}
+                                </span>
+                            </td>
+                            <td class="py-1.5 px-2 text-xs text-gray-500">
+                                {{ registro.created_at|date:"d/m/Y H:i" }}
+                            </td>
+                            <td class="py-1.5 px-2 text-center">
+                                <div class="flex justify-center gap-1">
+                                    <button onclick="editRecord('{{ registro.id }}')"
+                                            class="text-blue-600 hover:text-blue-800 p-1"
+                                            title="Editar">
+                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                        </svg>
+                                    </button>
+                                    <button onclick="deleteRecord('{{ registro.id }}', '{{ registro.sistema }}')"
+                                            class="text-red-600 hover:text-red-800 p-1"
+                                            title="Excluir">
+                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="py-8 text-center text-gray-500">
+                                <div class="flex flex-col items-center gap-2">
+                                    <svg class="h-12 w-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                    </svg>
+                                    <p>Nenhuma implantação encontrada</p>
+                                    <button onclick="openDialog()"
+                                            class="mt-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                                        Criar primeira implantação
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Paginação -->
+            {% if registros.has_other_pages %}
+            <div class="flex items-center justify-between mt-6 pt-4 border-t">
+                <div class="flex items-center gap-2">
+                    <span class="text-sm text-gray-600">
+                        Itens por página:
+                    </span>
+                    <select onchange="window.location.href='?{% if filtros.cr %}cr={{ filtros.cr }}&{% endif %}{% if filtros.sistema %}sistema={{ filtros.sistema }}&{% endif %}{% if filtros.servico != 'todos' %}servico={{ filtros.servico }}&{% endif %}{% if filtros.status != 'todos' %}status={{ filtros.status }}&{% endif %}{% if ordenacao %}ordenar={{ ordenacao }}&{% endif %}por_pagina=' + this.value"
+                            class="border rounded px-2 py-1 text-sm">
+                        <option value="10" {% if por_pagina == 10 %}selected{% endif %}>10</option>
+                        <option value="15" {% if por_pagina == 15 %}selected{% endif %}>15</option>
+                        <option value="30" {% if por_pagina == 30 %}selected{% endif %}>30</option>
+                        <option value="50" {% if por_pagina == 50 %}selected{% endif %}>50</option>
+                        <option value="100" {% if por_pagina == 100 %}selected{% endif %}>100</option>
+                    </select>
+                </div>
+
+                <div class="flex items-center gap-2 text-sm text-gray-600">
+                    <span>
+                        página {{ registros.number }} de {{ registros.paginator.num_pages }} com total de {{ registros.paginator.count }} itens
+                    </span>
+                </div>
+
+                <div class="flex items-center gap-1">
+                    {% if registros.has_previous %}
+                        <a href="?{% if filtros.cr %}cr={{ filtros.cr }}&{% endif %}{% if filtros.sistema %}sistema={{ filtros.sistema }}&{% endif %}{% if filtros.servico != 'todos' %}servico={{ filtros.servico }}&{% endif %}{% if filtros.status != 'todos' %}status={{ filtros.status }}&{% endif %}{% if ordenacao %}ordenar={{ ordenacao }}&{% endif %}{% if por_pagina %}por_pagina={{ por_pagina }}&{% endif %}pagina=1"
+                           class="px-2 py-1 border rounded hover:bg-gray-50">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/>
+                            </svg>
+                        </a>
+                        <a href="?{% if filtros.cr %}cr={{ filtros.cr }}&{% endif %}{% if filtros.sistema %}sistema={{ filtros.sistema }}&{% endif %}{% if filtros.servico != 'todos' %}servico={{ filtros.servico }}&{% endif %}{% if filtros.status != 'todos' %}status={{ filtros.status }}&{% endif %}{% if ordenacao %}ordenar={{ ordenacao }}&{% endif %}{% if por_pagina %}por_pagina={{ por_pagina }}&{% endif %}pagina={{ registros.previous_page_number }}"
+                           class="px-2 py-1 border rounded hover:bg-gray-50">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                            </svg>
+                        </a>
+                    {% else %}
+                        <span class="px-2 py-1 border rounded bg-gray-100 text-gray-400 cursor-not-allowed">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/>
+                            </svg>
+                        </span>
+                        <span class="px-2 py-1 border rounded bg-gray-100 text-gray-400 cursor-not-allowed">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                            </svg>
+                        </span>
+                    {% endif %}
+
+                    {% if registros.has_next %}
+                        <a href="?{% if filtros.cr %}cr={{ filtros.cr }}&{% endif %}{% if filtros.sistema %}sistema={{ filtros.sistema }}&{% endif %}{% if filtros.servico != 'todos' %}servico={{ filtros.servico }}&{% endif %}{% if filtros.status != 'todos' %}status={{ filtros.status }}&{% endif %}{% if ordenacao %}ordenar={{ ordenacao }}&{% endif %}{% if por_pagina %}por_pagina={{ por_pagina }}&{% endif %}pagina={{ registros.next_page_number }}"
+                           class="px-2 py-1 border rounded hover:bg-gray-50">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </a>
+                        <a href="?{% if filtros.cr %}cr={{ filtros.cr }}&{% endif %}{% if filtros.sistema %}sistema={{ filtros.sistema }}&{% endif %}{% if filtros.servico != 'todos' %}servico={{ filtros.servico }}&{% endif %}{% if filtros.status != 'todos' %}status={{ filtros.status }}&{% endif %}{% if ordenacao %}ordenar={{ ordenacao }}&{% endif %}{% if por_pagina %}por_pagina={{ por_pagina }}&{% endif %}pagina={{ registros.paginator.num_pages }}"
+                           class="px-2 py-1 border rounded hover:bg-gray-50">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/>
+                            </svg>
+                        </a>
+                    {% else %}
+                        <span class="px-2 py-1 border rounded bg-gray-100 text-gray-400 cursor-not-allowed">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </span>
+                        <span class="px-2 py-1 border rounded bg-gray-100 text-gray-400 cursor-not-allowed">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/>
+                            </svg>
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Criação/Edição -->
+<div id="recordDialog" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="p-6 border-b">
+                <h3 id="dialogTitle" class="text-lg font-semibold">Nova Implantação OpsVista</h3>
+            </div>
+            <form id="recordForm" class="p-6 space-y-4">
+                <input type="hidden" id="recordId" name="id">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="cr" class="block text-sm font-medium mb-1">CR *</label>
+                        <div class="relative">
+                            <input type="text" 
+                                   id="cr-search" 
+                                   placeholder="Digite para buscar CR..."
+                                   class="w-full h-10 rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                   autocomplete="off">
+                            <select id="cr" name="cr" required 
+                                    class="hidden w-full h-10 rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                <option value="">Selecione um CR</option>
+                                {% for estrutura in estruturas %}
+                                    <option value="{{ estrutura.id }}">{{ estrutura.cr }}</option>
+                                {% endfor %}
+                            </select>
+                            <div id="cr-dropdown" class="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg hidden max-h-60 overflow-y-auto">
+                                <!-- Resultados da busca aparecerão aqui -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label for="sistema" class="block text-sm font-medium mb-1">Sistema *</label>
+                        <input type="text" 
+                               id="sistema" 
+                               name="sistema" 
+                               required
+                               placeholder="Nome do sistema OpsVista"
+                               class="w-full h-10 rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    </div>
+                </div>
+                
+                <div>
+                    <label for="implantacoes" class="block text-sm font-medium mb-1">Implantações *</label>
+                    <textarea id="implantacoes"
+                              name="implantacoes"
+                              required
+                              rows="3"
+                              placeholder="Digite as implantações separadas por vírgula"
+                              class="w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"></textarea>
+                    <p class="text-xs text-gray-500 mt-1">Exemplo: Câmera 1, Sensor de movimento, GPS tracker</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="dashboards" class="block text-sm font-medium mb-1">Dashboards *</label>
+                        <select id="dashboards" name="dashboards" required
+                                class="w-full h-10 rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            <option value="nao_possui" selected>Não Possui</option>
+                            <option value="regional">Regional</option>
+                            <option value="corporativo">Corporativo</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="servico" class="block text-sm font-medium mb-1">Serviço *</label>
+                        <select id="servico" name="servico" required
+                                class="w-full h-10 rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            <option value="">Selecione um serviço</option>
+                            {% for value, label in servico_choices %}
+                                <option value="{{ value }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label for="status" class="block text-sm font-medium mb-1">Status *</label>
+                    <select id="status" name="status" required
+                            class="w-full h-10 rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                        {% for value, label in status_choices %}
+                            <option value="{{ value }}" {% if value == 'ativo' %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div>
+                    <label for="observacoes" class="block text-sm font-medium mb-1">Observações</label>
+                    <textarea id="observacoes" 
+                              name="observacoes" 
+                              rows="3"
+                              placeholder="Observações adicionais (opcional)"
+                              class="w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"></textarea>
+                </div>
+            </form>
+            
+            <div class="p-6 border-t flex justify-end gap-3">
+                <button type="button" 
+                        onclick="closeDialog()" 
+                        class="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50">
+                    Cancelar
+                </button>
+                <button type="button" 
+                        onclick="saveRecord()" 
+                        class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                    Salvar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmação Moderna -->
+<div id="confirmModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg w-full max-w-md mx-4 shadow-xl">
+        <div class="p-6">
+            <div class="flex items-center gap-4 mb-4">
+                <div class="flex-shrink-0">
+                    <svg id="confirmIcon" class="h-12 w-12 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                </div>
+                <div class="flex-1">
+                    <h3 id="confirmTitle" class="text-lg font-semibold text-gray-900">Confirmar ação</h3>
+                    <p id="confirmMessage" class="text-sm text-gray-600 mt-1"></p>
+                </div>
+            </div>
+            <div class="flex justify-end gap-3 mt-6">
+                <button id="confirmCancelBtn"
+                        type="button"
+                        class="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">
+                    Cancelar
+                </button>
+                <button id="confirmOkBtn"
+                        type="button"
+                        class="px-4 py-2 text-white rounded-md hover:opacity-90 transition-opacity"
+                        style="background-color: #0F172A;">
+                    Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Sistema de confirmação moderna
+function showConfirm(title, message, type = 'warning') {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('confirmModal');
+        const titleEl = document.getElementById('confirmTitle');
+        const messageEl = document.getElementById('confirmMessage');
+        const iconEl = document.getElementById('confirmIcon');
+        const okBtn = document.getElementById('confirmOkBtn');
+        const cancelBtn = document.getElementById('confirmCancelBtn');
+
+        const icons = {
+            warning: {
+                color: 'text-yellow-500',
+                path: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z'
+            },
+            danger: {
+                color: 'text-red-500',
+                path: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z'
+            },
+            info: {
+                color: 'text-blue-500',
+                path: 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
+            }
+        };
+
+        const icon = icons[type] || icons.warning;
+        iconEl.className = `h-12 w-12 ${icon.color}`;
+        iconEl.querySelector('path').setAttribute('d', icon.path);
+
+        titleEl.textContent = title;
+        messageEl.textContent = message;
+        modal.classList.remove('hidden');
+
+        function handleConfirm() {
+            modal.classList.add('hidden');
+            cleanup();
+            resolve(true);
+        }
+
+        function handleCancel() {
+            modal.classList.add('hidden');
+            cleanup();
+            resolve(false);
+        }
+
+        function cleanup() {
+            okBtn.removeEventListener('click', handleConfirm);
+            cancelBtn.removeEventListener('click', handleCancel);
+            modal.removeEventListener('click', handleOutsideClick);
+            document.removeEventListener('keydown', handleKeydown);
+        }
+
+        function handleOutsideClick(e) {
+            if (e.target === modal) {
+                handleCancel();
+            }
+        }
+
+        function handleKeydown(e) {
+            if (e.key === 'Escape') {
+                handleCancel();
+            } else if (e.key === 'Enter') {
+                handleConfirm();
+            }
+        }
+
+        okBtn.addEventListener('click', handleConfirm);
+        cancelBtn.addEventListener('click', handleCancel);
+        modal.addEventListener('click', handleOutsideClick);
+        document.addEventListener('keydown', handleKeydown);
+    });
+}
+
+let isEditing = false;
+
+function openDialog() {
+    document.getElementById('recordDialog').classList.remove('hidden');
+    document.getElementById('dialogTitle').textContent = 'Nova Implantação OpsVista';
+    document.getElementById('recordForm').reset();
+    document.getElementById('recordId').value = '';
+    
+    // Limpar campos CR específicos
+    document.getElementById('cr-search').value = '';
+    document.getElementById('cr').value = '';
+    document.getElementById('cr-dropdown').classList.add('hidden');
+    
+    isEditing = false;
+}
+
+function closeDialog() {
+    document.getElementById('recordDialog').classList.add('hidden');
+}
+
+async function editRecord(id) {
+    try {
+        const response = await fetch(`{% url 'gestao_a_vista:implantacoes_opsvista' %}?id=${id}`);
+        const data = await response.json();
+        
+        if (data.success === false) {
+            showNotification(data.message, 'error');
+            return;
+        }
+        
+        document.getElementById('recordId').value = data.id;
+        document.getElementById('cr').value = data.cr;
+        document.getElementById('cr-search').value = data.cr; // Mostrar CR no campo de busca
+        document.getElementById('sistema').value = data.sistema;
+        document.getElementById('implantacoes').value = Array.isArray(data.implantacoes) ? data.implantacoes.join(', ') : data.implantacoes;
+        document.getElementById('dashboards').value = data.dashboards || 'nao_possui';
+        document.getElementById('servico').value = data.servico;
+        document.getElementById('status').value = data.status;
+        document.getElementById('observacoes').value = data.observacoes || '';
+        
+        document.getElementById('dialogTitle').textContent = 'Editar Implantação OpsVista';
+        document.getElementById('recordDialog').classList.remove('hidden');
+        isEditing = true;
+    } catch (error) {
+        console.error('Erro ao buscar registro:', error);
+        showNotification('Erro ao carregar dados do registro', 'error');
+    }
+}
+
+async function saveRecord() {
+    const form = document.getElementById('recordForm');
+    const formData = new FormData(form);
+    
+    // Debug: verificar valores dos campos
+    console.log('CR value:', formData.get('cr'));
+    console.log('CR select element value:', document.getElementById('cr').value);
+    console.log('CR search element value:', document.getElementById('cr-search').value);
+    
+    // Converter implantações para array
+    const implantacoesText = formData.get('implantacoes');
+    const implantacoes = implantacoesText.split(',').map(item => item.trim()).filter(item => item);
+    
+    const data = {
+        cr: formData.get('cr'),
+        sistema: formData.get('sistema'),
+        implantacoes: implantacoes,
+        dashboards: formData.get('dashboards'),
+        servico: formData.get('servico'),
+        status: formData.get('status'),
+        observacoes: formData.get('observacoes')
+    };
+    
+    // Se o campo CR estiver vazio, mas houver texto no campo de busca, usar o texto
+    if (!data.cr && document.getElementById('cr-search').value.trim()) {
+        let crText = document.getElementById('cr-search').value.trim();
+        
+        // Garantir que não exceda 100 caracteres
+        if (crText.length > 100) {
+            crText = crText.substring(0, 100);
+        }
+        
+        data.cr = crText;
+        console.log('Usando texto do campo de busca como CR:', crText);
+    }
+    
+    // Validação no frontend
+    if (!data.cr) {
+        showNotification('Por favor, digite ou selecione um CR.', 'warning');
+        return;
+    }
+    
+    // Validar tamanho do CR (máximo 100 caracteres)
+    if (data.cr.length > 100) {
+        showNotification(`CR muito longo (${data.cr.length} caracteres). Máximo permitido: 100 caracteres.\nCR: ${data.cr}`, 'error');
+        return;
+    }
+    
+    if (isEditing) {
+        data.id = formData.get('id');
+    }
+    
+    try {
+        const response = await fetch('{% url "gestao_a_vista:implantacoes_opsvista" %}', {
+            method: isEditing ? 'PUT' : 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showNotification(result.message, 'success');
+            closeDialog();
+            location.reload();
+        } else {
+            showNotification(result.message, 'error');
+        }
+    } catch (error) {
+        console.error('Erro ao salvar registro:', error);
+        showNotification('Erro ao salvar registro', 'error');
+    }
+}
+
+async function deleteRecord(id, sistema) {
+    const confirmed = await showConfirm(
+        'Confirmar Exclusão',
+        `Tem certeza que deseja excluir a implantação "${sistema}"?`,
+        'danger'
+    );
+
+    if (!confirmed) {
+        return;
+    }
+
+    try {
+        const response = await fetch('{% url "gestao_a_vista:implantacoes_opsvista" %}', {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify({ id: id })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            showNotification(result.message, 'success');
+            location.reload();
+        } else {
+            showNotification(result.message, 'error');
+        }
+    } catch (error) {
+        console.error('Erro ao excluir registro:', error);
+        showNotification('Erro ao excluir registro', 'error');
+    }
+}
+
+// Fechar modal ao clicar fora
+document.getElementById('recordDialog').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeDialog();
+    }
+});
+
+// Busca dinâmica de CRs
+let searchTimeout;
+const crSearch = document.getElementById('cr-search');
+const crSelect = document.getElementById('cr');
+const crDropdown = document.getElementById('cr-dropdown');
+
+crSearch.addEventListener('input', function() {
+    const searchTerm = this.value.trim();
+    
+    // Limpar timeout anterior
+    clearTimeout(searchTimeout);
+    
+    if (searchTerm.length < 2) {
+        crDropdown.classList.add('hidden');
+        return;
+    }
+    
+    // Debounce otimizado - aguardar apenas 150ms após parar de digitar
+    searchTimeout = setTimeout(async () => {
+        try {
+            // Mostrar indicador de loading
+            crDropdown.innerHTML = '<div class="px-3 py-2 text-gray-500">🔍 Buscando...</div>';
+            crDropdown.classList.remove('hidden');
+            
+            const response = await fetch(`{% url "gestao_a_vista:implantacoes_opsvista" %}?search_estruturas=${encodeURIComponent(searchTerm)}`);
+            const data = await response.json();
+            
+            // Limpar dropdown
+            crDropdown.innerHTML = '';
+            
+            if (data.estruturas && data.estruturas.length > 0) {
+                data.estruturas.forEach(estrutura => {
+                    const div = document.createElement('div');
+                    div.className = 'px-3 py-2 hover:bg-gray-100 cursor-pointer';
+                    div.textContent = estrutura.cr;
+                    div.onclick = () => selectCR(estrutura.id, estrutura.cr);
+                    crDropdown.appendChild(div);
+                });
+                crDropdown.classList.remove('hidden');
+            } else {
+                const div = document.createElement('div');
+                div.className = 'px-3 py-2 text-gray-500';
+                div.textContent = 'Nenhum CR encontrado';
+                crDropdown.appendChild(div);
+                crDropdown.classList.remove('hidden');
+            }
+        } catch (error) {
+            console.error('Erro ao buscar CRs:', error);
+            // Mostrar mensagem de erro no dropdown
+            crDropdown.innerHTML = '<div class="px-3 py-2 text-red-500">Erro na busca. Tente novamente.</div>';
+            crDropdown.classList.remove('hidden');
+        }
+    }, 150);  // Reduzir de 300ms para 150ms
+});
+
+function selectCR(id, cr) {
+    crSearch.value = cr;
+    crSelect.value = id;
+    crDropdown.classList.add('hidden');
+}
+
+// Fechar dropdown ao clicar fora
+document.addEventListener('click', function(event) {
+    if (!crSearch.contains(event.target) && !crDropdown.contains(event.target)) {
+        crDropdown.classList.add('hidden');
+    }
+});
+</script>
+
+<!-- Dashboard: gráficos da Visão Geral -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+(function () {
+    var stats = JSON.parse(document.getElementById('implDashStats').textContent);
+
+    var NAVY = '#1a2a45', NAVY_MID = '#1e3558', SKY = '#0ea5e9', GREEN = '#16a34a',
+        GRAY = '#64748b', AMBER = '#d97706', GRID = '#eef2f7', TXT = '#475569';
+
+    Chart.defaults.font.family = "'Figtree', system-ui, sans-serif";
+    Chart.defaults.color = TXT;
+
+    // Andamento (Status): rosca Ativo x Desmobilizado
+    new Chart(document.getElementById('implChartStatus'), {
+        type: 'doughnut',
+        data: {
+            labels: stats.status.labels,
+            datasets: [{ data: stats.status.valores, backgroundColor: [GREEN, GRAY], borderWidth: 2, borderColor: '#fff' }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, cutout: '62%',
+            plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } } } }
+    });
+
+    // Por serviço: barras empilhadas (ativas x desmobilizadas)
+    new Chart(document.getElementById('implChartServico'), {
+        type: 'bar',
+        data: {
+            labels: stats.servico.labels,
+            datasets: [
+                { label: 'Ativas', data: stats.servico.ativos, backgroundColor: NAVY, borderRadius: 4, stack: 's' },
+                { label: 'Desmobilizadas', data: stats.servico.desmobilizados, backgroundColor: GRAY, borderRadius: 4, stack: 's' }
+            ]
+        },
+        options: { responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } } },
+            scales: { x: { stacked: true, grid: { display: false } },
+                      y: { stacked: true, beginAtZero: true, ticks: { precision: 0 }, grid: { color: GRID } } } }
+    });
+
+    // Tipo de dashboard: rosca Regional / Corporativo / Não possui
+    new Chart(document.getElementById('implChartDashboards'), {
+        type: 'doughnut',
+        data: {
+            labels: stats.dashboards.labels,
+            datasets: [{ data: stats.dashboards.valores, backgroundColor: [SKY, NAVY_MID, '#cbd5e1'], borderWidth: 2, borderColor: '#fff' }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, cutout: '62%',
+            plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } } } }
+    });
+
+    // Novas implantações por mês (últimos 6 meses)
+    new Chart(document.getElementById('implChartMensal'), {
+        type: 'bar',
+        data: {
+            labels: stats.mensal.labels,
+            datasets: [{ label: 'Novas implantações', data: stats.mensal.valores, backgroundColor: SKY, borderRadius: 5, maxBarThickness: 46 }]
+        },
+        options: { responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { x: { grid: { display: false } },
+                      y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: GRID } } } }
+    });
+})();
+</script>
+
+{% csrf_token %}
+{% endblock %}

@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+{% block title %}Auditor de Ronda{% endblock %}
+
+{% block content %}
+<style>
+    .nav-tabs .nav-link {
+        color: #64748b;
+        font-weight: 500;
+    }
+
+    .nav-tabs .nav-link.active {
+        background-color: #f8fafc;
+        border-bottom-color: transparent;
+        font-weight: bold;
+        color: #1e40af;
+    }
+
+    .tab-content {
+        background: #f8fafc;
+        border: 1px solid #dee2e6;
+        border-top: none;
+        padding: 20px;
+        border-radius: 0 0 8px 8px;
+    }
+
+    .auditor-ronda-frame {
+        width: 100%;
+        height: 78vh;
+        border: none;
+        border-radius: 6px;
+        background: #fff;
+    }
+</style>
+
+<div class="container-fluid py-4 bg-light-gray" style="min-height: 100vh;">
+    <div class="mb-4 border-bottom pb-3 border-secondary">
+        <h3 class="text-dark-blue fw-bold"><i class="bi bi-shield-check"></i> Auditor de Ronda</h3>
+    </div>
+
+    <ul class="nav nav-tabs" id="auditorRondaTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="ia-tab" data-bs-toggle="tab" data-bs-target="#ia" type="button" role="tab">
+                Auditoria de IA
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="hash-tab" data-bs-toggle="tab" data-bs-target="#hash" type="button" role="tab">
+                Auditoria de Hash
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="ata-tab" data-bs-toggle="tab" data-bs-target="#ata" type="button" role="tab">
+                Livro Ata
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="auditorRondaTabsContent">
+        <div class="tab-pane fade show active" id="ia" role="tabpanel">
+            <iframe class="auditor-ronda-frame"
+                src="https://app.powerbi.com/view?r=eyJrIjoiMGYzODg5OTMtNDY0NC00NmEwLWIwMjEtZDEzZDk3NzQzNmZmIiwidCI6IjQyODUyNWQ5LTIzYmQtNGY4Yy1hZmEyLTU2MDBmNDAxZjMyNiJ9"
+                loading="lazy" allowfullscreen title="Auditoria de IA"></iframe>
+        </div>
+        <div class="tab-pane fade" id="hash" role="tabpanel">
+            <iframe class="auditor-ronda-frame"
+                src="{% url 'gestao_a_vista:auditoria_hash_torre' %}?embed=1"
+                loading="lazy" title="Auditoria de Hash"></iframe>
+        </div>
+        <div class="tab-pane fade" id="ata" role="tabpanel">
+            <iframe class="auditor-ronda-frame" style="height: 85vh;"
+                src="{% url 'gestao_a_vista:livro_ata' %}?embed=1"
+                loading="lazy" title="Livro Ata"></iframe>
+        </div>
+    </div>
+</div>
+{% endblock %}

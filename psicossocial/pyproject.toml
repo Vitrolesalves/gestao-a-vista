@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "psicossocial-nr01"
+version = "0.1.0"
+description = "Backend local para avaliacao psicossocial NR-01 / COPSOQ II adaptado."
+readme = "README_BACKEND.md"
+requires-python = ">=3.11"
+dependencies = [
+  "PyYAML>=6.0.1",
+  "openpyxl>=3.1.5",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0",
+]
+
+[project.scripts]
+psicossocial = "psicossocial.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

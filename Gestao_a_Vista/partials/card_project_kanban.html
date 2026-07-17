@@ -1,0 +1,41 @@
+<div class="kanban-card priority-{{ projeto.prioridade }}" data-project-id="{{ projeto.id }}">
+    
+    <div class="card-tags">
+        {% if projeto.tipo_servico %}
+        <span class="tag tag-service">{{ projeto.tipo_servico.nome }}</span>
+        {% endif %}
+        
+        {% if projeto.prioridade == 'Alto' %}
+            <span class="tag tag-priority-alto">ALTA</span>
+        {% elif projeto.prioridade == 'Médio' %}
+            <span class="tag tag-priority-medio">MÉDIA</span>
+        {% else %}
+            <span class="tag tag-priority-baixo">BAIXA</span>
+        {% endif %}
+    </div>
+
+    <div class="d-flex justify-content-between align-items-start">
+        <div class="card-title">{{ projeto.nome }}</div>
+        <div class="card-actions">
+            <button onclick="editarProjeto('{{ projeto.id }}')" class="btn-card-action" title="Editar">
+                <i class="fas fa-pen"></i>
+            </button>
+        </div>
+    </div>
+
+    <div class="card-footer">
+        <div class="card-date {% if projeto.atrasado %}overdue{% endif %}">
+            <i class="far fa-calendar-alt"></i>
+            {{ projeto.data_conclusao|date:"d/m" }}
+        </div>
+        
+        {% if projeto.responsaveis.exists %}
+        <div class="d-flex align-items-center" title="{{ projeto.get_responsaveis_display }}">
+            <i class="fas fa-user-circle fa-lg text-secondary"></i>
+            {% if projeto.responsaveis.count > 1 %}
+            <span class="ms-1 small">+{{ projeto.responsaveis.count|add:"-1" }}</span>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>

@@ -1,0 +1,643 @@
+{% extends 'base.html' %}
+{% block title %}Auditoria de Hash{% endblock %}
+
+{% block content %}
+<style>
+    /* Cores personalizadas Azul Escuro e Cinza do site */
+    .bg-dark-blue {
+        background-color: #1e2b3c !important; 
+    }
+    .text-dark-blue {
+        color: #1e2b3c !important;
+    }
+    .bg-light-gray {
+        background-color: #f4f6f9 !important; 
+    }
+    .border-dark-blue {
+        border-color: #1e2b3c !important;
+    }
+    
+    /* Estilos da Lista */
+    .lista-auditoria-item {
+        border-left: 5px solid #1e2b3c;
+        transition: all 0.3s ease;
+        background-color: #ffffff;
+    }
+    .lista-auditoria-item:hover {
+        background-color: #f8f9fa;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .lista-coincidencia-item {
+        border-left: 5px solid #dc3545; 
+    }
+    
+    /* Status Auditado/Tratado */
+    .item-auditado {
+        background-color: #e9ecef !important;
+        opacity: 0.6;
+        border-left: 5px solid #6c757d !important;
+    }
+    .item-auditado img {
+        filter: grayscale(100%);
+    }
+
+    /* Miniatura de Imagem */
+    .img-miniatura {
+        width: 70px;
+        height: 70px;
+        object-fit: cover;
+        cursor: pointer;
+        border: 2px solid #dee2e6;
+        border-radius: 6px;
+        transition: transform 0.2s;
+    }
+    .img-miniatura:hover {
+        transform: scale(1.1);
+        border-color: #1e2b3c;
+    }
+
+    /* Estilos de Impressão (Exportar PDF) */
+    @media print {
+        body.printing-coincidencias * {
+            visibility: hidden;
+        }
+        body.printing-coincidencias #coincidencias, 
+        body.printing-coincidencias #coincidencias * {
+            visibility: visible;
+        }
+        body.printing-coincidencias #coincidencias {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        body.printing-coincidencias .card, 
+        body.printing-coincidencias button {
+            display: none !important;
+        }
+        body.printing-coincidencias .lista-coincidencia-item,
+        body.printing-coincidencias .item-auditado {
+            page-break-inside: avoid;
+            break-inside: avoid;
+            border: 1px solid #ddd !important;
+            margin-bottom: 20px !important;
+            box-shadow: none !important;
+            background-color: white !important;
+        }
+        body.printing-coincidencias .img-miniatura {
+            border: 1px solid #ccc !important;
+        }
+    }
+</style>
+
+<div class="container-fluid py-4 bg-light-gray" style="min-height: 100vh;">
+    <div class="mb-4 border-bottom pb-3 border-secondary">
+        <h3 class="text-dark-blue fw-bold"><i class="bi bi-shield-check"></i> Auditoria de Hash</h3>
+    </div>
+
+    <div class="card shadow-sm mb-4 border-0">
+        <div class="card-body bg-white rounded">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label fw-bold text-dark-blue small">Filtrar Unidade (CR)</label>
+                    <input type="text" id="filtroCr" class="form-control form-control-sm" placeholder="Ex: CIA HERING">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-bold text-dark-blue small">Filtrar Item / Pergunta</label>
+                    <input type="text" id="filtroItem" class="form-control form-control-sm" placeholder="Ex: PLACAS BALÍSTICAS">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-bold text-dark-blue small">Data Específica</label>
+                    <input type="date" id="filtroData" class="form-control form-control-sm">
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button class="btn bg-dark-blue text-white w-100 btn-sm shadow-sm" onclick="aplicarFiltros()">
+                        <i class="bi bi-funnel"></i> Buscar e Filtrar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <ul class="nav nav-pills mb-4" id="auditoriaTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active bg-dark-blue text-white shadow-sm me-2" id="todas-tab" data-bs-toggle="tab" data-bs-target="#todas" type="button" role="tab">
+                <i class="bi bi-list-task"></i> Todas as Ocorrências
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link text-danger border border-danger shadow-sm bg-white" id="coincidencias-tab" data-bs-toggle="tab" data-bs-target="#coincidencias" type="button" role="tab">
+                <i class="bi bi-images"></i> Coincidências (Fotos Iguais)
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="myTabContent">
+        <div class="tab-pane fade show active" id="todas" role="tabpanel">
+            <div class="list-group shadow-sm" id="lista-todas">
+            </div>
+            
+            <div class="text-center mt-4 mb-5">
+                <button class="btn text-white bg-dark-blue px-5 shadow" id="btnCarregarMaisTodas" onclick="carregarOcorrencias()">
+                    <i class="bi bi-plus-circle"></i> Carregar Mais Registros
+                </button>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="coincidencias" role="tabpanel">
+            <div class="card mb-4 border-0 shadow-sm bg-white">
+                <div class="card-body rounded text-center">
+                    <h5 class="text-dark-blue fw-bold mb-2"><i class="bi bi-search"></i> Verificação Completa de Coincidências</h5>
+                    <p class="text-muted small mb-3">Esta ação varre o histórico buscando imagens duplicadas.</p>
+                    
+                    <div id="painelVerificacao" style="display: none;" class="bg-light p-3 rounded mb-3 border text-start">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="fw-bold text-dark-blue">
+                                <i class="spinner-border spinner-border-sm me-2" id="spinnerVerificacao"></i> Analisando banco de dados...
+                            </span>
+                            <span class="badge bg-primary fs-6" id="statusVerificacaoData">Aguardando...</span>
+                        </div>
+                        <div class="progress mb-2" style="height: 10px;">
+                            <div id="barraVerificacao" class="progress-bar progress-bar-striped progress-bar-animated bg-dark-blue" role="progressbar" style="width: 100%"></div>
+                        </div>
+                        <div class="d-flex justify-content-between small text-muted">
+                            <span>Itens lidos no dia atual: <strong id="contadorDiaAtual" class="text-dark">0</strong></span>
+                            <span>Total lido (geral): <strong id="contadorTotal" class="text-dark">0</strong></span>
+                            <span class="text-danger fw-bold">Duplicadas achadas: <strong id="contadorDuplicadas" class="text-danger">0</strong></span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <button class="btn bg-dark-blue text-white shadow-sm px-4" id="btnIniciarVerificacao" onclick="iniciarVerificacaoGeral()">
+                            <i class="bi bi-play-circle"></i> Iniciar Verificação
+                        </button>
+                        <button class="btn btn-danger shadow-sm px-4" id="btnPararVerificacao" onclick="pararVerificacaoGeral()" style="display: none;">
+                            <i class="bi bi-stop-circle"></i> Parar
+                        </button>
+                        <button class="btn btn-outline-danger shadow-sm px-4 ms-2" id="btnExportarPDF" onclick="exportarCoincidenciasPDF()">
+                            <i class="bi bi-file-earmark-pdf-fill"></i> Exportar para PDF
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="list-group shadow-sm" id="lista-coincidencias">
+                <div class="list-group-item text-center text-muted py-5" id="empty-coincidencias">
+                    <i class="bi bi-check-circle" style="font-size: 2rem;"></i>
+                    <p class="mt-2 mb-0">Nenhuma foto idêntica detetada até ao momento.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block modals %}
+<div class="modal fade" id="imagemModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered d-flex justify-content-center">
+        <div class="modal-content bg-transparent border-0 position-relative" style="box-shadow: none;">
+            
+            <button type="button" class="btn-close btn-close-white fs-5 bg-dark rounded-circle p-2 shadow position-absolute" 
+                    data-bs-dismiss="modal" aria-label="Close" 
+                    style="right: 0px; top: -15px; z-index: 1060;"></button>
+            
+            <div class="modal-body p-0 d-flex justify-content-center align-items-center w-100">
+                <img id="imagemAmpliada" src="" class="img-fluid rounded shadow-lg mx-auto d-block" 
+                     style="max-height: 85vh; width: auto; max-width: 100%; object-fit: contain; cursor: pointer;" 
+                     data-bs-dismiss="modal" title="Clique para fechar">
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let offset = 0;
+const limit = 45;
+
+let isVerificando = false;
+let offsetVerificacao = 0;
+let dataAtualVerificacao = null;
+let contadorDia = 0;
+let contadorTotal = 0;
+let qtdDuplicadasTotal = 0;
+
+document.addEventListener('DOMContentLoaded', () => {
+    carregarOcorrencias();
+});
+
+function aplicarFiltros() {
+    offset = 0; 
+    document.getElementById('lista-todas').innerHTML = '';
+    
+    document.getElementById('lista-coincidencias').innerHTML = `
+        <div class="list-group-item text-center text-muted py-5" id="empty-coincidencias">
+            <i class="bi bi-check-circle" style="font-size: 2rem;"></i>
+            <p class="mt-2 mb-0">Nenhuma foto idêntica detetada até ao momento.</p>
+        </div>`;
+        
+    document.getElementById('btnCarregarMaisTodas').style.display = 'inline-block';
+    
+    if (isVerificando) {
+        pararVerificacaoGeral();
+    }
+    
+    carregarOcorrencias();
+}
+
+function carregarOcorrencias() {
+    const btn = document.getElementById('btnCarregarMaisTodas');
+    const oldText = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> A carregar...';
+    btn.disabled = true;
+
+    const cr = document.getElementById('filtroCr').value;
+    const item = document.getElementById('filtroItem').value;
+    const data = document.getElementById('filtroData').value;
+
+    const url = `/api/auditoria-torre/carregar-mais/?offset=${offset}&limit=${limit}&cr=${encodeURIComponent(cr)}&item=${encodeURIComponent(item)}&data=${encodeURIComponent(data)}`;
+
+    fetch(url)
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                if(data.todas.length === 0 && offset === 0) {
+                    document.getElementById('lista-todas').innerHTML = `
+                        <div class="list-group-item text-center text-muted py-5">
+                            <i class="bi bi-search" style="font-size: 2rem;"></i>
+                            <p class="mt-2 mb-0">Nenhum registo encontrado com estes filtros.</p>
+                        </div>`;
+                } else {
+                    renderizarOcorrencias(data.todas, 'lista-todas');
+                }
+                
+                renderizarCoincidencias(data.coincidencias, 'lista-coincidencias');
+                
+                offset += limit;
+                if(!data.has_more) {
+                    btn.style.display = 'none';
+                }
+            } else {
+                console.error("Erro ao carregar auditoria: " + data.error);
+            }
+        })
+        .finally(() => {
+            btn.innerHTML = oldText;
+            btn.disabled = false;
+        });
+}
+
+// ---------------------------------------------------------
+// FUNÇÕES DA VERIFICAÇÃO GERAL COM LOTES PEQUENOS
+// ---------------------------------------------------------
+
+function iniciarVerificacaoGeral() {
+    isVerificando = true;
+    offsetVerificacao = 0; 
+    dataAtualVerificacao = null;
+    contadorDia = 0;
+    contadorTotal = 0;
+    qtdDuplicadasTotal = 0;
+
+    document.getElementById('lista-coincidencias').innerHTML = `
+        <div class="list-group-item text-center text-muted py-5" id="empty-coincidencias">
+            <i class="bi bi-check-circle" style="font-size: 2rem;"></i>
+            <p class="mt-2 mb-0">Nenhuma foto idêntica detetada até ao momento.</p>
+        </div>`;
+
+    document.getElementById('btnIniciarVerificacao').style.display = 'none';
+    document.getElementById('btnPararVerificacao').style.display = 'inline-block';
+    document.getElementById('painelVerificacao').style.display = 'block';
+    
+    document.getElementById('statusVerificacaoData').innerText = "Iniciando...";
+    document.getElementById('statusVerificacaoData').className = "badge bg-primary fs-6";
+    document.getElementById('spinnerVerificacao').style.display = 'inline-block';
+    document.getElementById('barraVerificacao').classList.add('progress-bar-animated');
+    
+    document.getElementById('contadorDiaAtual').innerText = '0';
+    document.getElementById('contadorTotal').innerText = '0';
+    document.getElementById('contadorDuplicadas').innerText = '0';
+
+    verificarProximoLote();
+}
+
+function pararVerificacaoGeral() {
+    isVerificando = false;
+    document.getElementById('btnIniciarVerificacao').style.display = 'inline-block';
+    document.getElementById('btnPararVerificacao').style.display = 'none';
+    
+    document.getElementById('statusVerificacaoData').innerText = "Verificação Pausada";
+    document.getElementById('statusVerificacaoData').className = "badge bg-warning text-dark fs-6";
+    document.getElementById('spinnerVerificacao').style.display = 'none';
+    document.getElementById('barraVerificacao').classList.remove('progress-bar-animated');
+}
+
+function verificarProximoLote() {
+    if (!isVerificando) return;
+
+    const cr = document.getElementById('filtroCr').value;
+    const item = document.getElementById('filtroItem').value;
+    const data = document.getElementById('filtroData').value;
+    
+    const limitVerif = 10; 
+
+    const url = `/api/auditoria-torre/carregar-mais/?offset=${offsetVerificacao}&limit=${limitVerif}&cr=${encodeURIComponent(cr)}&item=${encodeURIComponent(item)}&data=${encodeURIComponent(data)}`;
+
+    fetch(url)
+        .then(res => {
+            if(!res.ok) throw new Error("Falha na rede.");
+            return res.json();
+        })
+        .then(dataResponse => {
+            if (!isVerificando) return;
+
+            if (dataResponse.success) {
+                if (dataResponse.todas && dataResponse.todas.length > 0) {
+                    let itemAtual = dataResponse.todas[0];
+                    let itemDate = itemAtual.data ? itemAtual.data.substring(0, 10) : "Processando..."; 
+                    
+                    if (itemDate !== dataAtualVerificacao) {
+                        dataAtualVerificacao = itemDate;
+                        contadorDia = dataResponse.todas.length; 
+                    } else {
+                        contadorDia += dataResponse.todas.length; 
+                    }
+                    contadorTotal += dataResponse.todas.length; 
+                    
+                    document.getElementById('statusVerificacaoData').innerText = "Lendo dia: " + dataAtualVerificacao;
+                    document.getElementById('contadorDiaAtual').innerText = contadorDia;
+                    document.getElementById('contadorTotal').innerText = contadorTotal;
+                    
+                    renderizarOcorrencias(dataResponse.todas, 'lista-todas');
+                }
+
+                if (dataResponse.coincidencias && dataResponse.coincidencias.length > 0) {
+                    let novasAdicionadas = 0;
+                    dataResponse.coincidencias.forEach(c => {
+                        if (!document.getElementById(`coincidencia-${c.ocorrencia_hash}`)) {
+                            novasAdicionadas++;
+                        }
+                    });
+                    
+                    qtdDuplicadasTotal += novasAdicionadas;
+                    document.getElementById('contadorDuplicadas').innerText = qtdDuplicadasTotal;
+                    renderizarCoincidencias(dataResponse.coincidencias, 'lista-coincidencias');
+                }
+
+                offsetVerificacao += limitVerif;
+                offset = offsetVerificacao; 
+                
+                if (dataResponse.has_more) {
+                    setTimeout(verificarProximoLote, 300);
+                } else {
+                    isVerificando = false;
+                    document.getElementById('btnIniciarVerificacao').style.display = 'inline-block';
+                    document.getElementById('btnPararVerificacao').style.display = 'none';
+                    document.getElementById('statusVerificacaoData').innerText = "Verificação Concluída!";
+                    document.getElementById('statusVerificacaoData').className = "badge bg-success fs-6";
+                    document.getElementById('spinnerVerificacao').style.display = 'none';
+                    document.getElementById('barraVerificacao').classList.remove('progress-bar-animated');
+                }
+            } else {
+                pararVerificacaoGeral();
+            }
+        })
+        .catch(err => {
+            offsetVerificacao += limitVerif; 
+            setTimeout(verificarProximoLote, 500); 
+        });
+}
+
+// ---------------------------------------------------------
+// RENDERIZAÇÃO
+// ---------------------------------------------------------
+
+function abrirModalImagem(url) {
+    if(!url || url === 'null') return; // Segurança extra para não abrir null
+    document.getElementById('imagemAmpliada').src = url;
+    var myModalEl = document.getElementById('imagemModal');
+    var myModal = bootstrap.Modal.getInstance(myModalEl);
+    if (!myModal) {
+        myModal = new bootstrap.Modal(myModalEl);
+    }
+    myModal.show();
+}
+
+function renderizarOcorrencias(lista, containerId) {
+    const container = document.getElementById(containerId);
+    lista.forEach(item => {
+        if(document.getElementById(`item-${item.ocorrencia_hash}`)) return;
+
+        const isAuditado = item.is_auditado ? 'item-auditado' : '';
+        const botaoAuditar = item.is_auditado ? 
+            `<button class="btn btn-sm btn-outline-secondary w-100" onclick="marcarAuditoria('${item.ocorrencia_hash}', this)"><i class="bi bi-arrow-counterclockwise"></i> Reverter</button>` :
+            `<button class="btn btn-sm btn-success w-100 shadow-sm" onclick="marcarAuditoria('${item.ocorrencia_hash}', this)"><i class="bi bi-check2-all"></i> Marcar Auditado</button>`;
+
+        const relatoStyle = (item.relato.includes('NÃO CONFORME') || item.relato.includes('NÃO')) ? 'text-danger fw-bold' : 'text-secondary';
+        
+        // CORREÇÃO: Evitar carregar a palavra 'null' como imagem
+        const urlSegura = (item.evidencia_url && item.evidencia_url !== 'null') ? item.evidencia_url : '';
+        const evidenciaHtml = urlSegura 
+            ? `<img src="${urlSegura}" class="img-miniatura ms-3 shadow-sm" title="Clique para ampliar" onclick="abrirModalImagem('${urlSegura}')">`
+            : `<div class="ms-3 text-muted border rounded d-flex align-items-center justify-content-center" style="width:70px; height:70px; font-size:0.7rem; background:#f8f9fa;">S/ Foto</div>`;
+
+        const avisoDuplicada = item.is_coincidencia && item.datas_coincidentes.length > 0
+            ? `<div class="alert alert-danger p-2 mt-2 mb-0 d-inline-block shadow-sm text-start" style="font-size: 0.8rem; width: 100%;">
+                 <div class="mb-1"><i class="bi bi-exclamation-triangle-fill"></i> <strong>Atenção! Imagem IDÊNTICA usada em:</strong></div>
+                 ${item.datas_coincidentes.join('<hr class="my-2 border-danger" style="opacity: 0.3;">')}
+               </div>`
+            : '';
+
+        const row = `
+        <div class="list-group-item lista-auditoria-item d-flex flex-column flex-md-row justify-content-between align-items-center mb-2 rounded shadow-sm ${isAuditado}" id="item-${item.ocorrencia_hash}">
+            
+            <div class="flex-grow-1 p-1 w-100">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <h6 class="mb-0 text-dark-blue fw-bold">CR: ${item.cr_nome}</h6>
+                    <small class="text-muted"><i class="bi bi-calendar-event"></i> ${item.data}</small>
+                </div>
+                
+                <div class="small text-secondary mb-2 border-bottom pb-1">
+                    <span class="me-3"><i class="bi bi-person-badge"></i> <strong>Lançado por:</strong> ${item.colaborador}</span>
+                    <span><i class="bi bi-person-workspace"></i> <strong>Gestor:</strong> ${item.gerente}</span>
+                </div>
+
+                <div class="small text-muted mb-2">
+                    <span class="me-3"><strong>Nº:</strong> ${item.numero || 'N/D'}</span>
+                    <span class="me-3"><strong>ID:</strong> ${item.tarefa_id || 'N/D'}</span>
+                    <span><strong>Início real:</strong> ${item.inicio_real || '-'}</span>
+                </div>
+
+                <div class="mb-1" style="font-size: 0.95rem;">
+                    <strong>Item:</strong> ${item.item}
+                </div>
+                <div style="font-size: 0.95rem;">
+                    <strong>Relato:</strong> <span class="${relatoStyle}">${item.relato}</span>
+                </div>
+                ${avisoDuplicada}
+            </div>
+            
+            <div class="p-2 d-flex flex-md-column align-items-center justify-content-center border-start ms-md-3 mt-3 mt-md-0" style="min-width: 140px;">
+                <div class="mb-2 w-100 text-center">
+                    ${evidenciaHtml}
+                </div>
+                <div class="w-100">
+                    ${botaoAuditar}
+                </div>
+            </div>
+        </div>`;
+        container.insertAdjacentHTML('beforeend', row);
+    });
+}
+
+function renderizarCoincidencias(lista, containerId) {
+    const container = document.getElementById(containerId);
+    
+    lista.forEach(item => {
+        if(document.getElementById(`coincidencia-${item.ocorrencia_hash}`)) return;
+        
+        const emptyMsg = document.getElementById('empty-coincidencias');
+        if(emptyMsg) emptyMsg.style.display = 'none';
+
+        const isTratada = item.is_tratada ? 'item-auditado border-secondary' : 'lista-coincidencia-item';
+        const txtBotao = item.is_tratada ? 'Tratada' : 'Marcar Tratada';
+        const btnClass = item.is_tratada ? 'btn-outline-secondary' : 'btn-danger';
+        const disableBtn = item.is_tratada ? 'disabled' : '';
+
+        // CORREÇÃO: Evitar carregar a palavra 'null' como imagem nas coincidências
+        const urlSegura = (item.evidencia_url && item.evidencia_url !== 'null') ? item.evidencia_url : '';
+        const imgCoincidencia = urlSegura 
+            ? `<img src="${urlSegura}" class="img-miniatura border-danger ms-3 shadow-sm" title="Clique para ampliar" onclick="abrirModalImagem('${urlSegura}')">`
+            : `<div class="ms-3 text-muted border rounded border-danger d-flex align-items-center justify-content-center" style="width:70px; height:70px; font-size:0.7rem; background:#f8f9fa;">S/ Foto</div>`;
+
+        const avisoDuplicada = item.datas_coincidentes.length > 0
+            ? `<div class="mt-2 text-danger small bg-white p-2 rounded border border-danger shadow-sm text-start">
+                 <div class="mb-1"><i class="bi bi-exclamation-triangle-fill"></i> <strong>Usada também em:</strong></div>
+                 ${item.datas_coincidentes.join('<hr class="my-2 border-danger" style="opacity: 0.3;">')}
+               </div>`
+            : '';
+
+        const row = `
+        <div class="list-group-item d-flex flex-column flex-md-row justify-content-between align-items-center mb-2 rounded shadow-sm ${isTratada}" id="coincidencia-${item.ocorrencia_hash}">
+            
+            <div class="flex-grow-1 p-1 w-100">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <h6 class="mb-0 text-danger fw-bold"><i class="bi bi-exclamation-triangle"></i> CR: ${item.cr_nome}</h6>
+                    <small class="text-muted"><i class="bi bi-calendar-event"></i> ${item.data}</small>
+                </div>
+                <div class="small text-secondary mb-1">
+                    <span><strong>Lançado por:</strong> ${item.colaborador}</span>
+                </div>
+                <div class="small text-muted mb-1">
+                    <span class="me-3"><strong>Nº:</strong> ${item.numero || 'N/D'}</span>
+                    <span class="me-3"><strong>ID:</strong> ${item.tarefa_id || 'N/D'}</span>
+                    <span><strong>Início real:</strong> ${item.inicio_real || '-'}</span>
+                </div>
+                <div class="small text-dark">
+                    <strong>Item:</strong> ${item.item}
+                </div>
+                ${avisoDuplicada}
+            </div>
+            
+            <div class="p-2 d-flex flex-md-column align-items-center justify-content-center border-start ms-md-3 mt-3 mt-md-0" style="min-width: 140px;">
+                <div class="mb-2 w-100 text-center">
+                    ${imgCoincidencia}
+                </div>
+                <div class="w-100">
+                    <button class="btn btn-sm ${btnClass} w-100 shadow-sm" ${disableBtn} onclick="tratarCoincidencia('${item.ocorrencia_hash}', this)">
+                        <i class="bi bi-shield-lock"></i> ${txtBotao}
+                    </button>
+                </div>
+            </div>
+        </div>`;
+        
+        container.insertAdjacentHTML('beforeend', row);
+    });
+}
+
+function marcarAuditoria(hash, btnElem) {
+    fetch('/api/auditoria-torre/marcar/', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')},
+        body: JSON.stringify({ ocorrencia_hash: hash })
+    }).then(res => res.json()).then(data => {
+        if(data.success) {
+            const row = document.getElementById(`item-${hash}`);
+            const container = document.getElementById('lista-todas');
+            
+            if(data.is_auditado) {
+                row.classList.add('item-auditado');
+                btnElem.className = 'btn btn-sm btn-outline-secondary w-100';
+                btnElem.innerHTML = '<i class="bi bi-arrow-counterclockwise"></i> Reverter';
+                setTimeout(() => container.appendChild(row), 200);
+            } else {
+                row.classList.remove('item-auditado');
+                btnElem.className = 'btn btn-sm btn-success w-100 shadow-sm';
+                btnElem.innerHTML = '<i class="bi bi-check2-all"></i> Marcar Auditado';
+                setTimeout(() => container.prepend(row), 200);
+            }
+        }
+    });
+}
+
+function tratarCoincidencia(hash, btnElem) {
+    fetch('/api/auditoria-torre/tratar-coincidencia/', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')},
+        body: JSON.stringify({ ocorrencia_hash: hash })
+    }).then(res => res.json()).then(data => {
+        if(data.success) {
+            const row = document.getElementById(`coincidencia-${hash}`);
+            row.classList.add('item-auditado', 'border-secondary');
+            row.classList.remove('lista-coincidencia-item');
+            
+            btnElem.className = 'btn btn-sm btn-outline-secondary w-100 shadow-sm';
+            btnElem.innerHTML = '<i class="bi bi-shield-lock"></i> Tratada';
+            btnElem.disabled = true;
+            
+            const container = document.getElementById('lista-coincidencias');
+            setTimeout(() => container.appendChild(row), 200);
+        }
+    });
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function exportarCoincidenciasPDF() {
+    const elemento = document.getElementById('lista-coincidencias');
+    
+    // Verifica se a lista está vazia
+    if (elemento.querySelector('#empty-coincidencias') && elemento.querySelector('#empty-coincidencias').style.display !== 'none') {
+        alert("Não há fotos coincidentes para exportar.");
+        return;
+    }
+
+    // Adiciona a classe no body para ativar o layout de impressão
+    document.body.classList.add('printing-coincidencias');
+
+    // Um pequeno delay para garantir que a renderização CSS ocorreu antes de abrir a janela de print
+    setTimeout(() => {
+        window.print();
+        // Remove a classe após a impressão (ou se o usuário fechar a janela)
+        document.body.classList.remove('printing-coincidencias');
+    }, 300);
+}
+</script>
+{% endblock %}

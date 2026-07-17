@@ -1,0 +1,24 @@
+# Dependências de produção
+-r requirements.txt
+
+# Dependências de desenvolvimento e testes
+pytest==7.4.3
+pytest-django==4.7.0
+pytest-cov==4.1.0
+pytest-xdist==3.5.0
+factory-boy==3.3.0
+faker==20.1.0
+coverage==7.3.4
+selenium==4.16.0
+webdriver-manager==4.0.1
+
+# Ferramentas de qualidade de código
+flake8==6.1.0
+black==23.11.0
+isort==5.12.0
+
+# Frontend dependencies
+django-compressor==4.4
+django-sass-processor==1.2.2
+libsass==0.22.0
+openpyxl

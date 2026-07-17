@@ -1,0 +1,676 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Controle de Chips - Gestão à Vista{% endblock %}
+
+{% block extra_css %}
+<style>
+    .controle-chips-title {
+        background: linear-gradient(to right, #0F172A, #1e40af);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-size: 28px;
+        font-weight: bold;
+        margin: 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="border-b pb-4">
+        <h1 class="controle-chips-title">Controle de Chips</h1>
+        <p class="text-muted-foreground">Gerencie o controle de chips e linhas telefônicas</p>
+    </div>
+
+    <!-- Filtros -->
+    <div class="bg-white rounded-lg border shadow-sm">
+        <div class="p-4 border-b">
+            <h2 class="text-lg font-semibold flex items-center gap-2">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+                </svg>
+                Filtros
+            </h2>
+        </div>
+        <div class="p-4">
+            <form method="get" class="flex gap-4 items-end flex-wrap">
+                <div class="flex-1 min-w-[200px]">
+                    <label for="filtro-cr" class="block text-sm font-medium mb-1">CR</label>
+                    <div class="relative flex items-center">
+                        <svg class="absolute left-3 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                        <input type="text" 
+                               id="filtro-cr" 
+                               name="cr" 
+                               value="{{ filtros.cr }}"
+                               placeholder="Buscar por CR..." 
+                               class="pl-10 w-full h-10 rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    </div>
+                </div>
+                <div class="flex-1 min-w-[200px]">
+                    <label for="filtro-telefone" class="block text-sm font-medium mb-1">Nº Telefone</label>
+                    <div class="relative flex items-center">
+                        <svg class="absolute left-3 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+                        </svg>
+                        <input type="text" 
+                               id="filtro-telefone" 
+                               name="telefone" 
+                               value="{{ filtros.telefone }}"
+                               placeholder="Buscar por telefone..." 
+                               class="pl-10 w-full h-10 rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    </div>
+                </div>
+                <div class="flex-1 min-w-[200px]">
+                    <label for="filtro-id-portal" class="block text-sm font-medium mb-1">ID Portal</label>
+                    <div class="relative flex items-center">
+                        <svg class="absolute left-3 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"/>
+                        </svg>
+                        <input type="text" 
+                               id="filtro-id-portal" 
+                               name="id_portal" 
+                               value="{{ filtros.id_portal }}"
+                               placeholder="Buscar por ID Portal..." 
+                               class="pl-10 w-full h-10 rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    </div>
+                </div>
+                <div class="w-48">
+                    <label for="filtro-status" class="block text-sm font-medium mb-1">Status</label>
+                    <select id="filtro-status" 
+                            name="status" 
+                            class="w-full h-10 rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                        <option value="todos" {% if filtros.status == 'todos' %}selected{% endif %}>Todos os status</option>
+                        {% for value, label in status_choices %}
+                            <option value="{{ value }}" {% if filtros.status == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="button" 
+                        class="px-4 h-10 text-white rounded-md hover:opacity-90 flex items-center gap-2"
+                        style="background-color: #0F172A;"
+                        onclick="openDialog()">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Novo Registro
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Lista -->
+    <div class="bg-white rounded-lg border shadow-sm">
+        <div class="p-4 border-b">
+            <h2 class="text-lg font-semibold">Lista de Registros</h2>
+        </div>
+        <div class="p-4">
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="border-b text-xs uppercase">
+                            <th class="text-left py-2 px-2">
+                                <a href="?{% if filtros.cr %}cr={{ filtros.cr }}&{% endif %}{% if filtros.telefone %}telefone={{ filtros.telefone }}&{% endif %}{% if filtros.id_portal %}id_portal={{ filtros.id_portal }}&{% endif %}{% if filtros.status != 'todos' %}status={{ filtros.status }}&{% endif %}ordenar=data{% if ordenacao == 'data' %}_desc{% endif %}" 
+                                   class="flex items-center gap-1 hover:text-blue-600 font-bold">
+                                    Data
+                                    <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/>
+                                    </svg>
+                                </a>
+                            </th>
+                            <th class="text-left py-2 px-2">
+                                <a href="?{% if filtros.cr %}cr={{ filtros.cr }}&{% endif %}{% if filtros.telefone %}telefone={{ filtros.telefone }}&{% endif %}{% if filtros.id_portal %}id_portal={{ filtros.id_portal }}&{% endif %}{% if filtros.status != 'todos' %}status={{ filtros.status }}&{% endif %}ordenar=id_portal{% if ordenacao == 'id_portal' %}_desc{% endif %}" 
+                                   class="flex items-center gap-1 hover:text-blue-600 font-bold">
+                                    ID Portal
+                                    <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/>
+                                    </svg>
+                                </a>
+                            </th>
+                            <th class="text-left py-2 px-2">
+                                <a href="?{% if filtros.cr %}cr={{ filtros.cr }}&{% endif %}{% if filtros.telefone %}telefone={{ filtros.telefone }}&{% endif %}{% if filtros.id_portal %}id_portal={{ filtros.id_portal }}&{% endif %}{% if filtros.status != 'todos' %}status={{ filtros.status }}&{% endif %}ordenar=solicitante{% if ordenacao == 'solicitante' %}_desc{% endif %}" 
+                                   class="flex items-center gap-1 hover:text-blue-600 font-bold">
+                                    Solicitante
+                                    <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/>
+                                    </svg>
+                                </a>
+                            </th>
+                            <th class="text-left py-2 px-2">
+                                <a href="?{% if filtros.cr %}cr={{ filtros.cr }}&{% endif %}{% if filtros.telefone %}telefone={{ filtros.telefone }}&{% endif %}{% if filtros.id_portal %}id_portal={{ filtros.id_portal }}&{% endif %}{% if filtros.status != 'todos' %}status={{ filtros.status }}&{% endif %}ordenar=cr{% if ordenacao == 'cr' %}_desc{% endif %}" 
+                                   class="flex items-center gap-1 hover:text-blue-600 font-bold">
+                                    CR
+                                    <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/>
+                                    </svg>
+                                </a>
+                            </th>
+                            <th class="text-left py-2 px-2">
+                                <a href="?{% if filtros.cr %}cr={{ filtros.cr }}&{% endif %}{% if filtros.telefone %}telefone={{ filtros.telefone }}&{% endif %}{% if filtros.id_portal %}id_portal={{ filtros.id_portal }}&{% endif %}{% if filtros.status != 'todos' %}status={{ filtros.status }}&{% endif %}ordenar=operadora{% if ordenacao == 'operadora' %}_desc{% endif %}" 
+                                   class="flex items-center gap-1 hover:text-blue-600 font-bold">
+                                    Operadora
+                                    <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/>
+                                    </svg>
+                                </a>
+                            </th>
+                            <th class="text-left py-2 px-2">
+                                <a href="?{% if filtros.cr %}cr={{ filtros.cr }}&{% endif %}{% if filtros.telefone %}telefone={{ filtros.telefone }}&{% endif %}{% if filtros.id_portal %}id_portal={{ filtros.id_portal }}&{% endif %}{% if filtros.status != 'todos' %}status={{ filtros.status }}&{% endif %}ordenar=numero_telefone{% if ordenacao == 'numero_telefone' %}_desc{% endif %}" 
+                                   class="flex items-center gap-1 hover:text-blue-600 font-bold">
+                                    Nº Telefone
+                                    <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/>
+                                    </svg>
+                                </a>
+                            </th>
+                            <th class="text-left py-2 px-2">
+                                <a href="?{% if filtros.cr %}cr={{ filtros.cr }}&{% endif %}{% if filtros.telefone %}telefone={{ filtros.telefone }}&{% endif %}{% if filtros.id_portal %}id_portal={{ filtros.id_portal }}&{% endif %}{% if filtros.status != 'todos' %}status={{ filtros.status }}&{% endif %}ordenar=responsavel_retirada{% if ordenacao == 'responsavel_retirada' %}_desc{% endif %}" 
+                                   class="flex items-center gap-1 hover:text-blue-600 font-bold">
+                                    Resp. Retirada
+                                    <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/>
+                                    </svg>
+                                </a>
+                            </th>
+                            <th class="text-left py-2 px-2">
+                                <a href="?{% if filtros.cr %}cr={{ filtros.cr }}&{% endif %}{% if filtros.telefone %}telefone={{ filtros.telefone }}&{% endif %}{% if filtros.id_portal %}id_portal={{ filtros.id_portal }}&{% endif %}{% if filtros.status != 'todos' %}status={{ filtros.status }}&{% endif %}ordenar=status{% if ordenacao == 'status' %}_desc{% endif %}" 
+                                   class="flex items-center gap-1 hover:text-blue-600 font-bold">
+                                    Status
+                                    <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/>
+                                    </svg>
+                                </a>
+                            </th>
+                            <th class="text-left py-2 px-2 font-bold">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in registros %}
+                        <tr class="border-b text-xs hover:bg-gray-50">
+                            <td class="py-1.5 px-2">{{ item.data|date:"d/m/Y" }}</td>
+                            <td class="py-1.5 px-2 font-medium">{{ item.id_portal }}</td>
+                            <td class="py-1.5 px-2">{{ item.solicitante }}</td>
+                            <td class="py-1.5 px-2">{{ item.cr }}</td>
+                            <td class="py-1.5 px-2">{{ item.get_operadora_display }}</td>
+                            <td class="py-1.5 px-2">{{ item.numero_telefone|default:"-" }}</td>
+                            <td class="py-1.5 px-2">{{ item.responsavel_retirada }}</td>
+                            <td class="py-1.5 px-2">
+                                <span class="px-2 py-0.5 rounded-full text-xs 
+                                    {% if item.status == 'solicitar' %}bg-yellow-100 text-yellow-800
+                                    {% elif item.status == 'pendente_ativacao' %}bg-blue-100 text-blue-800
+                                    {% elif item.status == 'pendente_entrega' %}bg-purple-100 text-purple-800
+                                    {% else %}bg-green-100 text-green-800{% endif %}">
+                                    {{ item.get_status_display }}
+                                </span>
+                            </td>
+                            <td class="py-1.5 px-2">
+                                <div class="flex items-center gap-1">
+                                    <button onclick="editarRegistro('{{ item.id }}')" 
+                                            class="text-blue-600 hover:text-blue-800" 
+                                            title="Editar">
+                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                        </svg>
+                                    </button>
+                                    <button onclick="excluirRegistro('{{ item.id }}')"
+                                            class="text-red-600 hover:text-red-800"
+                                            title="Excluir">
+                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="9" class="text-center py-8 text-gray-500">
+                                Nenhum registro encontrado com os filtros aplicados.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Paginação -->
+            {% if registros.has_other_pages %}
+            <div class="flex items-center justify-between mt-6 pt-4 border-t">
+                <div class="flex items-center gap-2">
+                    <span class="text-sm text-gray-600">
+                        Itens por página:
+                    </span>
+                    <select onchange="window.location.href='?{% if filtros.cr %}cr={{ filtros.cr }}&{% endif %}{% if filtros.telefone %}telefone={{ filtros.telefone }}&{% endif %}{% if filtros.id_portal %}id_portal={{ filtros.id_portal }}&{% endif %}{% if filtros.status != 'todos' %}status={{ filtros.status }}&{% endif %}{% if ordenacao %}ordenar={{ ordenacao }}&{% endif %}por_pagina=' + this.value" 
+                            class="border rounded px-2 py-1 text-sm">
+                        <option value="10" {% if por_pagina == 10 %}selected{% endif %}>10</option>
+                        <option value="15" {% if por_pagina == 15 %}selected{% endif %}>15</option>
+                        <option value="30" {% if por_pagina == 30 %}selected{% endif %}>30</option>
+                        <option value="50" {% if por_pagina == 50 %}selected{% endif %}>50</option>
+                        <option value="100" {% if por_pagina == 100 %}selected{% endif %}>100</option>
+                    </select>
+                </div>
+                
+                <div class="flex items-center gap-2 text-sm text-gray-600">
+                    <span>
+                        página {{ registros.number }} de {{ registros.paginator.num_pages }} com total de {{ registros.paginator.count }} itens
+                    </span>
+                </div>
+                
+                <div class="flex items-center gap-1">
+                    {% if registros.has_previous %}
+                        <a href="?{% if filtros.cr %}cr={{ filtros.cr }}&{% endif %}{% if filtros.telefone %}telefone={{ filtros.telefone }}&{% endif %}{% if filtros.id_portal %}id_portal={{ filtros.id_portal }}&{% endif %}{% if filtros.status != 'todos' %}status={{ filtros.status }}&{% endif %}{% if ordenacao %}ordenar={{ ordenacao }}&{% endif %}{% if por_pagina %}por_pagina={{ por_pagina }}&{% endif %}pagina=1" 
+                           class="px-2 py-1 border rounded hover:bg-gray-50">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/>
+                            </svg>
+                        </a>
+                        <a href="?{% if filtros.cr %}cr={{ filtros.cr }}&{% endif %}{% if filtros.telefone %}telefone={{ filtros.telefone }}&{% endif %}{% if filtros.id_portal %}id_portal={{ filtros.id_portal }}&{% endif %}{% if filtros.status != 'todos' %}status={{ filtros.status }}&{% endif %}{% if ordenacao %}ordenar={{ ordenacao }}&{% endif %}{% if por_pagina %}por_pagina={{ por_pagina }}&{% endif %}pagina={{ registros.previous_page_number }}" 
+                           class="px-2 py-1 border rounded hover:bg-gray-50">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                            </svg>
+                        </a>
+                    {% else %}
+                        <span class="px-2 py-1 border rounded bg-gray-100 text-gray-400 cursor-not-allowed">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/>
+                            </svg>
+                        </span>
+                        <span class="px-2 py-1 border rounded bg-gray-100 text-gray-400 cursor-not-allowed">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                            </svg>
+                        </span>
+                    {% endif %}
+                    
+                    {% if registros.has_next %}
+                        <a href="?{% if filtros.cr %}cr={{ filtros.cr }}&{% endif %}{% if filtros.telefone %}telefone={{ filtros.telefone }}&{% endif %}{% if filtros.id_portal %}id_portal={{ filtros.id_portal }}&{% endif %}{% if filtros.status != 'todos' %}status={{ filtros.status }}&{% endif %}{% if ordenacao %}ordenar={{ ordenacao }}&{% endif %}{% if por_pagina %}por_pagina={{ por_pagina }}&{% endif %}pagina={{ registros.next_page_number }}" 
+                           class="px-2 py-1 border rounded hover:bg-gray-50">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </a>
+                        <a href="?{% if filtros.cr %}cr={{ filtros.cr }}&{% endif %}{% if filtros.telefone %}telefone={{ filtros.telefone }}&{% endif %}{% if filtros.id_portal %}id_portal={{ filtros.id_portal }}&{% endif %}{% if filtros.status != 'todos' %}status={{ filtros.status }}&{% endif %}{% if ordenacao %}ordenar={{ ordenacao }}&{% endif %}{% if por_pagina %}por_pagina={{ por_pagina }}&{% endif %}pagina={{ registros.paginator.num_pages }}" 
+                           class="px-2 py-1 border rounded hover:bg-gray-50">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/>
+                            </svg>
+                        </a>
+                    {% else %}
+                        <span class="px-2 py-1 border rounded bg-gray-100 text-gray-400 cursor-not-allowed">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </span>
+                        <span class="px-2 py-1 border rounded bg-gray-100 text-gray-400 cursor-not-allowed">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/>
+                            </svg>
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Novo/Editar Registro -->
+<div id="novoRegistroModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center">
+    <div class="bg-white rounded-lg w-full max-w-2xl mx-4">
+        <div class="p-4 border-b">
+            <h2 class="text-lg font-semibold" id="modalTitle">Novo Registro de Chip</h2>
+        </div>
+        <form id="novoRegistroForm" class="p-4 space-y-4">
+            <input type="hidden" id="registro_id" name="registro_id">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label for="data" class="block text-sm font-medium mb-1">Data</label>
+                    <input type="date" 
+                           id="data" 
+                           name="data" 
+                           required
+                           class="w-full h-10 rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label for="id_portal" class="block text-sm font-medium mb-1">ID Portal</label>
+                    <input type="text" 
+                           id="id_portal" 
+                           name="id_portal" 
+                           placeholder="Ex: ID-001" 
+                           required
+                           class="w-full h-10 rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label for="solicitante" class="block text-sm font-medium mb-1">Solicitante</label>
+                    <input type="text" 
+                           id="solicitante" 
+                           name="solicitante" 
+                           placeholder="Nome do solicitante" 
+                           required
+                           class="w-full h-10 rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label for="cr" class="block text-sm font-medium mb-1">CR</label>
+                    <input type="text" 
+                           id="cr" 
+                           name="cr" 
+                           placeholder="Ex: CR-001" 
+                           required
+                           class="w-full h-10 rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label for="operadora" class="block text-sm font-medium mb-1">Operadora</label>
+                    <select id="operadora" 
+                            name="operadora" 
+                            required
+                            class="w-full h-10 rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                        {% for value, label in operadora_choices %}
+                            <option value="{{ value }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="numero_telefone" class="block text-sm font-medium mb-1">Nº Telefone</label>
+                    <input type="text" 
+                           id="numero_telefone" 
+                           name="numero_telefone" 
+                           placeholder="Ex: (11) 99999-9999" 
+                           class="w-full h-10 rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label for="responsavel_retirada" class="block text-sm font-medium mb-1">Responsável Retirada</label>
+                    <input type="text" 
+                           id="responsavel_retirada" 
+                           name="responsavel_retirada" 
+                           placeholder="Nome do responsável" 
+                           required
+                           class="w-full h-10 rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label for="status" class="block text-sm font-medium mb-1">Status</label>
+                    <select id="status" 
+                            name="status" 
+                            required
+                            class="w-full h-10 rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                        {% for value, label in status_choices %}
+                            <option value="{{ value }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div>
+                <label for="observacoes" class="block text-sm font-medium mb-1">Observações</label>
+                <textarea id="observacoes" 
+                          name="observacoes" 
+                          rows="3" 
+                          placeholder="Observações adicionais (opcional)"
+                          class="w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"></textarea>
+            </div>
+            <div class="flex justify-end gap-2 pt-4">
+                <button type="button" 
+                        onclick="closeDialog()"
+                        class="px-4 py-2 border rounded-md hover:bg-gray-50">
+                    Cancelar
+                </button>
+                <button type="submit" 
+                        class="px-4 py-2 text-white rounded-md hover:opacity-90"
+                        style="background-color: #0F172A;">
+                    Salvar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal de Confirmação Moderna -->
+<div id="confirmModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg w-full max-w-md mx-4 shadow-xl">
+        <div class="p-6">
+            <div class="flex items-center gap-4 mb-4">
+                <div class="flex-shrink-0">
+                    <svg id="confirmIcon" class="h-12 w-12 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                </div>
+                <div class="flex-1">
+                    <h3 id="confirmTitle" class="text-lg font-semibold text-gray-900">Confirmar ação</h3>
+                    <p id="confirmMessage" class="text-sm text-gray-600 mt-1"></p>
+                </div>
+            </div>
+            <div class="flex justify-end gap-3 mt-6">
+                <button id="confirmCancelBtn"
+                        type="button"
+                        class="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">
+                    Cancelar
+                </button>
+                <button id="confirmOkBtn"
+                        type="button"
+                        class="px-4 py-2 text-white rounded-md hover:opacity-90 transition-opacity"
+                        style="background-color: #0F172A;">
+                    Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Sistema de confirmação moderna
+function showConfirm(title, message, type = 'warning') {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('confirmModal');
+        const titleEl = document.getElementById('confirmTitle');
+        const messageEl = document.getElementById('confirmMessage');
+        const iconEl = document.getElementById('confirmIcon');
+        const okBtn = document.getElementById('confirmOkBtn');
+        const cancelBtn = document.getElementById('confirmCancelBtn');
+
+        const icons = {
+            warning: {
+                color: 'text-yellow-500',
+                path: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z'
+            },
+            danger: {
+                color: 'text-red-500',
+                path: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z'
+            },
+            info: {
+                color: 'text-blue-500',
+                path: 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
+            }
+        };
+
+        const icon = icons[type] || icons.warning;
+        iconEl.className = `h-12 w-12 ${icon.color}`;
+        iconEl.querySelector('path').setAttribute('d', icon.path);
+
+        titleEl.textContent = title;
+        messageEl.textContent = message;
+        modal.classList.remove('hidden');
+
+        function handleConfirm() {
+            modal.classList.add('hidden');
+            cleanup();
+            resolve(true);
+        }
+
+        function handleCancel() {
+            modal.classList.add('hidden');
+            cleanup();
+            resolve(false);
+        }
+
+        function cleanup() {
+            okBtn.removeEventListener('click', handleConfirm);
+            cancelBtn.removeEventListener('click', handleCancel);
+            modal.removeEventListener('click', handleOutsideClick);
+            document.removeEventListener('keydown', handleKeydown);
+        }
+
+        function handleOutsideClick(e) {
+            if (e.target === modal) {
+                handleCancel();
+            }
+        }
+
+        function handleKeydown(e) {
+            if (e.key === 'Escape') {
+                handleCancel();
+            } else if (e.key === 'Enter') {
+                handleConfirm();
+            }
+        }
+
+        okBtn.addEventListener('click', handleConfirm);
+        cancelBtn.addEventListener('click', handleCancel);
+        modal.addEventListener('click', handleOutsideClick);
+        document.addEventListener('keydown', handleKeydown);
+    });
+}
+
+function openDialog(isEdit = false) {
+    document.getElementById('modalTitle').textContent = isEdit ? 'Editar Registro de Chip' : 'Novo Registro de Chip';
+    document.getElementById('novoRegistroModal').classList.remove('hidden');
+    if (!isEdit) {
+        document.getElementById('novoRegistroForm').reset();
+        document.getElementById('registro_id').value = '';
+    }
+}
+
+function closeDialog() {
+    document.getElementById('novoRegistroModal').classList.add('hidden');
+}
+
+async function editarRegistro(id) {
+    try {
+        const response = await fetch(`{% url 'gestao_a_vista:controle_chips' %}?id=${id}`);
+        if (response.ok) {
+            const data = await response.json();
+            document.getElementById('registro_id').value = id;
+            document.getElementById('data').value = data.data;
+            document.getElementById('id_portal').value = data.id_portal;
+            document.getElementById('solicitante').value = data.solicitante;
+            document.getElementById('cr').value = data.cr;
+            document.getElementById('operadora').value = data.operadora;
+            document.getElementById('numero_telefone').value = data.numero_telefone || '';
+            document.getElementById('responsavel_retirada').value = data.responsavel_retirada;
+            document.getElementById('status').value = data.status;
+            document.getElementById('observacoes').value = data.observacoes || '';
+            openDialog(true);
+        } else {
+            showNotification('Erro ao carregar os dados do registro', 'error');
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+        showNotification('Erro ao carregar os dados do registro', 'error');
+    }
+}
+
+async function excluirRegistro(id) {
+    const confirmed = await showConfirm(
+        'Confirmar Exclusão',
+        'Tem certeza que deseja excluir este registro?',
+        'danger'
+    );
+
+    if (!confirmed) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`{% url 'gestao_a_vista:controle_chips' %}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ id: id })
+        });
+
+        if (response.ok) {
+            window.location.reload();
+        } else {
+            const data = await response.json();
+            showNotification(data.message || 'Erro ao excluir o registro', 'error');
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+        showNotification('Erro ao excluir o registro', 'error');
+    }
+}
+
+document.getElementById('novoRegistroForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = {
+        id: document.getElementById('registro_id').value,
+        data: document.getElementById('data').value,
+        id_portal: document.getElementById('id_portal').value,
+        solicitante: document.getElementById('solicitante').value,
+        cr: document.getElementById('cr').value,
+        operadora: document.getElementById('operadora').value,
+        numero_telefone: document.getElementById('numero_telefone').value,
+        responsavel_retirada: document.getElementById('responsavel_retirada').value,
+        status: document.getElementById('status').value,
+        observacoes: document.getElementById('observacoes').value
+    };
+    
+    try {
+        const response = await fetch('{% url "gestao_a_vista:controle_chips" %}', {
+            method: formData.id ? 'PUT' : 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            window.location.reload();
+        } else {
+            showNotification(data.message || 'Erro ao salvar o registro', 'error');
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+        showNotification('Erro ao salvar o registro. Por favor, verifique os dados e tente novamente.', 'error');
+    }
+});
+
+// Auto-submit do formulário de filtros quando mudar o select ou input
+document.getElementById('filtro-status').addEventListener('change', function() {
+    this.form.submit();
+});
+
+document.getElementById('filtro-cr').addEventListener('input', debounce(function() {
+    this.form.submit();
+}, 500));
+
+document.getElementById('filtro-telefone').addEventListener('input', debounce(function() {
+    this.form.submit();
+}, 500));
+
+document.getElementById('filtro-id-portal').addEventListener('input', debounce(function() {
+    this.form.submit();
+}, 500));
+
+// Função debounce para evitar múltiplos submits
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func.apply(this, args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+</script>
+{% endblock %} 

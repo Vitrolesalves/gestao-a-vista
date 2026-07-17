@@ -1,0 +1,191 @@
+groups:
+- name: gestao-a-vista-alerts
+  rules:
+  
+  # Application Health
+  - alert: ApplicationDown
+    expr: up{job="gestao-a-vista"} == 0
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Gestão à Vista application is down"
+      description: "The Gestão à Vista application has been down for more than 1 minute."
+
+  - alert: HighErrorRate
+    expr: rate(django_http_requests_total{status=~"5.."}[5m]) > 0.1
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High error rate detected"
+      description: "Error rate is {{ $value }} errors per second for the last 5 minutes."
+
+  - alert: HighResponseTime
+    expr: histogram_quantile(0.95, rate(django_http_request_duration_seconds_bucket[5m])) > 2
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High response time"
+      description: "95th percentile response time is {{ $value }}s for the last 5 minutes."
+
+  # Database
+  - alert: DatabaseDown
+    expr: up{job="postgres"} == 0
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "PostgreSQL database is down"
+      description: "PostgreSQL database has been down for more than 1 minute."
+
+  - alert: DatabaseHighConnections
+    expr: pg_stat_database_numbackends / pg_settings_max_connections > 0.8
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High database connections"
+      description: "Database connections are at {{ $value | humanizePercentage }} of maximum."
+
+  - alert: DatabaseSlowQueries
+    expr: rate(pg_stat_database_tup_returned[5m]) / rate(pg_stat_database_tup_fetched[5m]) < 0.1
+    for: 10m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Database slow queries detected"
+      description: "Database query efficiency is low: {{ $value | humanizePercentage }}."
+
+  # Redis
+  - alert: RedisDown
+    expr: up{job="redis"} == 0
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Redis is down"
+      description: "Redis has been down for more than 1 minute."
+
+  - alert: RedisHighMemoryUsage
+    expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.9
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Redis high memory usage"
+      description: "Redis memory usage is {{ $value | humanizePercentage }}."
+
+  # System Resources
+  - alert: HighCPUUsage
+    expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High CPU usage"
+      description: "CPU usage is {{ $value }}% on {{ $labels.instance }}."
+
+  - alert: HighMemoryUsage
+    expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes > 0.9
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High memory usage"
+      description: "Memory usage is {{ $value | humanizePercentage }} on {{ $labels.instance }}."
+
+  - alert: LowDiskSpace
+    expr: (node_filesystem_size_bytes - node_filesystem_free_bytes) / node_filesystem_size_bytes > 0.9
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Low disk space"
+      description: "Disk usage is {{ $value | humanizePercentage }} on {{ $labels.instance }}."
+
+  # Nginx
+  - alert: NginxDown
+    expr: up{job="nginx"} == 0
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Nginx is down"
+      description: "Nginx has been down for more than 1 minute."
+
+  - alert: NginxHighErrorRate
+    expr: rate(nginx_http_requests_total{status=~"5.."}[5m]) > 0.1
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Nginx high error rate"
+      description: "Nginx error rate is {{ $value }} errors per second."
+
+  # Celery
+  - alert: CeleryWorkersDown
+    expr: celery_workers_total == 0
+    for: 2m
+    labels:
+      severity: critical
+    annotations:
+      summary: "No Celery workers available"
+      description: "All Celery workers are down."
+
+  - alert: CeleryHighQueueSize
+    expr: celery_queue_length > 100
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High Celery queue size"
+      description: "Celery queue has {{ $value }} pending tasks."
+
+  - alert: CeleryTaskFailures
+    expr: rate(celery_task_total{state="FAILURE"}[5m]) > 0.1
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High Celery task failure rate"
+      description: "Celery task failure rate is {{ $value }} failures per second."
+
+  # Security
+  - alert: HighFailedLogins
+    expr: rate(django_failed_logins_total[5m]) > 0.5
+    for: 2m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High failed login attempts"
+      description: "Failed login rate is {{ $value }} attempts per second."
+
+  - alert: SuspiciousActivity
+    expr: rate(django_suspicious_requests_total[5m]) > 0.1
+    for: 2m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Suspicious activity detected"
+      description: "Suspicious request rate is {{ $value }} requests per second."
+
+  # Business Metrics
+  - alert: LowUserActivity
+    expr: rate(django_user_activity_total[1h]) < 0.01
+    for: 30m
+    labels:
+      severity: info
+    annotations:
+      summary: "Low user activity"
+      description: "User activity is unusually low: {{ $value }} activities per second."
+
+  - alert: HighUserRegistrations
+    expr: rate(django_user_registrations_total[5m]) > 1
+    for: 5m
+    labels:
+      severity: info
+    annotations:
+      summary: "High user registration rate"
+      description: "User registration rate is {{ $value }} registrations per second."

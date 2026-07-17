@@ -2,6 +2,8 @@
 
 Sistema web de gestão operacional que desenvolvi para uma empresa de facilities/serviços de grande porte, usado em produção — hoje em escala nacional — por equipes de operação, qualidade e gestão das regionais da empresa pelo Brasil. Ele centraliza rotinas que antes viviam em planilhas e grupos de WhatsApp: registro de ocorrências, auditoria de rondas, reservas de sala, avaliação psicossocial NR-01, gestão de qualidade, controle de efetivo e por aí vai.
 
+![Home do Gestão à Vista](docs/screenshots/home.png)
+
 Este repositório é a **versão pública de portfólio**: o código é o mesmo que roda em produção, mas todos os dados, credenciais, nomes de clientes e marcas foram removidos ou substituídos por valores fictícios (`example.com`, "Grupo Exemplo" etc.). O histórico do git foi zerado pelo mesmo motivo. Nenhum dado real está incluído — o projeto sobe com um banco SQLite vazio e um usuário de demonstração.
 
 ## Por que esse projeto existe
@@ -23,6 +25,17 @@ O projeto cresceu módulo a módulo em cima de demandas reais — dá para perce
 - **Utilitários de operação** — gerador de QR Codes e etiquetas em PDF, calendário anual de eventos, controle de chips, fluxos de implantação/desmobilização de contratos e um demo front-end de controle de ordens de manutenção (PCM).
 
 O sistema também é um PWA (manifest + service worker), então funciona razoavelmente bem instalado no celular do supervisor em campo.
+
+## Algumas telas
+
+Os prints abaixo são da instância local de demonstração — banco vazio e nomes fictícios, como explicado no fim deste README:
+
+| | |
+|---|---|
+| ![Torre de Controle — dashboard do Livro de Ocorrências](docs/screenshots/torre-de-controle.png) | ![CMO — Conformidade de Efetivo](docs/screenshots/cmo-efetivo.png) |
+| *Torre de Controle — Livro de Ocorrências* | *CMO — Conformidade de Efetivo* |
+| ![Acompanhamento de implantações](docs/screenshots/implantacoes.png) | ![Fluxo de implantações em kanban](docs/screenshots/fluxo-implantacoes.png) |
+| *Acompanhamento de implantações sistêmicas* | *Fluxo de implantações em kanban* |
 
 ## Arquitetura
 

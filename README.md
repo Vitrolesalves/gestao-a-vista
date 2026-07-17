@@ -95,4 +95,4 @@ O código é publicado para fins de avaliação técnica e portfólio. Todos os 
 
 ---
 
-Daniel Augusto — [daniel.aual08@gmail.com](mailto:daniel.aual08@gmail.com)
+Daniel Augusto — [danielmel776@gmail.com](mailto:danielmel776@gmail.com)
